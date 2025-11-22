@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { OptionCheckbox } from "@/components/OptionCheckbox";
 import { StickyFooter } from "@/components/StickyFooter";
 import { QuantitySelector } from "@/components/QuantitySelector";
-import { mockServiceOptions } from "@/data/mockData";
 import { Service, ServiceOption } from "@/types/booking";
+import { supabase } from "@/integrations/supabase/client";
+import { mapDbOptionToOption } from "@/lib/serviceMapper";
 
 const OptionsSelection = () => {
   const { serviceId } = useParams();
@@ -16,13 +17,61 @@ const OptionsSelection = () => {
 
   const [selectedOptions, setSelectedOptions] = useState<ServiceOption[]>([]);
   const [serviceQuantity, setServiceQuantity] = useState(1);
-  const options = serviceId ? mockServiceOptions[serviceId] || [] : [];
+  const [options, setOptions] = useState<ServiceOption[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!service) {
       navigate("/");
+      return;
     }
-  }, [service, navigate]);
+
+    const fetchOptions = async () => {
+      const { data, error } = await supabase
+        .from('service_options')
+        .select('*')
+        .eq('service_id', serviceId);
+      
+      if (error) {
+        console.error('Error fetching options:', error);
+      } else {
+        setOptions((data || []).map(mapDbOptionToOption));
+      }
+      setLoading(false);
+    };
+
+    fetchOptions();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('service-options-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_options',
+          filter: `service_id=eq.${serviceId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setOptions(prev => [...prev, mapDbOptionToOption(payload.new)]);
+          } else if (payload.eventType === 'UPDATE') {
+            setOptions(prev => prev.map(o => 
+              o.id === payload.new.id ? mapDbOptionToOption(payload.new) : o
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setOptions(prev => prev.filter(o => o.id !== payload.old.id));
+            setSelectedOptions(prev => prev.filter(o => o.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [serviceId, service, navigate]);
 
   if (!service) return null;
 
@@ -108,7 +157,9 @@ const OptionsSelection = () => {
         </p>
         
         <div className="space-y-3">
-          {options.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-12">読み込み中...</div>
+          ) : options.length > 0 ? (
             options.map((option) => (
               <OptionCheckbox
                 key={option.id}
