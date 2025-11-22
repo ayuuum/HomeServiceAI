@@ -1,17 +1,22 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Calendar, User } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, User, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { Booking } from "@/types/booking";
+import { toast } from "sonner";
 
 // Mock booking data
-const mockBookings = [
+const initialMockBookings: Booking[] = [
   {
     id: "1",
+    serviceId: "1",
     serviceName: "エアコンクリーニング",
     customerName: "田中 太郎",
     totalPrice: 19000,
-    status: "pending" as const,
+    status: "pending",
     selectedDate: "2025-01-25",
     selectedTime: "10:00",
     optionsSummary: ["お掃除機能付きエアコン", "防カビコート"],
@@ -19,10 +24,11 @@ const mockBookings = [
   },
   {
     id: "2",
+    serviceId: "2",
     serviceName: "キッチン掃除",
     customerName: "佐藤 花子",
     totalPrice: 19000,
-    status: "confirmed" as const,
+    status: "confirmed",
     selectedDate: "2025-01-23",
     selectedTime: "14:00",
     optionsSummary: ["換気扇分解洗浄"],
@@ -30,10 +36,11 @@ const mockBookings = [
   },
   {
     id: "3",
+    serviceId: "3",
     serviceName: "バスルームクリーニング",
     customerName: "鈴木 一郎",
     totalPrice: 18000,
-    status: "pending" as const,
+    status: "pending",
     selectedDate: "2025-01-26",
     selectedTime: "09:00",
     optionsSummary: ["防カビコーティング", "鏡のウロコ取り"],
@@ -63,6 +70,47 @@ const getStatusBadge = (status: string) => {
 };
 
 const AdminDashboard = () => {
+  const [bookings, setBookings] = useState<Booking[]>(initialMockBookings);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleViewDetails = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setModalOpen(true);
+  };
+
+  const handleApprove = (bookingId: string) => {
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking.id === bookingId
+          ? { ...booking, status: "confirmed" as const }
+          : booking
+      )
+    );
+    toast.success("予約を承認しました", {
+      description: "お客様に確認メールが送信されました",
+    });
+  };
+
+  const handleReject = (bookingId: string) => {
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking.id === bookingId
+          ? { ...booking, status: "cancelled" as const }
+          : booking
+      )
+    );
+    toast.error("予約を却下しました", {
+      description: "お客様に通知メールが送信されました",
+    });
+  };
+
+  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+  const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
+  const totalRevenue = bookings
+    .filter((b) => b.status === "confirmed")
+    .reduce((sum, b) => sum + b.totalPrice, 0);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -85,7 +133,7 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">
                     承認待ち
                   </p>
-                  <p className="text-3xl font-bold text-accent">2</p>
+                  <p className="text-3xl font-bold text-accent">{pendingCount}</p>
                 </div>
                 <Clock className="h-12 w-12 text-accent/20" />
               </div>
@@ -98,7 +146,7 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">
                     確定済み
                   </p>
-                  <p className="text-3xl font-bold text-success">1</p>
+                  <p className="text-3xl font-bold text-success">{confirmedCount}</p>
                 </div>
                 <CheckCircle2 className="h-12 w-12 text-success/20" />
               </div>
@@ -111,7 +159,9 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">
                     今月の売上
                   </p>
-                  <p className="text-3xl font-bold text-primary">¥56,000</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ¥{totalRevenue.toLocaleString()}
+                  </p>
                 </div>
                 <Calendar className="h-12 w-12 text-primary/20" />
               </div>
@@ -126,7 +176,7 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockBookings.map((booking, index) => (
+              {bookings.map((booking, index) => (
                 <div key={booking.id}>
                   {index > 0 && <Separator className="my-4" />}
                   <div className="space-y-4">
@@ -182,19 +232,33 @@ const AdminDashboard = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {booking.status === "pending" && (
                         <>
-                          <Button size="sm" className="btn-primary">
+                          <Button 
+                            size="sm" 
+                            className="btn-primary"
+                            onClick={() => handleApprove(booking.id)}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-1" />
                             承認する
                           </Button>
-                          <Button size="sm" variant="outline">
-                            日時変更を提案
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={() => handleReject(booking.id)}
+                          >
+                            却下する
                           </Button>
                         </>
                       )}
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleViewDetails(booking)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
                         詳細を見る
                       </Button>
                     </div>
@@ -205,6 +269,15 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </section>
+
+      {/* Booking Detail Modal */}
+      <BookingDetailModal
+        booking={selectedBooking}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
     </div>
   );
 };

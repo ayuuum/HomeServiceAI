@@ -38,7 +38,7 @@ export interface Booking {
   serviceId: string;
   serviceName: string;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   selectedDate: string;
   selectedTime: string;
   customerName: string;
