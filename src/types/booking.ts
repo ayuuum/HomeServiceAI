@@ -6,6 +6,10 @@ export interface Service {
   duration: number;
   imageUrl: string;
   category: string;
+  quantityDiscounts?: Array<{
+    min_quantity: number;
+    discount_rate: number;
+  }>;
 }
 
 export interface ServiceOption {
@@ -16,9 +20,13 @@ export interface ServiceOption {
   description?: string;
 }
 
+export interface SelectedOptionWithQuantity extends ServiceOption {
+  quantity: number;
+}
+
 export interface BookingState {
   selectedService?: Service;
-  selectedOptions: ServiceOption[];
+  selectedOptions: SelectedOptionWithQuantity[];
   serviceQuantity?: number;
   selectedDate?: Date;
   selectedTime?: string;
@@ -43,6 +51,11 @@ export interface Booking {
   selectedDate: string;
   selectedTime: string;
   customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  serviceQuantity: number;
+  diagnosisHasParking?: boolean;
+  diagnosisNotes?: string;
   optionsSummary: string[];
   createdAt: string;
 }

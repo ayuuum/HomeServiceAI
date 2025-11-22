@@ -9,6 +9,7 @@ export const mapDbServiceToService = (dbService: any) => {
     duration: dbService.duration,
     imageUrl: dbService.image_url,
     category: dbService.category,
+    quantityDiscounts: dbService.quantity_discounts || [],
   };
 };
 
