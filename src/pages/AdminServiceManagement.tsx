@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Clock, DollarSign } from "lucide-react";
 import { ServiceFormModal } from "@/components/ServiceFormModal";
 import { Service } from "@/types/booking";
-import { mockServices } from "@/data/mockData";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { mapDbServiceToService, mapServiceToDbService } from "@/lib/serviceMapper";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +20,59 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminServiceManagement = () => {
-  const [services, setServices] = useState<Service[]>(mockServices);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchServices();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('admin-services-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'services'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setServices(prev => [...prev, mapDbServiceToService(payload.new)]);
+          } else if (payload.eventType === 'UPDATE') {
+            setServices(prev => prev.map(s => 
+              s.id === payload.new.id ? mapDbServiceToService(payload.new) : s
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setServices(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchServices = async () => {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching services:', error);
+      toast.error('サービスの読み込みに失敗しました');
+    } else {
+      setServices((data || []).map(mapDbServiceToService));
+    }
+    setLoading(false);
+  };
 
   const handleAddService = () => {
     setSelectedService(null);
@@ -40,32 +89,52 @@ const AdminServiceManagement = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (serviceToDelete) {
-      setServices(services.filter(s => s.id !== serviceToDelete));
-      toast.success("サービスを削除しました");
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceToDelete);
+
+      if (error) {
+        console.error('Error deleting service:', error);
+        toast.error("サービスの削除に失敗しました");
+      } else {
+        toast.success("サービスを削除しました");
+      }
       setDeleteDialogOpen(false);
       setServiceToDelete(null);
     }
   };
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = async (values: any) => {
+    const dbValues = mapServiceToDbService(values);
+    
     if (selectedService) {
       // Edit existing service
-      setServices(services.map(s => 
-        s.id === selectedService.id 
-          ? { ...s, ...values }
-          : s
-      ));
-      toast.success("サービスを更新しました");
+      const { error } = await supabase
+        .from('services')
+        .update(dbValues)
+        .eq('id', selectedService.id);
+
+      if (error) {
+        console.error('Error updating service:', error);
+        toast.error("サービスの更新に失敗しました");
+      } else {
+        toast.success("サービスを更新しました");
+      }
     } else {
       // Add new service
-      const newService: Service = {
-        id: `service-${Date.now()}`,
-        ...values,
-      };
-      setServices([...services, newService]);
-      toast.success("新しいサービスを追加しました");
+      const { error } = await supabase
+        .from('services')
+        .insert([dbValues]);
+
+      if (error) {
+        console.error('Error adding service:', error);
+        toast.error("サービスの追加に失敗しました");
+      } else {
+        toast.success("新しいサービスを追加しました");
+      }
     }
   };
 
@@ -97,8 +166,11 @@ const AdminServiceManagement = () => {
       </div>
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {services.map((service) => (
+      {loading ? (
+        <div className="text-center py-12">読み込み中...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {services.map((service) => (
           <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-video relative overflow-hidden bg-muted">
               <img
@@ -150,8 +222,9 @@ const AdminServiceManagement = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Empty State */}
       {services.length === 0 && (
