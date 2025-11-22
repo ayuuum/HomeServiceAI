@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,23 @@ import { ja } from "date-fns/locale";
 const CalendarSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { service, selectedOptions, totalPrice } = location.state as {
+  const state = location.state as {
     service: Service;
     selectedOptions: ServiceOption[];
     totalPrice: number;
-  };
+  } | null;
+
+  useEffect(() => {
+    if (!state?.service) {
+      navigate("/", { replace: true });
+    }
+  }, [state, navigate]);
+
+  if (!state?.service) {
+    return null;
+  }
+
+  const { service, selectedOptions, totalPrice } = state;
 
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
