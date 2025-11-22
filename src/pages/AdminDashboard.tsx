@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Calendar, User, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { Booking } from "@/types/booking";
 import { toast } from "sonner";
+import AdminServiceManagement from "./AdminServiceManagement";
 
 // Mock booking data
 const initialMockBookings: Booking[] = [
@@ -116,15 +118,23 @@ const AdminDashboard = () => {
       {/* Header */}
       <header className="bg-card border-b border-border">
         <div className="container max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold">予約管理ダッシュボード</h1>
+          <h1 className="text-2xl font-bold">管理ダッシュボード</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            新着の予約リクエストを確認・管理できます
+            予約とサービスを一元管理
           </p>
         </div>
       </header>
 
-      {/* Stats Cards */}
+      {/* Tabs */}
       <section className="container max-w-6xl mx-auto px-4 py-8">
+        <Tabs defaultValue="bookings" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
+            <TabsTrigger value="bookings">予約管理</TabsTrigger>
+            <TabsTrigger value="services">サービス管理</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="bookings" className="space-y-8">
+            {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
@@ -268,6 +278,12 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="services">
+            <AdminServiceManagement />
+          </TabsContent>
+        </Tabs>
       </section>
 
       {/* Booking Detail Modal */}

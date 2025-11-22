@@ -19,6 +19,7 @@ export interface ServiceOption {
 export interface BookingState {
   selectedService?: Service;
   selectedOptions: ServiceOption[];
+  serviceQuantity?: number;
   selectedDate?: Date;
   selectedTime?: string;
   diagnosis?: {

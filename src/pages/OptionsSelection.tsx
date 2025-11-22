@@ -4,6 +4,7 @@ import { ChevronLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OptionCheckbox } from "@/components/OptionCheckbox";
 import { StickyFooter } from "@/components/StickyFooter";
+import { QuantitySelector } from "@/components/QuantitySelector";
 import { mockServiceOptions } from "@/data/mockData";
 import { Service, ServiceOption } from "@/types/booking";
 
@@ -14,6 +15,7 @@ const OptionsSelection = () => {
   const service = location.state?.service as Service;
 
   const [selectedOptions, setSelectedOptions] = useState<ServiceOption[]>([]);
+  const [serviceQuantity, setServiceQuantity] = useState(1);
   const options = serviceId ? mockServiceOptions[serviceId] || [] : [];
 
   useEffect(() => {
@@ -24,7 +26,7 @@ const OptionsSelection = () => {
 
   if (!service) return null;
 
-  const totalPrice = service.basePrice + 
+  const totalPrice = (service.basePrice * serviceQuantity) + 
     selectedOptions.reduce((sum, opt) => sum + opt.price, 0);
 
   const handleOptionChange = (option: ServiceOption, checked: boolean) => {
@@ -40,6 +42,7 @@ const OptionsSelection = () => {
       state: { 
         service, 
         selectedOptions,
+        serviceQuantity,
         totalPrice 
       } 
     });
@@ -77,14 +80,20 @@ const OptionsSelection = () => {
             />
             <div className="flex-1">
               <h2 className="text-lg font-semibold mb-1">{service.title}</h2>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{service.duration}分</span>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{service.duration}分</span>
+                  </div>
+                  <span className="font-semibold text-foreground">
+                    基本料金: ¥{service.basePrice.toLocaleString()}
+                  </span>
                 </div>
-                <span className="font-semibold text-foreground">
-                  基本料金: ¥{service.basePrice.toLocaleString()}
-                </span>
+                <QuantitySelector
+                  quantity={serviceQuantity}
+                  onQuantityChange={setServiceQuantity}
+                />
               </div>
             </div>
           </div>

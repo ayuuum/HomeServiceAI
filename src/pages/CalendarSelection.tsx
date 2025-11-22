@@ -13,6 +13,7 @@ const CalendarSelection = () => {
   const state = location.state as {
     service: Service;
     selectedOptions: ServiceOption[];
+    serviceQuantity?: number;
     totalPrice: number;
   } | null;
 
@@ -26,7 +27,7 @@ const CalendarSelection = () => {
     return null;
   }
 
-  const { service, selectedOptions, totalPrice } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice } = state;
 
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
@@ -49,6 +50,7 @@ const CalendarSelection = () => {
       state: {
         service,
         selectedOptions,
+        serviceQuantity,
         totalPrice,
         selectedDate,
         selectedTime,
