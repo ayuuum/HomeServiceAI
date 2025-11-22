@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { ChevronLeft, Calendar, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,14 +12,7 @@ import { toast } from "sonner";
 const Confirmation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    service,
-    selectedOptions,
-    totalPrice,
-    selectedDate,
-    selectedTime,
-    diagnosis,
-  } = location.state as {
+  const state = location.state as {
     service: Service;
     selectedOptions: ServiceOption[];
     totalPrice: number;
@@ -26,9 +20,22 @@ const Confirmation = () => {
     selectedTime: string;
     diagnosis: {
       hasParking: boolean;
+      photos?: File[];
       notes: string;
     };
-  };
+  } | null;
+
+  useEffect(() => {
+    if (!state?.service) {
+      navigate("/", { replace: true });
+    }
+  }, [state, navigate]);
+
+  if (!state?.service) {
+    return null;
+  }
+
+  const { service, selectedOptions, totalPrice, selectedDate, selectedTime, diagnosis } = state;
 
   const handleSubmit = () => {
     toast.success("予約リクエストを送信しました！", {
