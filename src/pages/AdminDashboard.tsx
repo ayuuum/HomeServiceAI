@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,46 +9,8 @@ import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { Booking } from "@/types/booking";
 import { toast } from "sonner";
 import AdminServiceManagement from "./AdminServiceManagement";
-
-// Mock booking data
-const initialMockBookings: Booking[] = [
-  {
-    id: "1",
-    serviceId: "1",
-    serviceName: "エアコンクリーニング",
-    customerName: "田中 太郎",
-    totalPrice: 19000,
-    status: "pending",
-    selectedDate: "2025-01-25",
-    selectedTime: "10:00",
-    optionsSummary: ["お掃除機能付きエアコン", "防カビコート"],
-    createdAt: "2025-01-20T10:30:00",
-  },
-  {
-    id: "2",
-    serviceId: "2",
-    serviceName: "キッチン掃除",
-    customerName: "佐藤 花子",
-    totalPrice: 19000,
-    status: "confirmed",
-    selectedDate: "2025-01-23",
-    selectedTime: "14:00",
-    optionsSummary: ["換気扇分解洗浄"],
-    createdAt: "2025-01-19T15:20:00",
-  },
-  {
-    id: "3",
-    serviceId: "3",
-    serviceName: "バスルームクリーニング",
-    customerName: "鈴木 一郎",
-    totalPrice: 18000,
-    status: "pending",
-    selectedDate: "2025-01-26",
-    selectedTime: "09:00",
-    optionsSummary: ["防カビコーティング", "鏡のウロコ取り"],
-    createdAt: "2025-01-20T09:15:00",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -72,39 +34,77 @@ const getStatusBadge = (status: string) => {
 };
 
 const AdminDashboard = () => {
-  const [bookings, setBookings] = useState<Booking[]>(initialMockBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBookings();
+
+    const channel = supabase
+      .channel('bookings-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings'
+      }, fetchBookings)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchBookings = async () => {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        services (title),
+        booking_options (option_title, option_price, option_quantity)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setBookings(data.map(mapDbBookingToBooking));
+    }
+    setLoading(false);
+  };
 
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setModalOpen(true);
   };
 
-  const handleApprove = (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((booking) =>
-        booking.id === bookingId
-          ? { ...booking, status: "confirmed" as const }
-          : booking
-      )
-    );
-    toast.success("予約を承認しました", {
-      description: "お客様に確認メールが送信されました",
-    });
+  const handleApprove = async (bookingId: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'confirmed' })
+      .eq('id', bookingId);
+
+    if (!error) {
+      toast.success("予約を承認しました", {
+        description: "お客様に確認メールが送信されました",
+      });
+    } else {
+      toast.error("予約の承認に失敗しました");
+    }
   };
 
-  const handleReject = (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((booking) =>
-        booking.id === bookingId
-          ? { ...booking, status: "cancelled" as const }
-          : booking
-      )
-    );
-    toast.error("予約を却下しました", {
-      description: "お客様に通知メールが送信されました",
-    });
+  const handleReject = async (bookingId: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' })
+      .eq('id', bookingId);
+
+    if (!error) {
+      toast.error("予約を却下しました", {
+        description: "お客様に通知メールが送信されました",
+      });
+    } else {
+      toast.error("予約の却下に失敗しました");
+    }
   };
 
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
@@ -185,8 +185,15 @@ const AdminDashboard = () => {
             <CardTitle>予約リスト</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {bookings.map((booking, index) => (
+            {loading ? (
+              <div className="text-center py-12">読み込み中...</div>
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                予約がまだありません
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {bookings.map((booking, index) => (
                 <div key={booking.id}>
                   {index > 0 && <Separator className="my-4" />}
                   <div className="space-y-4">
@@ -275,7 +282,8 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
           </TabsContent>

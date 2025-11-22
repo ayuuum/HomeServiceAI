@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Clock } from "lucide-react";
+import { ChevronLeft, Clock, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { OptionCheckbox } from "@/components/OptionCheckbox";
 import { StickyFooter } from "@/components/StickyFooter";
 import { QuantitySelector } from "@/components/QuantitySelector";
-import { Service, ServiceOption } from "@/types/booking";
+import { Service, ServiceOption, SelectedOptionWithQuantity } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbOptionToOption } from "@/lib/serviceMapper";
+import { calculateDiscount } from "@/lib/discountCalculator";
 
 const OptionsSelection = () => {
   const { serviceId } = useParams();
@@ -15,7 +18,7 @@ const OptionsSelection = () => {
   const location = useLocation();
   const service = location.state?.service as Service;
 
-  const [selectedOptions, setSelectedOptions] = useState<ServiceOption[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<SelectedOptionWithQuantity[]>([]);
   const [serviceQuantity, setServiceQuantity] = useState(1);
   const [options, setOptions] = useState<ServiceOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,15 +78,30 @@ const OptionsSelection = () => {
 
   if (!service) return null;
 
-  const totalPrice = (service.basePrice * serviceQuantity) + 
-    selectedOptions.reduce((sum, opt) => sum + opt.price, 0);
+  // Calculate prices with discount
+  const baseTotal = service.basePrice * serviceQuantity;
+  const optionsTotal = selectedOptions.reduce((sum, opt) => sum + (opt.price * opt.quantity), 0);
+  
+  const { discount, discountRate } = calculateDiscount(
+    service.basePrice,
+    serviceQuantity,
+    service.quantityDiscounts || []
+  );
+  
+  const totalPrice = baseTotal + optionsTotal - discount;
 
   const handleOptionChange = (option: ServiceOption, checked: boolean) => {
     if (checked) {
-      setSelectedOptions([...selectedOptions, option]);
+      setSelectedOptions([...selectedOptions, { ...option, quantity: 1 }]);
     } else {
       setSelectedOptions(selectedOptions.filter(opt => opt.id !== option.id));
     }
+  };
+
+  const handleOptionQuantityChange = (optionId: string, quantity: number) => {
+    setSelectedOptions(prev => prev.map(opt =>
+      opt.id === optionId ? { ...opt, quantity } : opt
+    ));
   };
 
   const handleNext = () => {
@@ -92,7 +110,9 @@ const OptionsSelection = () => {
         service, 
         selectedOptions,
         serviceQuantity,
-        totalPrice 
+        totalPrice,
+        discount,
+        discountRate,
       } 
     });
   };
@@ -119,39 +139,52 @@ const OptionsSelection = () => {
       </header>
 
       {/* Service Summary */}
-      <section className="bg-muted/30 py-6">
-        <div className="container max-w-2xl mx-auto px-4">
-          <div className="flex items-start gap-4">
-            <img 
-              src={service.imageUrl} 
-              alt={service.title}
-              className="w-20 h-20 rounded-lg object-cover"
-            />
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold mb-1">{service.title}</h2>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex items-center gap-4 text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{service.duration}分</span>
-                  </div>
-                  <span className="font-semibold text-foreground">
-                    基本料金: ¥{service.basePrice.toLocaleString()}
-                  </span>
+      <section className="container max-w-2xl mx-auto px-4 py-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex gap-4">
+              <img
+                src={service.imageUrl}
+                alt={service.title}
+                className="w-20 h-20 rounded-lg object-cover"
+              />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1">{service.title}</h3>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{service.duration}分</span>
                 </div>
-                <QuantitySelector
-                  quantity={serviceQuantity}
-                  onQuantityChange={setServiceQuantity}
-                />
+                <p className="text-sm font-semibold text-primary">
+                  ¥{service.basePrice.toLocaleString()} 税込
+                </p>
               </div>
             </div>
-          </div>
-        </div>
+            <div className="mt-4">
+              <QuantitySelector
+                quantity={serviceQuantity}
+                onQuantityChange={setServiceQuantity}
+              />
+              {discount > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-success/10 text-success border-success/30">
+                    {Math.round(discountRate * 100)}%オフ
+                  </Badge>
+                  <span className="text-sm text-success font-medium">
+                    -¥{discount.toLocaleString()}の割引が適用されます
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Options List */}
-      <section className="container max-w-2xl mx-auto px-4 py-8">
-        <h3 className="text-xl font-semibold mb-4">オプションを選択</h3>
+      <section className="container max-w-2xl mx-auto px-4 pb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingBag className="h-5 w-5 text-primary" />
+          <h3 className="text-xl font-semibold">追加オプション</h3>
+        </div>
         <p className="text-sm text-muted-foreground mb-6">
           必要なオプションがあればチェックしてください（複数選択可）
         </p>
@@ -160,21 +193,26 @@ const OptionsSelection = () => {
           {loading ? (
             <div className="text-center py-12">読み込み中...</div>
           ) : options.length > 0 ? (
-            options.map((option) => (
-              <OptionCheckbox
-                key={option.id}
-                option={option}
-                checked={selectedOptions.some(opt => opt.id === option.id)}
-                onChange={(checked) => handleOptionChange(option, checked)}
-              />
-            ))
+            options.map((option) => {
+              const selectedOption = selectedOptions.find(opt => opt.id === option.id);
+              return (
+                <OptionCheckbox
+                  key={option.id}
+                  option={option}
+                  checked={!!selectedOption}
+                  quantity={selectedOption?.quantity || 1}
+                  onChange={(checked) => handleOptionChange(option, checked)}
+                  onQuantityChange={(quantity) => handleOptionQuantityChange(option.id, quantity)}
+                />
+              );
+            })
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
                 このサービスにオプションはありません
               </p>
               <Button 
-                className="mt-4"
+                className="mt-4 btn-primary"
                 onClick={handleNext}
               >
                 次へ進む
@@ -188,6 +226,8 @@ const OptionsSelection = () => {
       {options.length > 0 && (
         <StickyFooter 
           totalPrice={totalPrice}
+          discount={discount}
+          discountRate={discountRate}
           onNext={handleNext}
           buttonText="日時を選択"
         />

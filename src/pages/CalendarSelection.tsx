@@ -4,7 +4,7 @@ import { ChevronLeft, Calendar as CalendarIcon, CheckCircle2, Clock } from "luci
 import { Button } from "@/components/ui/button";
 import { StickyFooter } from "@/components/StickyFooter";
 import { Calendar } from "@/components/ui/calendar";
-import { Service, ServiceOption } from "@/types/booking";
+import { Service, SelectedOptionWithQuantity } from "@/types/booking";
 import { ja } from "date-fns/locale";
 
 const CalendarSelection = () => {
@@ -12,9 +12,11 @@ const CalendarSelection = () => {
   const location = useLocation();
   const state = location.state as {
     service: Service;
-    selectedOptions: ServiceOption[];
+    selectedOptions: SelectedOptionWithQuantity[];
     serviceQuantity?: number;
     totalPrice: number;
+    discount?: number;
+    discountRate?: number;
   } | null;
 
   useEffect(() => {
@@ -27,7 +29,7 @@ const CalendarSelection = () => {
     return null;
   }
 
-  const { service, selectedOptions, serviceQuantity = 1, totalPrice } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice, discount = 0, discountRate = 0 } = state;
 
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
@@ -54,6 +56,8 @@ const CalendarSelection = () => {
         totalPrice,
         selectedDate,
         selectedTime,
+        discount,
+        discountRate,
       },
     });
   };
@@ -152,6 +156,8 @@ const CalendarSelection = () => {
       {selectedDate && selectedTime && (
         <StickyFooter
           totalPrice={totalPrice}
+          discount={discount}
+          discountRate={discountRate}
           onNext={handleNext}
           buttonText="問診へ進む"
         />

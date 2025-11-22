@@ -6,18 +6,20 @@ import { StickyFooter } from "@/components/StickyFooter";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Service, ServiceOption } from "@/types/booking";
+import { Service, SelectedOptionWithQuantity } from "@/types/booking";
 
 const Diagnosis = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as {
     service: Service;
-    selectedOptions: ServiceOption[];
+    selectedOptions: SelectedOptionWithQuantity[];
     serviceQuantity?: number;
     totalPrice: number;
     selectedDate: Date;
     selectedTime: string;
+    discount?: number;
+    discountRate?: number;
   } | null;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +44,7 @@ const Diagnosis = () => {
     return null;
   }
 
-  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime, discount = 0, discountRate = 0 } = state;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -74,6 +76,8 @@ const Diagnosis = () => {
           photos: selectedPhotos,
           notes,
         },
+        discount,
+        discountRate,
       },
     });
   };
@@ -202,6 +206,8 @@ const Diagnosis = () => {
       {/* Sticky Footer */}
       <StickyFooter
         totalPrice={totalPrice}
+        discount={discount}
+        discountRate={discountRate}
         onNext={handleNext}
         buttonText="確認画面へ"
       />

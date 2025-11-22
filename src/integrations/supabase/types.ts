@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_options: {
+        Row: {
+          booking_id: string
+          id: string
+          option_id: string
+          option_price: number
+          option_quantity: number
+          option_title: string
+        }
+        Insert: {
+          booking_id: string
+          id?: string
+          option_id: string
+          option_price: number
+          option_quantity?: number
+          option_title: string
+        }
+        Update: {
+          booking_id?: string
+          id?: string
+          option_id?: string
+          option_price?: number
+          option_quantity?: number
+          option_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_options_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "service_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          diagnosis_has_parking: boolean | null
+          diagnosis_notes: string | null
+          id: string
+          selected_date: string
+          selected_time: string
+          service_id: string
+          service_quantity: number
+          status: string
+          total_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          diagnosis_has_parking?: boolean | null
+          diagnosis_notes?: string | null
+          id?: string
+          selected_date: string
+          selected_time: string
+          service_id: string
+          service_quantity?: number
+          status?: string
+          total_price: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          diagnosis_has_parking?: boolean | null
+          diagnosis_notes?: string | null
+          id?: string
+          selected_date?: string
+          selected_time?: string
+          service_id?: string
+          service_quantity?: number
+          status?: string
+          total_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_options: {
         Row: {
           created_at: string | null
@@ -58,6 +159,7 @@ export type Database = {
           duration: number
           id: string
           image_url: string
+          quantity_discounts: Json | null
           title: string
           updated_at: string | null
         }
@@ -69,6 +171,7 @@ export type Database = {
           duration: number
           id?: string
           image_url: string
+          quantity_discounts?: Json | null
           title: string
           updated_at?: string | null
         }
@@ -80,8 +183,30 @@ export type Database = {
           duration?: number
           id?: string
           image_url?: string
+          quantity_discounts?: Json | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -90,10 +215,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -220,6 +351,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

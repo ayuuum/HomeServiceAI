@@ -4,17 +4,18 @@ import { ChevronLeft, Calendar, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Service, ServiceOption } from "@/types/booking";
+import { Service, SelectedOptionWithQuantity } from "@/types/booking";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Confirmation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as {
     service: Service;
-    selectedOptions: ServiceOption[];
+    selectedOptions: SelectedOptionWithQuantity[];
     serviceQuantity?: number;
     totalPrice: number;
     selectedDate: Date;
@@ -24,6 +25,7 @@ const Confirmation = () => {
       photos?: File[];
       notes: string;
     };
+    discount?: number;
   } | null;
 
   useEffect(() => {
@@ -36,16 +38,57 @@ const Confirmation = () => {
     return null;
   }
 
-  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime, diagnosis } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime, diagnosis, discount = 0 } = state;
 
-  const handleSubmit = () => {
-    toast.success("予約リクエストを送信しました！", {
-      description: "事業者からの確認連絡をお待ちください",
-    });
-    // In real app, save to database here
-    setTimeout(() => {
-      navigate("/");
-    }, 2000);
+  const handleSubmit = async () => {
+    try {
+      // Save booking to database
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          service_id: service.id,
+          customer_name: "ゲストユーザー",
+          service_quantity: serviceQuantity,
+          selected_date: format(selectedDate, 'yyyy-MM-dd'),
+          selected_time: selectedTime,
+          total_price: totalPrice,
+          status: 'pending',
+          diagnosis_has_parking: diagnosis.hasParking,
+          diagnosis_notes: diagnosis.notes
+        })
+        .select()
+        .single();
+
+      if (bookingError) throw bookingError;
+
+      // Save selected options
+      if (selectedOptions.length > 0) {
+        const optionsData = selectedOptions.map(option => ({
+          booking_id: bookingData.id,
+          option_id: option.id,
+          option_title: option.title,
+          option_price: option.price,
+          option_quantity: option.quantity
+        }));
+
+        const { error: optionsError } = await supabase
+          .from('booking_options')
+          .insert(optionsData);
+
+        if (optionsError) throw optionsError;
+      }
+
+      toast.success("予約リクエストを送信しました！", {
+        description: "事業者からの確認連絡をお待ちください",
+      });
+
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast.error("予約の送信に失敗しました");
+    }
   };
 
   return (
@@ -115,9 +158,10 @@ const Confirmation = () => {
                       >
                         <span className="text-muted-foreground">
                           • {option.title}
+                          {option.quantity > 1 && ` × ${option.quantity}個`}
                         </span>
                         <span className="font-medium">
-                          +¥{option.price.toLocaleString()}
+                          +¥{(option.price * option.quantity).toLocaleString()}
                         </span>
                       </div>
                     ))}
@@ -190,10 +234,17 @@ const Confirmation = () => {
                   >
                     <span className="text-muted-foreground">
                       {option.title}
+                      {option.quantity > 1 && ` × ${option.quantity}個`}
                     </span>
-                    <span>¥{option.price.toLocaleString()}</span>
+                    <span>¥{(option.price * option.quantity).toLocaleString()}</span>
                   </div>
                 ))}
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-success">
+                    <span>台数割引</span>
+                    <span>-¥{discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <Separator />
                 <div className="flex justify-between items-baseline pt-2">
                   <span className="font-semibold text-lg">合計金額</span>
