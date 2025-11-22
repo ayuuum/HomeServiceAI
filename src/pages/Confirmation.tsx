@@ -15,6 +15,7 @@ const Confirmation = () => {
   const state = location.state as {
     service: Service;
     selectedOptions: ServiceOption[];
+    serviceQuantity?: number;
     totalPrice: number;
     selectedDate: Date;
     selectedTime: string;
@@ -35,7 +36,7 @@ const Confirmation = () => {
     return null;
   }
 
-  const { service, selectedOptions, totalPrice, selectedDate, selectedTime, diagnosis } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime, diagnosis } = state;
 
   const handleSubmit = () => {
     toast.success("予約リクエストを送信しました！", {
@@ -82,7 +83,12 @@ const Confirmation = () => {
                   className="w-24 h-24 rounded-lg object-cover"
                 />
                 <div className="flex-1">
-                  <p className="font-semibold mb-1">{service.title}</p>
+                  <p className="font-semibold mb-1">
+                    {service.title}
+                    {serviceQuantity > 1 && (
+                      <span className="text-muted-foreground font-normal"> × {serviceQuantity}台</span>
+                    )}
+                  </p>
                   <p className="text-sm text-muted-foreground mb-2">
                     {service.description}
                   </p>
@@ -174,8 +180,8 @@ const Confirmation = () => {
               <h3 className="font-semibold text-lg mb-3">料金</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">基本料金</span>
-                  <span>¥{service.basePrice.toLocaleString()}</span>
+                  <span className="text-muted-foreground">基本料金 × {serviceQuantity}台</span>
+                  <span>¥{(service.basePrice * serviceQuantity).toLocaleString()}</span>
                 </div>
                 {selectedOptions.map((option) => (
                   <div

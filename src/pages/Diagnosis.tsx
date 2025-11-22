@@ -14,6 +14,7 @@ const Diagnosis = () => {
   const state = location.state as {
     service: Service;
     selectedOptions: ServiceOption[];
+    serviceQuantity?: number;
     totalPrice: number;
     selectedDate: Date;
     selectedTime: string;
@@ -41,7 +42,7 @@ const Diagnosis = () => {
     return null;
   }
 
-  const { service, selectedOptions, totalPrice, selectedDate, selectedTime } = state;
+  const { service, selectedOptions, serviceQuantity = 1, totalPrice, selectedDate, selectedTime } = state;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -64,6 +65,7 @@ const Diagnosis = () => {
       state: {
         service,
         selectedOptions,
+        serviceQuantity,
         totalPrice,
         selectedDate,
         selectedTime,
