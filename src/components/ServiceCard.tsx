@@ -11,7 +11,7 @@ export const ServiceCard = ({ service }: ServiceCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/options/${service.id}`, { state: { service } });
+    navigate(`/booking/${service.id}`, { state: { service } });
   };
 
   return (
