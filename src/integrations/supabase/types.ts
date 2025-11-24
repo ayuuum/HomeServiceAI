@@ -56,6 +56,51 @@ export type Database = {
           },
         ]
       }
+      booking_services: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          id: string
+          service_base_price: number
+          service_id: string
+          service_quantity: number
+          service_title: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          service_base_price: number
+          service_id: string
+          service_quantity?: number
+          service_title: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          service_base_price?: number
+          service_id?: string
+          service_quantity?: number
+          service_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_services_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           created_at: string | null
@@ -67,8 +112,6 @@ export type Database = {
           id: string
           selected_date: string
           selected_time: string
-          service_id: string
-          service_quantity: number
           status: string
           total_price: number
           updated_at: string | null
@@ -83,8 +126,6 @@ export type Database = {
           id?: string
           selected_date: string
           selected_time: string
-          service_id: string
-          service_quantity?: number
           status?: string
           total_price: number
           updated_at?: string | null
@@ -99,21 +140,11 @@ export type Database = {
           id?: string
           selected_date?: string
           selected_time?: string
-          service_id?: string
-          service_quantity?: number
           status?: string
           total_price?: number
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bookings_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       service_options: {
         Row: {

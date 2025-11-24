@@ -61,7 +61,7 @@ const AdminDashboard = () => {
       .from('bookings')
       .select(`
         *,
-        services (title),
+        booking_services (service_title, service_quantity, service_base_price),
         booking_options (option_title, option_price, option_quantity)
       `)
       .order('created_at', { ascending: false });
@@ -202,7 +202,7 @@ const AdminDashboard = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg">
-                            {booking.serviceName}
+                            {booking.serviceName || "複数サービス"}
                           </h3>
                           {getStatusBadge(booking.status)}
                         </div>
