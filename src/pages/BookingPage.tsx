@@ -1,183 +1,243 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Clock, ShoppingBag, Calendar as CalendarIcon, CheckCircle2, Upload, Image as ImageIcon, X, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { OptionCheckbox } from "@/components/OptionCheckbox";
-import { QuantitySelector } from "@/components/QuantitySelector";
-import { Service, ServiceOption, SelectedOptionWithQuantity } from "@/types/booking";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { mapDbOptionToOption } from "@/lib/serviceMapper";
+import { Service, ServiceOption } from "@/types/booking";
+import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
+import { QuantitySelector } from "@/components/QuantitySelector";
+import { OptionCheckbox } from "@/components/OptionCheckbox";
+import { Sparkles, Calendar as CalendarIcon, Clock, MapPin, Camera, User, CheckCircle2, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
+
+interface SelectedService {
+  serviceId: string;
+  quantity: number;
+  service: Service;
+}
+
+interface SelectedOption {
+  optionId: string;
+  quantity: number;
+  option: ServiceOption;
+}
 
 const BookingPage = () => {
-  const { serviceId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const service = location.state?.service as Service;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Service & Options
-  const [options, setOptions] = useState<ServiceOption[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // User selections
-  const [serviceQuantity, setServiceQuantity] = useState(1);
-  const [selectedOptions, setSelectedOptions] = useState<SelectedOptionWithQuantity[]>([]);
+  // State management
+  const [allServices, setAllServices] = useState<Service[]>([]);
+  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
+  const [allOptions, setAllOptions] = useState<ServiceOption[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [hasParking, setHasParking] = useState<string>("");
+  const [photos, setPhotos] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
-  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
-
-  // Customer information
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-
-  // Calculated values
   const [totalPrice, setTotalPrice] = useState(0);
-  const [discount, setDiscount] = useState(0);
-  const [discountRate, setDiscountRate] = useState(0);
+  const [totalDiscount, setTotalDiscount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch service options
+  // Fetch all services
   useEffect(() => {
-    if (!service) {
-      navigate("/");
-      return;
-    }
-
-    const fetchOptions = async () => {
+    const fetchServices = async () => {
       const { data, error } = await supabase
-        .from('service_options')
+        .from('services')
         .select('*')
-        .eq('service_id', serviceId);
+        .order('created_at', { ascending: true });
       
       if (error) {
-        console.error('Error fetching options:', error);
+        console.error('Error fetching services:', error);
+        toast.error("サービスの読み込みに失敗しました");
       } else {
-        setOptions((data || []).map(mapDbOptionToOption));
+        setAllServices((data || []).map(mapDbServiceToService));
       }
       setLoading(false);
     };
 
-    fetchOptions();
+    fetchServices();
 
-    const channel = supabase
-      .channel('service-options-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_options',
-          filter: `service_id=eq.${serviceId}`
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setOptions(prev => [...prev, mapDbOptionToOption(payload.new)]);
-          } else if (payload.eventType === 'UPDATE') {
-            setOptions(prev => prev.map(o => 
-              o.id === payload.new.id ? mapDbOptionToOption(payload.new) : o
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setOptions(prev => prev.filter(o => o.id !== payload.old.id));
-            setSelectedOptions(prev => prev.filter(o => o.id !== payload.old.id));
-          }
+    // Realtime subscription for services
+    const servicesChannel = supabase
+      .channel('services-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'services'
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setAllServices(prev => [...prev, mapDbServiceToService(payload.new)]);
+        } else if (payload.eventType === 'UPDATE') {
+          setAllServices(prev => prev.map(s => 
+            s.id === payload.new.id ? mapDbServiceToService(payload.new) : s
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          setAllServices(prev => prev.filter(s => s.id !== payload.old.id));
         }
-      )
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(servicesChannel);
     };
-  }, [serviceId, service, navigate]);
+  }, []);
 
-  // Cleanup photo previews
+  // Fetch options for selected services
   useEffect(() => {
-    return () => {
-      photoPreviews.forEach(url => URL.revokeObjectURL(url));
+    if (selectedServices.length === 0) {
+      setAllOptions([]);
+      return;
+    }
+
+    const fetchOptions = async () => {
+      const serviceIds = selectedServices.map(s => s.serviceId);
+      const { data, error } = await supabase
+        .from('service_options')
+        .select('*')
+        .in('service_id', serviceIds);
+
+      if (error) {
+        console.error('Error fetching options:', error);
+      } else {
+        setAllOptions((data || []).map(mapDbOptionToOption));
+      }
     };
-  }, [photoPreviews]);
+
+    fetchOptions();
+
+    // Realtime subscription for options
+    const optionsChannel = supabase
+      .channel('options-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'service_options'
+      }, (payload) => {
+        const serviceIds = selectedServices.map(s => s.serviceId);
+        if (payload.eventType === 'INSERT' && serviceIds.includes(payload.new.service_id)) {
+          setAllOptions(prev => [...prev, mapDbOptionToOption(payload.new)]);
+        } else if (payload.eventType === 'UPDATE') {
+          setAllOptions(prev => prev.map(o => o.id === payload.new.id ? mapDbOptionToOption(payload.new) : o));
+        } else if (payload.eventType === 'DELETE') {
+          setAllOptions(prev => prev.filter(o => o.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(optionsChannel);
+    };
+  }, [selectedServices]);
 
   // Calculate total price
   useEffect(() => {
-    if (!service) return;
+    let total = 0;
+    let discount = 0;
 
-    const baseTotal = service.basePrice * serviceQuantity;
-    const optionsTotal = selectedOptions.reduce((sum, opt) => sum + (opt.price * opt.quantity), 0);
-    
-    const { discount: calcDiscount, discountRate: calcRate } = calculateDiscount(
-      service.basePrice,
-      serviceQuantity,
-      service.quantityDiscounts || []
-    );
-    
-    setDiscount(calcDiscount);
-    setDiscountRate(calcRate);
-    setTotalPrice(baseTotal + optionsTotal - calcDiscount);
-  }, [service, serviceQuantity, selectedOptions]);
+    // Services total with quantity discounts
+    selectedServices.forEach(({ service, quantity }) => {
+      const baseTotal = service.basePrice * quantity;
+      const { discount: serviceDiscount } = calculateDiscount(
+        service.basePrice,
+        quantity,
+        service.quantityDiscounts || []
+      );
+      total += baseTotal - serviceDiscount;
+      discount += serviceDiscount;
+    });
 
-  if (!service) return null;
+    // Options total
+    selectedOptions.forEach(({ option, quantity }) => {
+      total += option.price * quantity;
+    });
 
-  // Mock time slots
-  const timeSlots = [
-    { time: "09:00", available: true },
-    { time: "10:00", available: true },
-    { time: "11:00", available: false },
-    { time: "13:00", available: true },
-    { time: "14:00", available: true },
-    { time: "15:00", available: true },
-    { time: "16:00", available: false },
-  ];
+    setTotalPrice(total);
+    setTotalDiscount(discount);
+  }, [selectedServices, selectedOptions]);
 
-  const handleOptionChange = (option: ServiceOption, checked: boolean) => {
-    if (checked) {
-      setSelectedOptions([...selectedOptions, { ...option, quantity: 1 }]);
+  // Cleanup photo URLs
+  useEffect(() => {
+    return () => {
+      photos.forEach(file => {
+        if (file instanceof File) {
+          URL.revokeObjectURL(URL.createObjectURL(file));
+        }
+      });
+    };
+  }, [photos]);
+
+  const handleServiceQuantityChange = (serviceId: string, newQuantity: number) => {
+    if (newQuantity === 0) {
+      // Remove service
+      setSelectedServices(prev => prev.filter(s => s.serviceId !== serviceId));
+      // Remove related options
+      setSelectedOptions(prev => prev.filter(o => o.option.serviceId !== serviceId));
     } else {
-      setSelectedOptions(selectedOptions.filter(opt => opt.id !== option.id));
+      const service = allServices.find(s => s.id === serviceId);
+      if (!service) return;
+
+      setSelectedServices(prev => {
+        const existing = prev.find(s => s.serviceId === serviceId);
+        if (existing) {
+          return prev.map(s => s.serviceId === serviceId ? { ...s, quantity: newQuantity } : s);
+        } else {
+          return [...prev, { serviceId, quantity: newQuantity, service }];
+        }
+      });
     }
   };
 
-  const handleOptionQuantityChange = (optionId: string, quantity: number) => {
-    setSelectedOptions(prev => prev.map(opt =>
-      opt.id === optionId ? { ...opt, quantity } : opt
+  const handleOptionChange = (optionId: string, checked: boolean) => {
+    if (checked) {
+      const option = allOptions.find(o => o.id === optionId);
+      if (option) {
+        setSelectedOptions(prev => [...prev, { optionId, quantity: 1, option }]);
+      }
+    } else {
+      setSelectedOptions(prev => prev.filter(o => o.optionId !== optionId));
+    }
+  };
+
+  const handleOptionQuantityChange = (optionId: string, newQuantity: number) => {
+    setSelectedOptions(prev => prev.map(o => 
+      o.optionId === optionId ? { ...o, quantity: newQuantity } : o
     ));
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    setSelectedPhotos(prev => [...prev, ...files]);
-    
-    const newPreviews = files.map(file => URL.createObjectURL(file));
-    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setPhotos(prev => [...prev, ...newFiles].slice(0, 5));
+    }
   };
 
   const handleRemovePhoto = (index: number) => {
-    URL.revokeObjectURL(photoPreviews[index]);
-    setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
-    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+    setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     // Validation
+    if (selectedServices.length === 0) {
+      toast.error("サービスを選択してください");
+      return;
+    }
+
     if (!selectedDate || !selectedTime) {
       toast.error("日時を選択してください");
       return;
     }
-    
+
     if (!hasParking) {
       toast.error("駐車場の有無を選択してください");
       return;
@@ -194,14 +254,13 @@ const BookingPage = () => {
     }
 
     try {
+      // 1. Create booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
-          service_id: service.id,
           customer_name: customerName.trim(),
           customer_email: customerEmail.trim() || null,
           customer_phone: customerPhone.trim() || null,
-          service_quantity: serviceQuantity,
           selected_date: format(selectedDate, 'yyyy-MM-dd'),
           selected_time: selectedTime,
           total_price: totalPrice,
@@ -214,13 +273,29 @@ const BookingPage = () => {
 
       if (bookingError) throw bookingError;
 
+      // 2. Create booking_services records
+      const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
+        booking_id: bookingData.id,
+        service_id: serviceId,
+        service_title: service.title,
+        service_quantity: quantity,
+        service_base_price: service.basePrice
+      }));
+
+      const { error: servicesError } = await supabase
+        .from('booking_services')
+        .insert(servicesData);
+
+      if (servicesError) throw servicesError;
+
+      // 3. Create booking_options records
       if (selectedOptions.length > 0) {
-        const optionsData = selectedOptions.map(option => ({
+        const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
           booking_id: bookingData.id,
-          option_id: option.id,
+          option_id: optionId,
           option_title: option.title,
           option_price: option.price,
-          option_quantity: option.quantity
+          option_quantity: quantity
         }));
 
         const { error: optionsError } = await supabase
@@ -234,420 +309,520 @@ const BookingPage = () => {
         description: "事業者からの確認連絡をお待ちください",
       });
 
-      setTimeout(() => navigate("/"), 2000);
+      // Reset form
+      setSelectedServices([]);
+      setSelectedOptions([]);
+      setSelectedDate(undefined);
+      setSelectedTime(undefined);
+      setHasParking("");
+      setPhotos([]);
+      setNotes("");
+      setCustomerName("");
+      setCustomerEmail("");
+      setCustomerPhone("");
+
     } catch (error) {
       console.error("Booking error:", error);
       toast.error("予約の送信に失敗しました");
     }
   };
 
+  const timeSlots = [
+    "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
+  ];
+
+  const getOptionsForService = (serviceId: string) => {
+    return allOptions.filter(o => o.serviceId === serviceId);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="container max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate("/")}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="font-semibold">予約内容の入力</h1>
+        <div className="container max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold">ServiceBook</h1>
           </div>
         </div>
       </header>
 
-      <div className="container max-w-2xl mx-auto px-4 py-8 space-y-8">
-        {/* 1. Service Summary */}
-        <section>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex gap-4">
-                <img
-                  src={service.imageUrl}
-                  alt={service.title}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">{service.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{service.duration}分</span>
-                  </div>
-                  <p className="text-sm font-semibold text-primary">
-                    ¥{service.basePrice.toLocaleString()} 税込
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <QuantitySelector
-                  quantity={serviceQuantity}
-                  onQuantityChange={setServiceQuantity}
-                />
-                {discount > 0 && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-success/10 text-success border-success/30">
-                      {Math.round(discountRate * 100)}%オフ
-                    </Badge>
-                    <span className="text-sm text-success font-medium">
-                      -¥{discount.toLocaleString()}の割引が適用されます
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-primary/5 to-transparent py-12">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-center">
+            プロのサービスを<br className="md:hidden" />簡単予約
+          </h2>
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto">
+            サービスを選んで、日時を選ぶだけ。<br />
+            見積もり不要、すぐに予約完了できます。
+          </p>
+        </div>
+      </section>
 
-        <Separator />
-
-        {/* 2. Options Selection */}
+      <div className="container max-w-4xl mx-auto px-4 py-8 space-y-12">
+        {/* Section 1: Service Selection */}
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <ShoppingBag className="h-5 w-5 text-primary" />
-            <h3 className="text-xl font-semibold">追加オプション</h3>
+          <div className="flex items-center gap-2 mb-6">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-2xl font-bold">サービスを選ぶ</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-6">
-            必要なオプションがあればチェックしてください（複数選択可）
+            複数のサービスを同時に選択できます。数量を調整してカートに追加してください。
           </p>
           
-          <div className="space-y-3">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
-            ) : options.length > 0 ? (
-              options.map((option) => {
-                const selectedOption = selectedOptions.find(opt => opt.id === option.id);
-                return (
-                  <OptionCheckbox
-                    key={option.id}
-                    option={option}
-                    checked={!!selectedOption}
-                    quantity={selectedOption?.quantity || 1}
-                    onChange={(checked) => handleOptionChange(option, checked)}
-                    onQuantityChange={(quantity) => handleOptionQuantityChange(option.id, quantity)}
-                  />
-                );
-              })
-            ) : (
-              <p className="text-center py-8 text-muted-foreground">
-                このサービスにオプションはありません
-              </p>
-            )}
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* 3. Date & Time Selection */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-            <h3 className="text-xl font-semibold">希望日時</h3>
-          </div>
-
-          <div className="mb-6">
-            <h4 className="text-base font-medium mb-3">希望日を選択</h4>
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                locale={ja}
-                disabled={(date) => date < new Date()}
-                className="rounded-lg border border-border bg-card p-3"
-              />
-            </div>
-          </div>
-
-          {selectedDate && (
-            <div className="animate-fade-in">
-              <h4 className="text-base font-medium mb-3">希望時間を選択</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {allServices.map((service) => {
+              const selectedService = selectedServices.find(s => s.serviceId === service.id);
+              const quantity = selectedService?.quantity || 0;
               
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                    <span>即予約可能</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>リクエスト</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {timeSlots.map(({ time, available }) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    onClick={() => available && setSelectedTime(time)}
-                    disabled={!available}
-                    className="h-16 relative"
-                  >
-                    <div className="text-center">
-                      <div className="text-lg font-semibold">{time}</div>
-                      <div className="text-xs">
-                        {available ? (
-                          <span className="text-success flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            即予約
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">満席</span>
-                        )}
+              return (
+                <Card key={service.id} className={quantity > 0 ? "border-primary border-2" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex gap-3 mb-3">
+                      <img 
+                        src={service.imageUrl} 
+                        alt={service.title}
+                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0" 
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold mb-1">{service.title}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                          {service.description}
+                        </p>
+                        <p className="text-lg font-bold text-primary">
+                          ¥{service.basePrice.toLocaleString()}
+                        </p>
                       </div>
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+                    
+                    <QuantitySelector
+                      quantity={quantity}
+                      onQuantityChange={(newQty) => handleServiceQuantityChange(service.id, newQty)}
+                      min={0}
+                    />
+                    
+                    {quantity > 0 && (
+                      <Badge className="mt-2 bg-primary/10 text-primary border-primary/30">
+                        カートに追加済み
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </section>
 
-        <Separator />
+        {/* Section 2: Selected Services Summary */}
+        {selectedServices.length > 0 && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 className="h-5 w-5 text-success" />
+              <h3 className="text-xl font-semibold">選択中のサービス</h3>
+            </div>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                {selectedServices.map(({ serviceId, quantity, service }) => {
+                  const subtotal = service.basePrice * quantity;
+                  const { discount } = calculateDiscount(
+                    service.basePrice,
+                    quantity,
+                    service.quantityDiscounts || []
+                  );
+                  
+                  return (
+                    <div key={serviceId} className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{service.title}</span>
+                        <span className="text-muted-foreground"> × {quantity}台</span>
+                        {discount > 0 && (
+                          <Badge variant="secondary" className="ml-2 bg-success/10 text-success border-success/30">
+                            -{Math.round((discount / subtotal) * 100)}%
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="font-semibold">
+                        ¥{(subtotal - discount).toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
-        {/* 4. Diagnosis Section */}
-        <section>
-          <h3 className="text-xl font-semibold mb-4">現場の状況を教えてください</h3>
-          <p className="text-sm text-muted-foreground mb-6">
-            スムーズな作業のため、いくつか質問にお答えください
-          </p>
+        {/* Section 3: Options Selection */}
+        {selectedServices.length > 0 && allOptions.length > 0 && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold">オプションを追加</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              選択したサービスに追加できるオプションです
+            </p>
+            
+            {selectedServices.map(({ serviceId, service }) => {
+              const serviceOptions = getOptionsForService(serviceId);
+              if (serviceOptions.length === 0) return null;
+              
+              return (
+                <div key={serviceId} className="mb-6">
+                  <h4 className="font-semibold mb-3">{service.title} のオプション</h4>
+                  <div className="space-y-3">
+                    {serviceOptions.map((option) => {
+                      const selected = selectedOptions.find(o => o.optionId === option.id);
+                      return (
+                        <OptionCheckbox
+                          key={option.id}
+                          option={option}
+                          checked={!!selected}
+                          quantity={selected?.quantity || 1}
+                          onChange={(checked) => handleOptionChange(option.id, checked)}
+                          onQuantityChange={(qty) => handleOptionQuantityChange(option.id, qty)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
 
-          <div className="space-y-4">
-            {/* Parking */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label className="text-base font-semibold mb-4 block">
-                駐車場はありますか？
-              </Label>
-              <RadioGroup value={hasParking} onValueChange={setHasParking}>
-                <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="yes" id="yes" />
-                  <Label htmlFor="yes" className="cursor-pointer flex-1">
-                    はい、あります
+        {/* Section 4: Date & Time Selection */}
+        {selectedServices.length > 0 && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <CalendarIcon className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold">日時を選択</h3>
+            </div>
+            
+            <div className="space-y-6">
+              <div>
+                <Label className="text-base font-semibold mb-3 block">希望日</Label>
+                <Card className="p-4 flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    locale={ja}
+                    className="rounded-md"
+                  />
+                </Card>
+              </div>
+
+              {selectedDate && (
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">
+                    希望時間帯
                   </Label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {timeSlots.map((time) => (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? "default" : "outline"}
+                        onClick={() => setSelectedTime(time)}
+                        className="w-full"
+                      >
+                        <Clock className="h-4 w-4 mr-1" />
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                  <RadioGroupItem value="no" id="no" />
-                  <Label htmlFor="no" className="cursor-pointer flex-1">
-                    いいえ、ありません
-                  </Label>
-                </div>
-              </RadioGroup>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Section 5: Diagnosis */}
+        {selectedServices.length > 0 && selectedDate && selectedTime && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold">現場情報</h3>
             </div>
 
-            {/* Photo Upload */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label className="text-base font-semibold mb-4 block">
-                現場の写真（任意）
-              </Label>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+            <div className="space-y-6">
+              <div>
+                <Label className="text-base font-semibold mb-3 block">
+                  駐車場の有無 <span className="text-destructive">*</span>
+                </Label>
+                <RadioGroup value={hasParking} onValueChange={setHasParking}>
+                  <div className="flex items-center space-x-2 p-4 rounded-lg border border-border">
+                    <RadioGroupItem value="yes" id="parking-yes" />
+                    <Label htmlFor="parking-yes" className="cursor-pointer flex-1">
+                      駐車場あり（無料でご利用いただけます）
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-4 rounded-lg border border-border">
+                    <RadioGroupItem value="no" id="parking-no" />
+                    <Label htmlFor="parking-no" className="cursor-pointer flex-1">
+                      駐車場なし（近隣のコインパーキングをご利用ください）
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-              {selectedPhotos.length > 0 && (
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {photoPreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full aspect-square object-cover rounded-lg"
-                      />
-                      <button
-                        onClick={() => handleRemovePhoto(index)}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+              <div>
+                <Label className="text-base font-semibold mb-2 block">
+                  現場写真のアップロード（任意）
+                </Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  事前に写真をお送りいただくと、より正確なお見積もりが可能です（最大5枚）
+                </p>
+                <div className="space-y-3">
+                  {photos.length < 5 && (
+                    <Button variant="outline" className="w-full" asChild>
+                      <label>
+                        <Camera className="h-4 w-4 mr-2" />
+                        写真を追加
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    </Button>
+                  )}
+                  {photos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {photos.map((photo, index) => (
+                        <div key={index} className="relative aspect-square">
+                          <img
+                            src={URL.createObjectURL(photo)}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-1 right-1 h-6 w-6 p-0"
+                            onClick={() => handleRemovePhoto(index)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-base font-semibold mb-2 block">
+                  備考・特記事項（任意）
+                </Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="気になる点や特別な要望があればご記入ください"
+                  className="min-h-24"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Section 6: Customer Information */}
+        {selectedServices.length > 0 && selectedDate && selectedTime && hasParking && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold">ご連絡先情報</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              予約確認のご連絡に使用します
+            </p>
+
+            <div className="space-y-4">
+              <div className="p-6 rounded-lg border border-border bg-card">
+                <Label htmlFor="customerName" className="text-base font-semibold mb-2 block">
+                  お名前 <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerName"
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="山田 太郎"
+                  required
+                />
+              </div>
+
+              <div className="p-6 rounded-lg border border-border bg-card">
+                <Label htmlFor="customerEmail" className="text-base font-semibold mb-2 block">
+                  メールアドレス
+                </Label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="example@email.com"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  予約確認メールを受け取る場合は入力してください
+                </p>
+              </div>
+
+              <div className="p-6 rounded-lg border border-border bg-card">
+                <Label htmlFor="customerPhone" className="text-base font-semibold mb-2 block">
+                  電話番号
+                </Label>
+                <Input
+                  id="customerPhone"
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="090-1234-5678"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  緊急連絡用に電話番号を入力してください
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Section 7: Final Confirmation */}
+        {selectedServices.length > 0 && selectedDate && selectedTime && hasParking && customerName && (
+          <section>
+            <Separator className="mb-6" />
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold">予約内容の確認</h3>
+            </div>
+
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">選択サービス</h4>
+                  {selectedServices.map(({ serviceId, quantity, service }) => (
+                    <div key={serviceId} className="text-sm flex justify-between py-1">
+                      <span>{service.title} × {quantity}</span>
+                      <span>¥{(service.basePrice * quantity).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
-              )}
 
-              <div 
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <ImageIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-sm font-medium mb-1">
-                  写真をアップロード
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  作業箇所の写真があると、より正確な対応が可能です
-                </p>
-                <Button variant="outline" className="mt-4" size="sm" type="button">
-                  <Upload className="h-4 w-4 mr-2" />
-                  ファイルを選択
-                </Button>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label htmlFor="notes" className="text-base font-semibold mb-4 block">
-                その他、伝えておきたいこと（任意）
-              </Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="例：ペットがいます、作業時間の制約があります、など"
-                className="min-h-[120px]"
-              />
-            </div>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* 5. Customer Information */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-5 w-5 text-primary" />
-            <h3 className="text-xl font-semibold">ご連絡先情報</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-6">
-            予約確認のご連絡に使用します
-          </p>
-
-          <div className="space-y-4">
-            {/* Name (Required) */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label htmlFor="customerName" className="text-base font-semibold mb-4 block">
-                お名前 <span className="text-destructive">*</span>
-              </Label>
-              <input
-                id="customerName"
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="山田 太郎"
-                required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              />
-            </div>
-
-            {/* Email (Optional) */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label htmlFor="customerEmail" className="text-base font-semibold mb-4 block">
-                メールアドレス
-              </Label>
-              <input
-                id="customerEmail"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="example@email.com"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                予約確認メールを受け取る場合は入力してください
-              </p>
-            </div>
-
-            {/* Phone (Optional) */}
-            <div className="p-6 rounded-lg border border-border bg-card">
-              <Label htmlFor="customerPhone" className="text-base font-semibold mb-4 block">
-                電話番号
-              </Label>
-              <input
-                id="customerPhone"
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="090-1234-5678"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                緊急連絡用に電話番号を入力してください
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* 6. Confirmation Summary */}
-        <section>
-          <h3 className="text-xl font-semibold mb-4">予約内容の確認</h3>
-          
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">基本料金 × {serviceQuantity}台</span>
-                  <span>¥{(service.basePrice * serviceQuantity).toLocaleString()}</span>
-                </div>
-                {selectedOptions.map((option) => (
-                  <div key={option.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {option.title}
-                      {option.quantity > 1 && ` × ${option.quantity}個`}
-                    </span>
-                    <span>¥{(option.price * option.quantity).toLocaleString()}</span>
-                  </div>
-                ))}
-                {discount > 0 && (
-                  <div className="flex justify-between text-sm text-success">
-                    <span>台数割引</span>
-                    <span>-¥{discount.toLocaleString()}</span>
+                {selectedOptions.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">オプション</h4>
+                    {selectedOptions.map(({ optionId, quantity, option }) => (
+                      <div key={optionId} className="text-sm flex justify-between py-1">
+                        <span>{option.title} × {quantity}</span>
+                        <span>¥{(option.price * quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
 
-          <div className="bg-muted/50 p-4 rounded-lg mt-4">
-            <p className="text-sm text-muted-foreground">
-              ※ この段階ではまだ予約は確定していません。
-              <br />
-              事業者からの確認連絡をお待ちください。
-            </p>
-          </div>
-        </section>
+                {totalDiscount > 0 && (
+                  <div className="text-sm flex justify-between py-1 text-success font-medium">
+                    <span>台数割引</span>
+                    <span>-¥{totalDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+
+                <Separator />
+
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">合計金額</span>
+                  <span className="text-2xl font-bold text-primary">
+                    ¥{totalPrice.toLocaleString()}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">税込</span>
+                  </span>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">希望日時</span>
+                    <span className="font-medium">
+                      {format(selectedDate, 'yyyy年M月d日', { locale: ja })} {selectedTime}〜
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">お名前</span>
+                    <span className="font-medium">{customerName}</span>
+                  </div>
+                  {customerEmail && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">メール</span>
+                      <span className="font-medium">{customerEmail}</span>
+                    </div>
+                  )}
+                  {customerPhone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">電話</span>
+                      <span className="font-medium">{customerPhone}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
       </div>
 
       {/* Sticky Footer */}
-      <div className="sticky-footer">
-        <div className="container max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              {discount > 0 && (
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="secondary" className="bg-success/10 text-success border-success/30">
-                    {Math.round(discountRate * 100)}%オフ
-                  </Badge>
-                  <span className="text-sm text-success font-medium">
-                    -¥{discount.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">合計金額</p>
-              <p className="text-2xl font-bold text-foreground">
-                ¥{totalPrice.toLocaleString()}
-                <span className="text-sm font-normal text-muted-foreground ml-1">税込</span>
-              </p>
+      {selectedServices.length > 0 && selectedDate && selectedTime && hasParking && customerName && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-50">
+          <div className="container max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                {totalDiscount > 0 && (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="secondary" className="bg-success/10 text-success border-success/30">
+                      {Math.round((totalDiscount / (totalPrice + totalDiscount)) * 100)}%オフ
+                    </Badge>
+                    <span className="text-sm text-success font-medium">
+                      -¥{totalDiscount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">合計金額</p>
+                <p className="text-2xl font-bold text-foreground">
+                  ¥{totalPrice.toLocaleString()}
+                  <span className="text-sm font-normal text-muted-foreground ml-1">税込</span>
+                </p>
+              </div>
+              <Button 
+                size="lg" 
+                onClick={handleSubmit}
+                className="btn-primary gap-2"
+              >
+                予約する
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
-            <Button 
-              size="lg" 
-              onClick={handleSubmit}
-              className="btn-primary gap-2"
-            >
-              <CheckCircle2 className="h-5 w-5" />
-              予約リクエストを送る
-            </Button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
