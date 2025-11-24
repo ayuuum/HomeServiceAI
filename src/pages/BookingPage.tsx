@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Clock, ShoppingBag, Calendar as CalendarIcon, CheckCircle2, Upload, Image as ImageIcon, X } from "lucide-react";
+import { ChevronLeft, Clock, ShoppingBag, Calendar as CalendarIcon, CheckCircle2, Upload, Image as ImageIcon, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,11 @@ const BookingPage = () => {
   const [notes, setNotes] = useState("");
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+
+  // Customer information
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
 
   // Calculated values
   const [totalPrice, setTotalPrice] = useState(0);
@@ -178,12 +183,24 @@ const BookingPage = () => {
       return;
     }
 
+    if (!customerName.trim()) {
+      toast.error("お名前を入力してください");
+      return;
+    }
+
+    if (customerEmail && !customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast.error("有効なメールアドレスを入力してください");
+      return;
+    }
+
     try {
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
           service_id: service.id,
-          customer_name: "ゲストユーザー",
+          customer_name: customerName.trim(),
+          customer_email: customerEmail.trim() || null,
+          customer_phone: customerPhone.trim() || null,
           service_quantity: serviceQuantity,
           selected_date: format(selectedDate, 'yyyy-MM-dd'),
           selected_time: selectedTime,
@@ -492,7 +509,74 @@ const BookingPage = () => {
 
         <Separator />
 
-        {/* 5. Confirmation Summary */}
+        {/* 5. Customer Information */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <User className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-semibold">ご連絡先情報</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            予約確認のご連絡に使用します
+          </p>
+
+          <div className="space-y-4">
+            {/* Name (Required) */}
+            <div className="p-6 rounded-lg border border-border bg-card">
+              <Label htmlFor="customerName" className="text-base font-semibold mb-4 block">
+                お名前 <span className="text-destructive">*</span>
+              </Label>
+              <input
+                id="customerName"
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="山田 太郎"
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
+            </div>
+
+            {/* Email (Optional) */}
+            <div className="p-6 rounded-lg border border-border bg-card">
+              <Label htmlFor="customerEmail" className="text-base font-semibold mb-4 block">
+                メールアドレス
+              </Label>
+              <input
+                id="customerEmail"
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="example@email.com"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                予約確認メールを受け取る場合は入力してください
+              </p>
+            </div>
+
+            {/* Phone (Optional) */}
+            <div className="p-6 rounded-lg border border-border bg-card">
+              <Label htmlFor="customerPhone" className="text-base font-semibold mb-4 block">
+                電話番号
+              </Label>
+              <input
+                id="customerPhone"
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="090-1234-5678"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                緊急連絡用に電話番号を入力してください
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* 6. Confirmation Summary */}
         <section>
           <h3 className="text-xl font-semibold mb-4">予約内容の確認</h3>
           
