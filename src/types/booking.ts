@@ -80,6 +80,10 @@ export interface Staff {
   colorCode: string;
   lineUserId?: string;
   isActive: boolean;
+  store_id?: string;
+  color_code?: string;
+  line_user_id?: string;
+  is_active?: boolean;
 }
 
 export interface Customer {
