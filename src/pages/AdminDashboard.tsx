@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Calendar, User, Eye } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, User, Eye, CalendarDays } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
@@ -12,6 +13,8 @@ import AdminServiceManagement from "./AdminServiceManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import StaffGanttChart from "@/components/StaffGanttChart";
+import { AdminHeader } from "@/components/AdminHeader";
+import { useStore } from "@/contexts/StoreContext";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -40,6 +43,8 @@ const AdminDashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { selectedStoreId } = useStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
@@ -57,14 +62,20 @@ const AdminDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedStoreId]);
 
   const fetchStaffs = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('staffs')
       .select('*')
       .eq('is_active', true)
       .order('name');
+
+    if (selectedStoreId) {
+      query = query.eq('store_id', selectedStoreId);
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       setStaffs(data);
@@ -72,7 +83,7 @@ const AdminDashboard = () => {
   };
 
   const fetchBookings = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('bookings')
       .select(`
         *,
@@ -82,6 +93,12 @@ const AdminDashboard = () => {
         staffs (name)
       `)
       .order('created_at', { ascending: false });
+
+    if (selectedStoreId) {
+      query = query.eq('store_id', selectedStoreId);
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       setBookings(data.map(mapDbBookingToBooking));
@@ -132,18 +149,23 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="container max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold">管理ダッシュボード</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            予約とサービスを一元管理
-          </p>
-        </div>
-      </header>
+      <AdminHeader />
 
       {/* Tabs */}
       <section className="container max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">管理ダッシュボード</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              予約とサービスを一元管理
+            </p>
+          </div>
+          <Button onClick={() => navigate('/admin/schedule')} variant="outline">
+            <CalendarDays className="h-4 w-4 mr-2" />
+            スタッフ配置
+          </Button>
+        </div>
+
         <Tabs defaultValue="bookings" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
             <TabsTrigger value="bookings">予約管理</TabsTrigger>
