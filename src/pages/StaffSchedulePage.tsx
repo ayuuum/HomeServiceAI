@@ -10,12 +10,15 @@ import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
 import { AdminHeader } from "@/components/AdminHeader";
+import { BookingDetailModal } from "@/components/BookingDetailModal";
 
 export default function StaffSchedulePage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [draggedBookingId, setDraggedBookingId] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const { selectedStoreId } = useStore();
   const { toast } = useToast();
 
@@ -108,6 +111,55 @@ export default function StaffSchedulePage() {
     }
   };
 
+  const handleApprove = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "confirmed" })
+        .eq("id", bookingId);
+
+      if (error) throw error;
+
+      await fetchBookings();
+      toast({
+        title: "予約を承認しました",
+      });
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "承認に失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", bookingId);
+
+      if (error) throw error;
+
+      await fetchBookings();
+      toast({
+        title: "予約を却下しました",
+      });
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "却下に失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBookingClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setModalOpen(true);
+  };
+
   const unassignedBookings = bookings.filter((b) => !b.staffId);
   const assignedBookings = bookings.filter((b) => b.staffId);
 
@@ -128,8 +180,17 @@ export default function StaffSchedulePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminHeader />
+    <>
+      <BookingDetailModal
+        booking={selectedBooking}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
+
+      <div className="min-h-screen bg-background">
+        <AdminHeader />
       
       <div className="container mx-auto px-4 py-6">
         <Card className="mb-6">
@@ -262,6 +323,7 @@ export default function StaffSchedulePage() {
                                     backgroundColor: staff.colorCode,
                                   }}
                                   title={`${booking.customerName} - ${booking.selectedTime}`}
+                                  onClick={() => handleBookingClick(booking)}
                                 >
                                   <span className="truncate">{booking.customerName}</span>
                                 </div>
@@ -278,6 +340,7 @@ export default function StaffSchedulePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

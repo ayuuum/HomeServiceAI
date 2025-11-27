@@ -153,21 +153,33 @@ const AdminDashboard = () => {
 
       {/* Tabs */}
       <section className="container max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">管理ダッシュボード</h1>
             <p className="text-sm text-muted-foreground mt-1">
               予約とサービスを一元管理
             </p>
           </div>
-          <Button onClick={() => navigate('/admin/schedule')} variant="outline">
-            <CalendarDays className="h-4 w-4 mr-2" />
-            スタッフ配置
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={() => toast.info("新規予約機能は近日実装予定です")} 
+              className="flex-1 sm:flex-none"
+            >
+              ＋ 新規予約
+            </Button>
+            <Button 
+              onClick={() => navigate('/admin/schedule')} 
+              variant="outline"
+              className="flex-1 sm:flex-none"
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              スタッフ配置
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="bookings" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 sm:mb-8">
             <TabsTrigger value="bookings">予約管理</TabsTrigger>
             <TabsTrigger value="services">サービス管理</TabsTrigger>
           </TabsList>
