@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,6 +123,19 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm space-y-2">
+            <div>
+              アカウントをお持ちでないですか？{' '}
+              <Link to="/signup" className="text-primary hover:underline">
+                新規登録
+              </Link>
+            </div>
+            <div>
+              <Link to="/forgot-password" className="text-primary hover:underline">
+                パスワードをお忘れの方
+              </Link>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
