@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import AdminServiceManagement from "./AdminServiceManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
+import StaffGanttChart from "@/components/StaffGanttChart";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -35,12 +36,14 @@ const getStatusBadge = (status: string) => {
 
 const AdminDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [staffs, setStaffs] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchBookings();
+    fetchStaffs();
 
     const channel = supabase
       .channel('bookings-changes')
@@ -55,6 +58,18 @@ const AdminDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchStaffs = async () => {
+    const { data, error } = await supabase
+      .from('staffs')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+
+    if (!error && data) {
+      setStaffs(data);
+    }
+  };
 
   const fetchBookings = async () => {
     const { data, error } = await supabase
@@ -136,6 +151,13 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="bookings" className="space-y-8">
+            {/* Staff Gantt Chart */}
+            <StaffGanttChart
+              bookings={bookings}
+              staffs={staffs}
+              onBookingClick={handleViewDetails}
+            />
+
             {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
