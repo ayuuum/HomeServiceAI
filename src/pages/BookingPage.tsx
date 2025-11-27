@@ -13,6 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { OptionCheckbox } from "@/components/OptionCheckbox";
+import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { Sparkles, Calendar as CalendarIcon, Clock, MapPin, Camera, User, CheckCircle2, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -48,6 +49,13 @@ const BookingPage = () => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [totalDiscount, setTotalDiscount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationData, setConfirmationData] = useState<{
+    date: Date;
+    time: string;
+    serviceName: string;
+    totalPrice: number;
+  } | null>(null);
 
   // Fetch all services
   useEffect(() => {
@@ -350,9 +358,14 @@ const BookingPage = () => {
         if (optionsError) throw optionsError;
       }
 
-      toast.success("予約リクエストを送信しました！", {
-        description: "事業者からの確認連絡をお待ちください",
+      // Show confirmation modal
+      setConfirmationData({
+        date: selectedDate,
+        time: selectedTime,
+        serviceName: selectedServices.map(s => s.service.title).join(", "),
+        totalPrice: totalPrice,
       });
+      setShowConfirmation(true);
 
       // Reset form
       setSelectedServices([]);
@@ -392,7 +405,14 @@ const BookingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <>
+      <BookingConfirmationModal
+        open={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        bookingData={confirmationData}
+      />
+      
+      <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4">
@@ -869,6 +889,7 @@ const BookingPage = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

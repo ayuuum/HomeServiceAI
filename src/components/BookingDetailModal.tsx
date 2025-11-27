@@ -12,6 +12,7 @@ import { Booking } from "@/types/booking";
 import { Calendar, Clock, User, MapPin, FileText, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -113,6 +114,18 @@ export const BookingDetailModal = ({
                 <span className="text-sm text-muted-foreground w-24">お名前:</span>
                 <span className="font-medium">{booking.customerName}</span>
               </div>
+              {booking.customerEmail && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-24">メール:</span>
+                  <span className="font-medium">{booking.customerEmail}</span>
+                </div>
+              )}
+              {booking.customerPhone && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-24">電話番号:</span>
+                  <span className="font-medium">{booking.customerPhone}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -165,22 +178,40 @@ export const BookingDetailModal = ({
 
           {/* Actions */}
           {booking.status === "pending" && (
-            <div className="flex gap-3 pt-4">
-              <Button
-                className="flex-1 btn-primary h-12"
-                onClick={handleApprove}
-              >
-                <CheckCircle2 className="h-5 w-5 mr-2" />
-                予約を承認する
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                onClick={handleReject}
-              >
-                <XCircle className="h-5 w-5 mr-2" />
-                予約を却下する
-              </Button>
+            <div className="space-y-3 pt-4">
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1 btn-primary h-12"
+                  onClick={handleApprove}
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  予約を承認する
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={handleReject}
+                >
+                  <XCircle className="h-5 w-5 mr-2" />
+                  予約を却下する
+                </Button>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => toast.info("編集機能は近日実装予定です")}
+                >
+                  編集
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => toast.info("キャンセル機能は近日実装予定です")}
+                >
+                  キャンセル
+                </Button>
+              </div>
             </div>
           )}
 
