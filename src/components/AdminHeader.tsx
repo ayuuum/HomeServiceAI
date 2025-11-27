@@ -1,4 +1,4 @@
-import { Building2, Sparkles, LogOut } from "lucide-react";
+import { Building2, Sparkles, LogOut, Users, UserCog } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -58,6 +58,22 @@ export function AdminHeader() {
               activeClassName="bg-muted text-primary"
             >
               スタッフ配置
+            </NavLink>
+            <NavLink
+              to="/admin/customers"
+              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              activeClassName="bg-muted text-primary"
+            >
+              <Users className="h-4 w-4" />
+              顧客管理
+            </NavLink>
+            <NavLink
+              to="/admin/staffs"
+              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              activeClassName="bg-muted text-primary"
+            >
+              <UserCog className="h-4 w-4" />
+              スタッフ管理
             </NavLink>
             <NavLink
               to="/"

@@ -10,6 +10,8 @@ import BookingPage from "./pages/BookingPage";
 import LoginPage from "./pages/LoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StaffSchedulePage from "./pages/StaffSchedulePage";
+import CustomerManagement from "./pages/CustomerManagement";
+import StaffManagement from "./pages/StaffManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,16 @@ const App = () => (
               <Route path="/admin/schedule" element={
                 <ProtectedRoute>
                   <StaffSchedulePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/customers" element={
+                <ProtectedRoute>
+                  <CustomerManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/staffs" element={
+                <ProtectedRoute>
+                  <StaffManagement />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
