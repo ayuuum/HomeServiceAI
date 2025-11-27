@@ -4,13 +4,14 @@ import { Booking, Staff } from "@/types/booking";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, ArrowLeft } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
 import { AdminHeader } from "@/components/AdminHeader";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { Link } from "react-router-dom";
 
 export default function StaffSchedulePage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -196,10 +197,23 @@ export default function StaffSchedulePage() {
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                スタッフ配置カレンダー
-              </CardTitle>
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="gap-1"
+                >
+                  <Link to="/admin">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden md:inline">戻る</span>
+                  </Link>
+                </Button>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  スタッフ配置カレンダー
+                </CardTitle>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"

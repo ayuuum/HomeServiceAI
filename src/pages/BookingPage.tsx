@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
 
 interface SelectedService {
   serviceId: string;
@@ -416,9 +417,17 @@ const BookingPage = () => {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">ServiceBook</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">ServiceBook</h1>
+            </div>
+            <Link
+              to="/admin"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              管理画面
+            </Link>
           </div>
         </div>
       </header>
