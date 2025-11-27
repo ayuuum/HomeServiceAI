@@ -8,6 +8,12 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import BookingPage from "./pages/BookingPage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ProfilePage from "./pages/ProfilePage";
+import StoreManagement from "./pages/StoreManagement";
+import ReportsPage from "./pages/ReportsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import StaffSchedulePage from "./pages/StaffSchedulePage";
 import CustomerManagement from "./pages/CustomerManagement";
@@ -27,6 +33,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<BookingPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/admin" element={
                 <ProtectedRoute>
                   <AdminDashboard />
@@ -45,6 +54,21 @@ const App = () => (
               <Route path="/admin/staffs" element={
                 <ProtectedRoute>
                   <StaffManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/stores" element={
+                <ProtectedRoute>
+                  <StoreManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <ProtectedRoute>
+                  <ReportsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -207,7 +207,22 @@ export const BookingDetailModal = ({
                 <Button
                   variant="outline"
                   className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
-                  onClick={() => toast.info("キャンセル機能は近日実装予定です")}
+            onClick={async () => {
+              try {
+                const { error } = await supabase
+                  .from('bookings')
+                  .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                  .eq('id', booking.id);
+                
+                if (error) throw error;
+                
+                toast({ title: "予約をキャンセルしました" });
+                onSuccess();
+                onOpenChange(false);
+              } catch (error) {
+                toast({ variant: "destructive", title: "キャンセル失敗", description: "予約のキャンセルに失敗しました" });
+              }
+            }}
                 >
                   キャンセル
                 </Button>
