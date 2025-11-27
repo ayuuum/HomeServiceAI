@@ -254,10 +254,55 @@ const BookingPage = () => {
     }
 
     try {
-      // 1. Create booking
+      // 1. Get store ID (default to first non-HQ store or渋谷店)
+      const { data: storeData } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('is_hq', false)
+        .limit(1)
+        .single();
+
+      const storeId = storeData?.id;
+
+      // 2. Find or create customer
+      let customerId: string | null = null;
+      
+      if (customerEmail || customerPhone) {
+        // Try to find existing customer
+        const { data: existingCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('store_id', storeId)
+          .or(`email.eq.${customerEmail},phone.eq.${customerPhone}`)
+          .maybeSingle();
+
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+        } else {
+          // Create new customer
+          const { data: newCustomer, error: customerError } = await supabase
+            .from('customers')
+            .insert({
+              store_id: storeId,
+              name: customerName.trim(),
+              email: customerEmail.trim() || null,
+              phone: customerPhone.trim() || null,
+            })
+            .select('id')
+            .single();
+
+          if (!customerError && newCustomer) {
+            customerId = newCustomer.id;
+          }
+        }
+      }
+
+      // 3. Create booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
+          store_id: storeId,
+          customer_id: customerId,
           customer_name: customerName.trim(),
           customer_email: customerEmail.trim() || null,
           customer_phone: customerPhone.trim() || null,
@@ -273,7 +318,7 @@ const BookingPage = () => {
 
       if (bookingError) throw bookingError;
 
-      // 2. Create booking_services records
+      // 4. Create booking_services records
       const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
         booking_id: bookingData.id,
         service_id: serviceId,
@@ -288,7 +333,7 @@ const BookingPage = () => {
 
       if (servicesError) throw servicesError;
 
-      // 3. Create booking_options records
+      // 5. Create booking_options records
       if (selectedOptions.length > 0) {
         const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
           booking_id: bookingData.id,
