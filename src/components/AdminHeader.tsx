@@ -1,4 +1,4 @@
-import { Building2, Sparkles } from "lucide-react";
+import { Building2, Sparkles, LogOut } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -6,12 +6,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useStore } from "@/contexts/StoreContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { MobileNav } from "@/components/MobileNav";
 import { NavLink } from "@/components/NavLink";
+import { useNavigate } from "react-router-dom";
 
 export function AdminHeader() {
   const { selectedStoreId, setSelectedStoreId, stores, isLoading } = useStore();
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <header className="border-b bg-card sticky top-0 z-50">
@@ -48,7 +69,7 @@ export function AdminHeader() {
           </nav>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Select
             value={selectedStoreId || "all"}
             onValueChange={(value) => setSelectedStoreId(value === "all" ? null : value)}
@@ -66,6 +87,26 @@ export function AdminHeader() {
               ))}
             </SelectContent>
           </Select>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="hidden sm:flex">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>ログアウトしますか？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {user?.email && `${user.email} からログアウトします。`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout}>ログアウト</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </header>
