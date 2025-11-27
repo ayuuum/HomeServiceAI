@@ -58,4 +58,36 @@ export interface Booking {
   diagnosisNotes?: string;
   optionsSummary: string[];
   createdAt: string;
+  storeId?: string;
+  storeName?: string;
+  customerId?: string;
+  staffId?: string;
+  staffName?: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  lineChannelToken?: string;
+  lineChannelSecret?: string;
+  isHq: boolean;
+}
+
+export interface Staff {
+  id: string;
+  storeId: string;
+  name: string;
+  colorCode: string;
+  lineUserId?: string;
+  isActive: boolean;
+}
+
+export interface Customer {
+  id: string;
+  storeId: string;
+  lineUserId?: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
 }

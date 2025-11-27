@@ -105,6 +105,7 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_email: string | null
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
           diagnosis_has_parking: boolean | null
@@ -112,13 +113,16 @@ export type Database = {
           id: string
           selected_date: string
           selected_time: string
+          staff_id: string | null
           status: string
+          store_id: string | null
           total_price: number
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
           diagnosis_has_parking?: boolean | null
@@ -126,13 +130,16 @@ export type Database = {
           id?: string
           selected_date: string
           selected_time: string
+          staff_id?: string | null
           status?: string
+          store_id?: string | null
           total_price: number
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           diagnosis_has_parking?: boolean | null
@@ -140,11 +147,156 @@ export type Database = {
           id?: string
           selected_date?: string
           selected_time?: string
+          staff_id?: string | null
           status?: string
+          store_id?: string | null
           total_price?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staffs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_logs: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          message: string | null
+          message_type: string | null
+          sender: string | null
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          message?: string | null
+          message_type?: string | null
+          sender?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          message?: string | null
+          message_type?: string | null
+          sender?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          line_user_id: string | null
+          name: string | null
+          phone: string | null
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          line_user_id?: string | null
+          name?: string | null
+          phone?: string | null
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          line_user_id?: string | null
+          name?: string | null
+          phone?: string | null
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_options: {
         Row: {
@@ -153,6 +305,7 @@ export type Database = {
           id: string
           price: number
           service_id: string
+          store_id: string | null
           title: string
         }
         Insert: {
@@ -161,6 +314,7 @@ export type Database = {
           id?: string
           price: number
           service_id: string
+          store_id?: string | null
           title: string
         }
         Update: {
@@ -169,6 +323,7 @@ export type Database = {
           id?: string
           price?: number
           service_id?: string
+          store_id?: string | null
           title?: string
         }
         Relationships: [
@@ -177,6 +332,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_options_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -190,7 +352,9 @@ export type Database = {
           duration: number
           id: string
           image_url: string
+          is_active: boolean | null
           quantity_discounts: Json | null
+          store_id: string | null
           title: string
           updated_at: string | null
         }
@@ -202,7 +366,9 @@ export type Database = {
           duration: number
           id?: string
           image_url: string
+          is_active?: boolean | null
           quantity_discounts?: Json | null
+          store_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -214,8 +380,86 @@ export type Database = {
           duration?: number
           id?: string
           image_url?: string
+          is_active?: boolean | null
           quantity_discounts?: Json | null
+          store_id?: string | null
           title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staffs: {
+        Row: {
+          color_code: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          line_user_id: string | null
+          name: string
+          store_id: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          line_user_id?: string | null
+          name: string
+          store_id: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          line_user_id?: string | null
+          name?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staffs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_hq: boolean | null
+          line_channel_secret: string | null
+          line_channel_token: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_hq?: boolean | null
+          line_channel_secret?: string | null
+          line_channel_token?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_hq?: boolean | null
+          line_channel_secret?: string | null
+          line_channel_token?: string | null
+          name?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -255,7 +499,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "hq_admin" | "store_owner" | "store_staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -383,7 +627,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["hq_admin", "store_owner", "store_staff"],
     },
   },
 } as const
