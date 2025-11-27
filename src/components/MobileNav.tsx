@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Menu, LayoutDashboard, Calendar, Sparkles, LogOut } from "lucide-react";
+import { Menu, LayoutDashboard, Calendar, Sparkles, LogOut, Users, UserCog } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -52,6 +52,22 @@ export function MobileNav() {
           >
             <Calendar className="h-5 w-5" />
             スタッフ配置
+          </NavLink>
+          <NavLink
+            to="/admin/customers"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <Users className="h-5 w-5" />
+            顧客管理
+          </NavLink>
+          <NavLink
+            to="/admin/staffs"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <UserCog className="h-5 w-5" />
+            スタッフ管理
           </NavLink>
           <Link
             to="/"
