@@ -13,6 +13,7 @@ import { Calendar, Clock, User, MapPin, FileText, CheckCircle2, XCircle } from "
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -20,6 +21,7 @@ interface BookingDetailModalProps {
   onOpenChange: (open: boolean) => void;
   onApprove: (bookingId: string) => void;
   onReject: (bookingId: string) => void;
+  onSuccess?: () => void;
 }
 
 export const BookingDetailModal = ({
@@ -28,6 +30,7 @@ export const BookingDetailModal = ({
   onOpenChange,
   onApprove,
   onReject,
+  onSuccess,
 }: BookingDetailModalProps) => {
   if (!booking) return null;
 
@@ -207,22 +210,22 @@ export const BookingDetailModal = ({
                 <Button
                   variant="outline"
                   className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
-            onClick={async () => {
-              try {
-                const { error } = await supabase
-                  .from('bookings')
-                  .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                  .eq('id', booking.id);
-                
-                if (error) throw error;
-                
-                toast({ title: "予約をキャンセルしました" });
-                onSuccess();
-                onOpenChange(false);
-              } catch (error) {
-                toast({ variant: "destructive", title: "キャンセル失敗", description: "予約のキャンセルに失敗しました" });
-              }
-            }}
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('bookings')
+                        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                        .eq('id', booking.id);
+                      
+                      if (error) throw error;
+                      
+                      toast.success("予約をキャンセルしました");
+                      onSuccess?.();
+                      onOpenChange(false);
+                    } catch (error) {
+                      toast.error("予約のキャンセルに失敗しました");
+                    }
+                  }}
                 >
                   キャンセル
                 </Button>
