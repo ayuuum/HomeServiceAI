@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Loader2 } from 'lucide-react';
 
-type AppRole = 'admin' | 'moderator' | 'user';
+type AppRole = 'hq_admin' | 'store_owner' | 'store_staff' | 'admin' | 'moderator' | 'user';
 
 interface RoleProtectedRouteProps {
   children: ReactNode;
