@@ -23,8 +23,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
+import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, History } from "lucide-react";
 import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
@@ -34,6 +35,7 @@ export default function CustomerManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+  const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers", selectedStoreId],
@@ -142,8 +144,6 @@ export default function CustomerManagement() {
                     <TableHead>名前</TableHead>
                     <TableHead>電話番号</TableHead>
                     <TableHead>メール</TableHead>
-                    <TableHead>住所</TableHead>
-                    <TableHead>LINE ID</TableHead>
                     <TableHead className="text-right">アクション</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -155,12 +155,16 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell>{customer.phone || "-"}</TableCell>
                       <TableCell>{customer.email || "-"}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {customer.address || "-"}
-                      </TableCell>
-                      <TableCell>{customer.lineUserId || "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingBookingHistory(customer)}
+                            title="予約履歴を見る"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -190,6 +194,13 @@ export default function CustomerManagement() {
         open={isFormOpen}
         onClose={handleCloseForm}
         customer={editingCustomer}
+      />
+
+      <CustomerBookingHistoryModal
+        customerId={viewingBookingHistory?.id || null}
+        customerName={viewingBookingHistory?.name || ""}
+        open={!!viewingBookingHistory}
+        onOpenChange={(open) => !open && setViewingBookingHistory(null)}
       />
 
       <AlertDialog
