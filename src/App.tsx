@@ -19,6 +19,7 @@ import StaffSchedulePage from "./pages/StaffSchedulePage";
 import CustomerManagement from "./pages/CustomerManagement";
 import StaffManagement from "./pages/StaffManagement";
 import LineMessageHistory from "./pages/LineMessageHistory";
+import LineChatHistory from "./pages/LineChatHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,11 @@ const App = () => (
               <Route path="/admin/line-messages" element={
                 <ProtectedRoute>
                   <LineMessageHistory />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/line-chat" element={
+                <ProtectedRoute>
+                  <LineChatHistory />
                 </ProtectedRoute>
               } />
               <Route path="/admin/profile" element={

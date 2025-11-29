@@ -84,6 +84,14 @@ export function AdminHeader() {
               LINE履歴
             </NavLink>
             <NavLink
+              to="/admin/line-chat"
+              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              activeClassName="bg-muted text-primary"
+            >
+              <MessageCircle className="h-4 w-4" />
+              LINEチャット
+            </NavLink>
+            <NavLink
               to="/"
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
             >
