@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
+import { LineMessageModal } from "@/components/LineMessageModal";
+import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash2, History } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, History, MessageCircle } from "lucide-react";
 import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
@@ -36,6 +38,7 @@ export default function CustomerManagement() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
+  const [sendingLineMessage, setSendingLineMessage] = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers", selectedStoreId],
@@ -105,6 +108,7 @@ export default function CustomerManagement() {
 
   return (
     <div className="min-h-screen bg-background">
+      <AdminHeader />
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">顧客管理</h1>
@@ -157,6 +161,16 @@ export default function CustomerManagement() {
                       <TableCell>{customer.email || "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
+                          {customer.lineUserId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSendingLineMessage(customer)}
+                              title="LINEメッセージを送る"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -201,6 +215,13 @@ export default function CustomerManagement() {
         customerName={viewingBookingHistory?.name || ""}
         open={!!viewingBookingHistory}
         onOpenChange={(open) => !open && setViewingBookingHistory(null)}
+      />
+
+      <LineMessageModal
+        open={!!sendingLineMessage}
+        onOpenChange={(open) => !open && setSendingLineMessage(null)}
+        customer={sendingLineMessage}
+        storeId={selectedStoreId}
       />
 
       <AlertDialog

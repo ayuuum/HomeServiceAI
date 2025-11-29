@@ -266,6 +266,63 @@ export type Database = {
           },
         ]
       }
+      line_messages: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          message_content: string
+          message_type: string
+          recipient_line_user_id: string
+          sent_at: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message_content: string
+          message_type?: string
+          recipient_line_user_id: string
+          sent_at?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          message_type?: string
+          recipient_line_user_id?: string
+          sent_at?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "line_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
