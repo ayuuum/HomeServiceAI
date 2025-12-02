@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Clock, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, DollarSign, ListPlus } from "lucide-react";
 import { ServiceFormModal } from "@/components/ServiceFormModal";
+import { ServiceOptionsModal } from "@/components/ServiceOptionsModal";
 import { Service } from "@/types/booking";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,7 @@ const AdminServiceManagement = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
@@ -44,7 +46,7 @@ const AdminServiceManagement = () => {
           if (payload.eventType === 'INSERT') {
             setServices(prev => [...prev, mapDbServiceToService(payload.new)]);
           } else if (payload.eventType === 'UPDATE') {
-            setServices(prev => prev.map(s => 
+            setServices(prev => prev.map(s =>
               s.id === payload.new.id ? mapDbServiceToService(payload.new) : s
             ));
           } else if (payload.eventType === 'DELETE') {
@@ -64,7 +66,7 @@ const AdminServiceManagement = () => {
       .from('services')
       .select('*')
       .order('created_at', { ascending: true });
-    
+
     if (error) {
       console.error('Error fetching services:', error);
       toast.error('サービスの読み込みに失敗しました');
@@ -89,6 +91,11 @@ const AdminServiceManagement = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleManageOptions = (service: Service) => {
+    setSelectedService(service);
+    setOptionsModalOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
     if (serviceToDelete) {
       const { error } = await supabase
@@ -109,7 +116,7 @@ const AdminServiceManagement = () => {
 
   const handleSubmit = async (values: any) => {
     const dbValues = mapServiceToDbService(values);
-    
+
     if (selectedService) {
       // Edit existing service
       const { error } = await supabase
@@ -171,57 +178,66 @@ const AdminServiceManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
-          <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="aspect-video relative overflow-hidden bg-muted">
-              <img
-                src={service.imageUrl}
-                alt={service.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg">{service.title}</CardTitle>
-                {getCategoryBadge(service.category)}
+            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-video relative overflow-hidden bg-muted">
+                <img
+                  src={service.imageUrl}
+                  alt={service.title}
+                  className="w-full h-full object-cover"
+                />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {service.description}
-              </p>
-              
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{service.duration}分</span>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-lg">{service.title}</CardTitle>
+                  {getCategoryBadge(service.category)}
                 </div>
-                <div className="flex items-center gap-1 font-semibold text-primary">
-                  <DollarSign className="h-4 w-4" />
-                  <span>¥{service.basePrice.toLocaleString()}</span>
-                </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {service.description}
+                </p>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => handleEditService(service)}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  編集
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  onClick={() => handleDeleteClick(service.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{service.duration}分</span>
+                  </div>
+                  <div className="flex items-center gap-1 font-semibold text-primary">
+                    <DollarSign className="h-4 w-4" />
+                    <span>¥{service.basePrice.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEditService(service)}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    編集
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleManageOptions(service)}
+                  >
+                    <ListPlus className="h-3 w-3 mr-1" />
+                    オプション
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={() => handleDeleteClick(service.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -247,6 +263,12 @@ const AdminServiceManagement = () => {
         onOpenChange={setModalOpen}
         service={selectedService}
         onSubmit={handleSubmit}
+      />
+
+      <ServiceOptionsModal
+        open={optionsModalOpen}
+        onOpenChange={setOptionsModalOpen}
+        service={selectedService}
       />
 
       {/* Delete Confirmation Dialog */}

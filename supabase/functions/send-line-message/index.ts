@@ -83,6 +83,23 @@ Deno.serve(async (req) => {
       throw new Error('メッセージ記録の作成に失敗しました');
     }
 
+    // Also save to chat_logs for the chat UI
+    const { error: chatLogError } = await supabase
+      .from('chat_logs')
+      .insert({
+        store_id: storeId,
+        customer_id: customerId || null,
+        sender: 'staff',
+        message_type: messageType,
+        message: messageContent,
+      });
+
+    if (chatLogError) {
+      console.error('Failed to create chat log:', chatLogError);
+      // We don't throw here to allow the message to be sent even if chat log fails
+      // but in production you might want to handle this better
+    }
+
     // Send LINE message using Push Message API
     const lineApiUrl = 'https://api.line.me/v2/bot/message/push';
     const linePayload = {

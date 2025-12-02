@@ -17,7 +17,7 @@ interface ChatLog {
   id: string;
   storeId: string;
   customerId: string;
-  sender: 'customer' | 'staff';
+  sender: 'user' | 'staff' | 'bot';
   messageType: string;
   message: string;
   createdAt: string;
@@ -96,20 +96,7 @@ export default function LineChatHistory() {
         throw new Error("必須情報が不足しています");
       }
 
-      // Save to chat_logs first
-      const { error: logError } = await supabase
-        .from("chat_logs")
-        .insert({
-          store_id: selectedStoreId,
-          customer_id: selectedCustomerId,
-          sender: "staff",
-          message_type: "text",
-          message: message,
-        });
-
-      if (logError) throw logError;
-
-      // Send via LINE
+      // Send via LINE (Backend will also save to chat_logs)
       const { data, error } = await supabase.functions.invoke("send-line-message", {
         body: {
           storeId: selectedStoreId,
@@ -124,6 +111,7 @@ export default function LineChatHistory() {
       return data;
     },
     onSuccess: () => {
+      // Invalidate queries to fetch the new message saved by the backend
       queryClient.invalidateQueries({ queryKey: ["chat-logs", selectedCustomerId] });
       setMessageInput("");
       toast.success("メッセージを送信しました");
@@ -205,9 +193,8 @@ export default function LineChatHistory() {
                       <button
                         key={customer.id}
                         onClick={() => setSelectedCustomerId(customer.id)}
-                        className={`w-full p-4 text-left hover:bg-muted transition-colors ${
-                          selectedCustomerId === customer.id ? "bg-muted" : ""
-                        }`}
+                        className={`w-full p-4 text-left hover:bg-muted transition-colors ${selectedCustomerId === customer.id ? "bg-muted" : ""
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <Avatar>
@@ -246,45 +233,45 @@ export default function LineChatHistory() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {chatLogs.map((log) => (
-                          <div
-                            key={log.id}
-                            className={`flex ${
-                              log.sender === "staff" ? "justify-end" : "justify-start"
-                            }`}
-                          >
+                        {chatLogs.map((log) => {
+                          const isStaff = log.sender === "staff";
+                          return (
                             <div
-                              className={`max-w-[70%] ${
-                                log.sender === "staff"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
-                              } rounded-lg p-3`}
+                              key={log.id}
+                              className={`flex ${isStaff ? "justify-end" : "justify-start"
+                                }`}
                             >
-                              <div className="flex items-start gap-2">
-                                {log.sender === "customer" && (
-                                  <User className="h-4 w-4 mt-1 flex-shrink-0" />
-                                )}
-                                <div className="flex-1">
-                                  <p className="text-sm whitespace-pre-wrap break-words">
-                                    {log.message}
-                                  </p>
-                                  <p
-                                    className={`text-xs mt-1 ${
-                                      log.sender === "staff"
-                                        ? "text-primary-foreground/70"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {format(new Date(log.createdAt), "HH:mm", { locale: ja })}
-                                  </p>
+                              <div
+                                className={`max-w-[70%] ${isStaff
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                  } rounded-lg p-3`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  {!isStaff && (
+                                    <User className="h-4 w-4 mt-1 flex-shrink-0" />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="text-sm whitespace-pre-wrap break-words">
+                                      {log.message}
+                                    </p>
+                                    <p
+                                      className={`text-xs mt-1 ${isStaff
+                                          ? "text-primary-foreground/70"
+                                          : "text-muted-foreground"
+                                        }`}
+                                    >
+                                      {format(new Date(log.createdAt), "HH:mm", { locale: ja })}
+                                    </p>
+                                  </div>
+                                  {isStaff && (
+                                    <Bot className="h-4 w-4 mt-1 flex-shrink-0" />
+                                  )}
                                 </div>
-                                {log.sender === "staff" && (
-                                  <Bot className="h-4 w-4 mt-1 flex-shrink-0" />
-                                )}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </ScrollArea>

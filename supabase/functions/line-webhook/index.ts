@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // Get request body and signature
     const bodyText = await req.text();
     const signature = req.headers.get('x-line-signature');
-    
+
     if (!signature) {
       console.error('No signature provided');
       return new Response('Forbidden', { status: 403 });
@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         .insert({
           store_id: matchedStore.id,
           customer_id: customer.id,
-          sender: 'customer',
+          sender: 'user',
           message_type: 'text',
           message: messageText,
         });
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       console.log('Saved chat log for customer:', customer.id);
     }
 
-    return new Response('OK', { 
+    return new Response('OK', {
       headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
       status: 200,
     });

@@ -3,16 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Calendar, User, Eye, CalendarDays } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, User, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { NewBookingModal } from "@/components/NewBookingModal";
 import { Booking } from "@/types/booking";
 import { toast } from "sonner";
 import AdminServiceManagement from "./AdminServiceManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
-import StaffGanttChart from "@/components/StaffGanttChart";
 import { AdminHeader } from "@/components/AdminHeader";
 import { useStore } from "@/contexts/StoreContext";
 
@@ -39,16 +39,17 @@ const getStatusBadge = (status: string) => {
 
 const AdminDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [staffs, setStaffs] = useState<any[]>([]);
+
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { selectedStoreId } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
-    fetchStaffs();
+
 
     const channel = supabase
       .channel('bookings-changes')
@@ -64,23 +65,7 @@ const AdminDashboard = () => {
     };
   }, [selectedStoreId]);
 
-  const fetchStaffs = async () => {
-    let query = supabase
-      .from('staffs')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
 
-    if (selectedStoreId) {
-      query = query.eq('store_id', selectedStoreId);
-    }
-
-    const { data, error } = await query;
-
-    if (!error && data) {
-      setStaffs(data);
-    }
-  };
 
   const fetchBookings = async () => {
     let query = supabase
@@ -161,20 +146,13 @@ const AdminDashboard = () => {
             </p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button 
-              onClick={() => toast.info("新規予約機能は近日実装予定です")} 
+            <Button
+              onClick={() => setNewBookingModalOpen(true)}
               className="flex-1 sm:flex-none"
             >
               ＋ 新規予約
             </Button>
-            <Button 
-              onClick={() => navigate('/admin/schedule')} 
-              variant="outline"
-              className="flex-1 sm:flex-none"
-            >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              スタッフ配置
-            </Button>
+
           </div>
         </div>
 
@@ -185,170 +163,163 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="bookings" className="space-y-8">
-            {/* Staff Gantt Chart */}
-            <StaffGanttChart
-              bookings={bookings}
-              staffs={staffs}
-              onBookingClick={handleViewDetails}
-            />
-
             {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    承認待ち
-                  </p>
-                  <p className="text-3xl font-bold text-accent">{pendingCount}</p>
-                </div>
-                <Clock className="h-12 w-12 text-accent/20" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    確定済み
-                  </p>
-                  <p className="text-3xl font-bold text-success">{confirmedCount}</p>
-                </div>
-                <CheckCircle2 className="h-12 w-12 text-success/20" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    今月の売上
-                  </p>
-                  <p className="text-3xl font-bold text-primary">
-                    ¥{totalRevenue.toLocaleString()}
-                  </p>
-                </div>
-                <Calendar className="h-12 w-12 text-primary/20" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bookings List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>予約リスト</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-12">読み込み中...</div>
-            ) : bookings.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                予約がまだありません
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {bookings.map((booking, index) => (
-                <div key={booking.id}>
-                  {index > 0 && <Separator className="my-4" />}
-                  <div className="space-y-4">
-                    {/* Header Row */}
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">
-                            {booking.serviceName || "複数サービス"}
-                          </h3>
-                          {getStatusBadge(booking.status)}
-                        </div>
-                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="h-4 w-4" />
-                          {booking.customerName}
-                          {booking.staffName && (
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              担当: {booking.staffName}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-primary">
-                          ¥{booking.totalPrice.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">税込</p>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        承認待ち
+                      </p>
+                      <p className="text-3xl font-bold text-accent">{pendingCount}</p>
                     </div>
-
-                    {/* Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {booking.selectedDate}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {booking.selectedTime}〜
-                          </span>
-                        </div>
-                        {booking.optionsSummary.length > 0 && (
-                          <div className="ml-6">
-                            <p className="text-muted-foreground mb-1">
-                              オプション:
-                            </p>
-                            <ul className="space-y-1">
-                              {booking.optionsSummary.map((option, idx) => (
-                                <li key={idx} className="text-xs">
-                                  • {option}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 flex-wrap">
-                      {booking.status === "pending" && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            className="btn-primary"
-                            onClick={() => handleApprove(booking.id)}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            承認する
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                            onClick={() => handleReject(booking.id)}
-                          >
-                            却下する
-                          </Button>
-                        </>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleViewDetails(booking)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        詳細を見る
-                      </Button>
-                    </div>
+                    <Clock className="h-12 w-12 text-accent/20" />
                   </div>
-                </div>
-              ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        確定済み
+                      </p>
+                      <p className="text-3xl font-bold text-success">{confirmedCount}</p>
+                    </div>
+                    <CheckCircle2 className="h-12 w-12 text-success/20" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        今月の売上
+                      </p>
+                      <p className="text-3xl font-bold text-primary">
+                        ¥{totalRevenue.toLocaleString()}
+                      </p>
+                    </div>
+                    <Calendar className="h-12 w-12 text-primary/20" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bookings List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>予約リスト</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-12">読み込み中...</div>
+                ) : bookings.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    予約がまだありません
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking, index) => (
+                      <div key={booking.id}>
+                        {index > 0 && <Separator className="my-4" />}
+                        <div className="space-y-4">
+                          {/* Header Row */}
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-lg">
+                                  {booking.serviceName || "複数サービス"}
+                                </h3>
+                                {getStatusBadge(booking.status)}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <User className="h-4 w-4" />
+                                {booking.customerName}
+                                {booking.staffName && (
+                                  <Badge variant="outline" className="ml-2 text-xs">
+                                    担当: {booking.staffName}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-primary">
+                                ¥{booking.totalPrice.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-muted-foreground">税込</p>
+                            </div>
+                          </div>
+
+                          {/* Details */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {booking.selectedDate}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {booking.selectedTime}〜
+                                </span>
+                              </div>
+                              {booking.optionsSummary.length > 0 && (
+                                <div className="ml-6">
+                                  <p className="text-muted-foreground mb-1">
+                                    オプション:
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {booking.optionsSummary.map((option, idx) => (
+                                      <li key={idx} className="text-xs">
+                                        • {option}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 flex-wrap">
+                            {booking.status === "pending" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="btn-primary"
+                                  onClick={() => handleApprove(booking.id)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  承認する
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                  onClick={() => handleReject(booking.id)}
+                                >
+                                  却下する
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewDetails(booking)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              詳細を見る
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="services">
@@ -364,6 +335,12 @@ const AdminDashboard = () => {
         onOpenChange={setModalOpen}
         onApprove={handleApprove}
         onReject={handleReject}
+      />
+
+      <NewBookingModal
+        open={newBookingModalOpen}
+        onOpenChange={setNewBookingModalOpen}
+        onBookingCreated={fetchBookings}
       />
     </div>
   );

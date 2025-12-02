@@ -32,12 +32,17 @@ export default function ReportsPage() {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      const { data: bookings, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select('*, booking_services(*)')
-        .eq('store_id', selectedStoreId)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
+
+      if (selectedStoreId) {
+        query = query.eq('store_id', selectedStoreId);
+      }
+
+      const { data: bookings, error } = await query;
 
       if (error) throw error;
 
@@ -58,10 +63,21 @@ export default function ReportsPage() {
 
   const processSalesData = (bookings: any[]) => {
     const salesByDate: { [key: string]: number } = {};
+    const days = parseInt(period);
+    const today = new Date();
+
+    // Initialize all dates with 0
+    for (let i = days - 1; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dateStr = format(date, 'MM/dd', { locale: ja });
+      salesByDate[dateStr] = 0;
+    }
 
     bookings.forEach((booking) => {
       const date = format(new Date(booking.created_at), 'MM/dd', { locale: ja });
-      salesByDate[date] = (salesByDate[date] || 0) + booking.total_price;
+      if (salesByDate[date] !== undefined) {
+        salesByDate[date] += booking.total_price;
+      }
     });
 
     const data = Object.entries(salesByDate).map(([date, amount]) => ({
@@ -94,10 +110,10 @@ export default function ReportsPage() {
 
     bookings.forEach((booking) => {
       const status = booking.status === 'pending' ? '保留中' :
-                     booking.status === 'approved' ? '承認済み' :
-                     booking.status === 'rejected' ? '却下' :
-                     booking.status === 'completed' ? '完了' :
-                     booking.status === 'cancelled' ? 'キャンセル' : '不明';
+        booking.status === 'approved' ? '承認済み' :
+          booking.status === 'rejected' ? '却下' :
+            booking.status === 'completed' ? '完了' :
+              booking.status === 'cancelled' ? 'キャンセル' : '不明';
       statusCount[status] = (statusCount[status] || 0) + 1;
     });
 
@@ -115,7 +131,7 @@ export default function ReportsPage() {
       <div className="container mx-auto p-4 md:p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">レポート・分析</h1>
+            <h1 className="text-3xl font-bold">経営ダッシュボード</h1>
             <p className="text-muted-foreground mt-2">売上と予約の統計情報</p>
           </div>
           <Select value={period} onValueChange={setPeriod}>

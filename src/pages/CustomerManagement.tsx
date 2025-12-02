@@ -45,7 +45,7 @@ export default function CustomerManagement() {
     queryFn: async () => {
       const query = supabase
         .from("customers")
-        .select("*")
+        .select("*, bookings(id, total_price)")
         .order("created_at", { ascending: false });
 
       if (selectedStoreId) {
@@ -54,16 +54,24 @@ export default function CustomerManagement() {
 
       const { data, error } = await query;
       if (error) throw error;
-      
-      return (data || []).map((c) => ({
-        id: c.id,
-        storeId: c.store_id,
-        lineUserId: c.line_user_id || undefined,
-        name: c.name || "",
-        phone: c.phone || undefined,
-        email: c.email || undefined,
-        address: c.address || undefined,
-      }));
+
+      return (data || []).map((c) => {
+        const bookings = c.bookings || [];
+        const bookingCount = bookings.length;
+        const totalSpend = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+
+        return {
+          id: c.id,
+          storeId: c.store_id,
+          lineUserId: c.line_user_id || undefined,
+          name: c.name || "",
+          phone: c.phone || undefined,
+          email: c.email || undefined,
+          address: c.address || undefined,
+          bookingCount,
+          totalSpend,
+        };
+      });
     },
   });
 
@@ -148,6 +156,8 @@ export default function CustomerManagement() {
                     <TableHead>名前</TableHead>
                     <TableHead>電話番号</TableHead>
                     <TableHead>メール</TableHead>
+                    <TableHead className="text-right">利用回数</TableHead>
+                    <TableHead className="text-right">利用総額</TableHead>
                     <TableHead className="text-right">アクション</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -159,6 +169,12 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell>{customer.phone || "-"}</TableCell>
                       <TableCell>{customer.email || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        {customer.bookingCount}回
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ¥{customer.totalSpend?.toLocaleString()}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
                           {customer.lineUserId && (
