@@ -1,4 +1,6 @@
+
 import { Building2, LayoutDashboard, Users, MessageCircle, ExternalLink, LogOut, Store, FileText, Sparkles, Calendar } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -39,6 +41,7 @@ export function AdminHeader() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MobileNav />
+          
           <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
 
           {/* Desktop Navigation */}

@@ -11,13 +11,21 @@ import { useStore } from '@/contexts/StoreContext';
 import { QuantitySelector } from './QuantitySelector';
 import { OptionCheckbox } from './OptionCheckbox';
 
+interface InitialCustomerData {
+  id?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
 interface AdminBookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialCustomer?: InitialCustomerData;
 }
 
-export default function AdminBookingModal({ open, onOpenChange, onSuccess }: AdminBookingModalProps) {
+export default function AdminBookingModal({ open, onOpenChange, onSuccess, initialCustomer }: AdminBookingModalProps) {
   const { toast } = useToast();
   const { selectedStoreId } = useStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,8 +48,16 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess }: Adm
       loadServices();
       loadCustomers();
       loadStaffs();
+      
+      // Pre-fill customer data if provided
+      if (initialCustomer) {
+        setCustomerId(initialCustomer.id || '');
+        setCustomerName(initialCustomer.name || '');
+        setCustomerPhone(initialCustomer.phone || '');
+        setCustomerEmail(initialCustomer.email || '');
+      }
     }
-  }, [open, selectedStoreId]);
+  }, [open, selectedStoreId, initialCustomer]);
 
   const loadServices = async () => {
     try {
