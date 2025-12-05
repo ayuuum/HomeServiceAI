@@ -1,5 +1,6 @@
-import { Sparkles, LogOut, Users, UserCog, MessageCircle } from "lucide-react";
-import logo from "@/assets/logo.png";
+
+import { Building2, LayoutDashboard, Users, MessageCircle, ExternalLink, LogOut, Store, FileText, Sparkles, Calendar } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -40,9 +41,9 @@ export function AdminHeader() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MobileNav />
-          <img src={logo} alt="ハウクリPro" className="h-8" />
-          <h1 className="text-xl font-bold hidden sm:block sr-only">管理画面</h1>
           
+          <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 ml-6">
             <NavLink
@@ -54,13 +55,6 @@ export function AdminHeader() {
               ダッシュボード
             </NavLink>
             <NavLink
-              to="/admin/schedule"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-            >
-              スタッフ配置
-            </NavLink>
-            <NavLink
               to="/admin/customers"
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
               activeClassName="bg-muted text-primary"
@@ -69,28 +63,36 @@ export function AdminHeader() {
               顧客管理
             </NavLink>
             <NavLink
-              to="/admin/staffs"
+              to="/admin/calendar"
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
               activeClassName="bg-muted text-primary"
             >
-              <UserCog className="h-4 w-4" />
-              スタッフ管理
+              <Calendar className="h-4 w-4" />
+              カレンダー
             </NavLink>
             <NavLink
-              to="/admin/line-messages"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
-              activeClassName="bg-muted text-primary"
+              to="/admin/reports"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+              activeClassName="bg-primary text-primary-foreground"
             >
-              <MessageCircle className="h-4 w-4" />
-              LINE履歴
+              <FileText className="h-4 w-4" />
+              経営管理
+            </NavLink>
+            <NavLink
+              to="/admin/stores"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+              activeClassName="bg-primary text-primary-foreground"
+            >
+              <Store className="h-4 w-4" />
+              店舗管理
             </NavLink>
             <NavLink
               to="/admin/line-chat"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
-              activeClassName="bg-muted text-primary"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+              activeClassName="bg-primary text-primary-foreground"
             >
               <MessageCircle className="h-4 w-4" />
-              LINEチャット
+              LINE
             </NavLink>
             <NavLink
               to="/"
@@ -101,7 +103,7 @@ export function AdminHeader() {
             </NavLink>
           </nav>
         </div>
-        
+
         <div className="flex items-center gap-2 sm:gap-4">
           <Select
             value={selectedStoreId || "all"}

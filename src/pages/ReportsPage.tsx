@@ -14,9 +14,10 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 export default function ReportsPage() {
   const { toast } = useToast();
-  const { selectedStoreId } = useStore();
+  const { selectedStoreId, stores } = useStore();
   const [period, setPeriod] = useState('7');
   const [salesData, setSalesData] = useState<any[]>([]);
+  const [storeSalesData, setStoreSalesData] = useState<any[]>([]);
   const [serviceData, setServiceData] = useState<any[]>([]);
   const [statusData, setStatusData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,16 +33,22 @@ export default function ReportsPage() {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      const { data: bookings, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select('*, booking_services(*)')
-        .eq('store_id', selectedStoreId)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
+
+      if (selectedStoreId) {
+        query = query.eq('store_id', selectedStoreId);
+      }
+
+      const { data: bookings, error } = await query;
 
       if (error) throw error;
 
       processSalesData(bookings || []);
+      processStoreSalesData(bookings || []);
       processServiceData(bookings || []);
       processStatusData(bookings || []);
     } catch (error) {
@@ -58,10 +65,21 @@ export default function ReportsPage() {
 
   const processSalesData = (bookings: any[]) => {
     const salesByDate: { [key: string]: number } = {};
+    const days = parseInt(period);
+    const today = new Date();
+
+    // Initialize all dates with 0
+    for (let i = days - 1; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dateStr = format(date, 'MM/dd', { locale: ja });
+      salesByDate[dateStr] = 0;
+    }
 
     bookings.forEach((booking) => {
       const date = format(new Date(booking.created_at), 'MM/dd', { locale: ja });
-      salesByDate[date] = (salesByDate[date] || 0) + booking.total_price;
+      if (salesByDate[date] !== undefined) {
+        salesByDate[date] += booking.total_price;
+      }
     });
 
     const data = Object.entries(salesByDate).map(([date, amount]) => ({
@@ -70,6 +88,26 @@ export default function ReportsPage() {
     }));
 
     setSalesData(data);
+  };
+
+  const processStoreSalesData = (bookings: any[]) => {
+    const salesByStore: { [key: string]: number } = {};
+
+    bookings.forEach((booking) => {
+      if (booking.store_id) {
+        salesByStore[booking.store_id] = (salesByStore[booking.store_id] || 0) + booking.total_price;
+      }
+    });
+
+    const data = Object.entries(salesByStore).map(([storeId, amount]) => {
+      const store = stores.find(s => s.id === storeId);
+      return {
+        name: store ? store.name : '不明な店舗',
+        売上: amount,
+      };
+    }).sort((a, b) => b.売上 - a.売上);
+
+    setStoreSalesData(data);
   };
 
   const processServiceData = (bookings: any[]) => {
@@ -94,10 +132,10 @@ export default function ReportsPage() {
 
     bookings.forEach((booking) => {
       const status = booking.status === 'pending' ? '保留中' :
-                     booking.status === 'approved' ? '承認済み' :
-                     booking.status === 'rejected' ? '却下' :
-                     booking.status === 'completed' ? '完了' :
-                     booking.status === 'cancelled' ? 'キャンセル' : '不明';
+        booking.status === 'approved' ? '承認済み' :
+          booking.status === 'rejected' ? '却下' :
+            booking.status === 'completed' ? '完了' :
+              booking.status === 'cancelled' ? 'キャンセル' : '不明';
       statusCount[status] = (statusCount[status] || 0) + 1;
     });
 
@@ -115,7 +153,7 @@ export default function ReportsPage() {
       <div className="container mx-auto p-4 md:p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">レポート・分析</h1>
+            <h1 className="text-3xl font-bold">経営ダッシュボード</h1>
             <p className="text-muted-foreground mt-2">売上と予約の統計情報</p>
           </div>
           <Select value={period} onValueChange={setPeriod}>
@@ -136,69 +174,154 @@ export default function ReportsPage() {
             <p className="text-muted-foreground">読み込み中...</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>売上推移</CardTitle>
-                <CardDescription>日別の売上金額</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="売上" stroke="hsl(var(--primary))" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="md:col-span-2 shadow-subtle border-none">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold">売上推移</CardTitle>
+                  <CardDescription>日別の売上金額</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <ResponsiveContainer width="100%" height={350}>
+                    <LineChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.4} />
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tickFormatter={(value) => `¥${value.toLocaleString()}`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: 'var(--shadow-medium)'
+                        }}
+                        formatter={(value: number) => [`¥${value.toLocaleString()}`, '売上']}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="売上"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        dot={{ r: 4, fill: 'hsl(var(--background))', strokeWidth: 2, stroke: 'hsl(var(--primary))' }}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>サービス別予約数</CardTitle>
+              {storeSalesData.length > 0 && (
+                <Card className="md:col-span-2 shadow-subtle border-none">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-bold">店舗別売上</CardTitle>
+                    <CardDescription>店舗ごとの売上合計</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={storeSalesData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" opacity={0.4} />
+                        <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(value) => `¥${value.toLocaleString()}`} />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          width={100}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 500 }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: 'none',
+                            borderRadius: '8px',
+                            boxShadow: 'var(--shadow-medium)'
+                          }}
+                          formatter={(value: number) => [`¥${value.toLocaleString()}`, '売上']}
+                        />
+                        <Legend />
+                        <Bar dataKey="売上" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={32} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="shadow-subtle border-none">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold">サービス別予約数</CardTitle>
                   <CardDescription>人気のサービス</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={serviceData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
+                    <BarChart data={serviceData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.4} />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        interval={0}
+                        angle={-15}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis axisLine={false} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: 'var(--shadow-medium)'
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="予約数" fill="hsl(var(--primary))" />
+                      <Bar dataKey="予約数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>予約ステータス</CardTitle>
+              <Card className="shadow-subtle border-none">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold">予約ステータス</CardTitle>
                   <CardDescription>ステータス別の予約数</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={statusData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={(entry) => entry.name}
+                        innerRadius={60}
                         outerRadius={80}
-                        fill="hsl(var(--primary))"
+                        paddingAngle={5}
                         dataKey="value"
                       >
                         {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: 'none',
+                          borderRadius: '8px',
+                          boxShadow: 'var(--shadow-medium)'
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} />
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>

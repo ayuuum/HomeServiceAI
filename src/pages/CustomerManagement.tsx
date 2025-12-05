@@ -27,7 +27,7 @@ import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistory
 import { LineMessageModal } from "@/components/LineMessageModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash2, History, MessageCircle } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, History, MessageCircle, RefreshCw } from "lucide-react";
 import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
@@ -45,7 +45,7 @@ export default function CustomerManagement() {
     queryFn: async () => {
       const query = supabase
         .from("customers")
-        .select("*")
+        .select("*, bookings(id, total_price)")
         .order("created_at", { ascending: false });
 
       if (selectedStoreId) {
@@ -54,16 +54,24 @@ export default function CustomerManagement() {
 
       const { data, error } = await query;
       if (error) throw error;
-      
-      return (data || []).map((c) => ({
-        id: c.id,
-        storeId: c.store_id,
-        lineUserId: c.line_user_id || undefined,
-        name: c.name || "",
-        phone: c.phone || undefined,
-        email: c.email || undefined,
-        address: c.address || undefined,
-      }));
+
+      return (data || []).map((c) => {
+        const bookings = c.bookings || [];
+        const bookingCount = bookings.length;
+        const totalSpend = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+
+        return {
+          id: c.id,
+          storeId: c.store_id,
+          lineUserId: c.line_user_id || undefined,
+          name: c.name || "",
+          phone: c.phone || undefined,
+          email: c.email || undefined,
+          address: c.address || undefined,
+          bookingCount,
+          totalSpend,
+        };
+      });
     },
   });
 
@@ -106,6 +114,90 @@ export default function CustomerManagement() {
     setEditingCustomer(null);
   };
 
+  const [isFixing, setIsFixing] = useState(false);
+
+  const fixMissingCustomers = async () => {
+    try {
+      setIsFixing(true);
+      // 1. Get bookings with no customer_id
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*')
+        .is('customer_id', null);
+
+      if (bookingsError) throw bookingsError;
+
+      if (!bookings || bookings.length === 0) {
+        toast.info("修正が必要なデータはありませんでした");
+        return;
+      }
+
+      let fixedCount = 0;
+
+      for (const booking of bookings) {
+        // 2. Check if customer exists by name/email/phone
+        let customerId = null;
+
+        // Try to match by email or phone first if available
+        if (booking.customer_email || booking.customer_phone) {
+          const { data: existing } = await supabase
+            .from('customers')
+            .select('id')
+            .or(`email.eq.${booking.customer_email},phone.eq.${booking.customer_phone}`)
+            .maybeSingle();
+
+          if (existing) customerId = existing.id;
+        }
+
+        // If not found, try by name
+        if (!customerId && booking.customer_name) {
+          const { data: existingByName } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('name', booking.customer_name)
+            .maybeSingle();
+
+          if (existingByName) customerId = existingByName.id;
+        }
+
+        // 3. If still not found, create new customer
+        if (!customerId) {
+          const { data: newCustomer, error: createError } = await supabase
+            .from('customers')
+            .insert({
+              store_id: booking.store_id, // Use booking's store_id
+              name: booking.customer_name || '不明な顧客',
+              email: booking.customer_email,
+              phone: booking.customer_phone
+            })
+            .select('id')
+            .single();
+
+          if (!createError && newCustomer) {
+            customerId = newCustomer.id;
+          }
+        }
+
+        // 4. Update booking with customer_id
+        if (customerId) {
+          await supabase
+            .from('bookings')
+            .update({ customer_id: customerId })
+            .eq('id', booking.id);
+          fixedCount++;
+        }
+      }
+
+      toast.success(`${fixedCount}件のデータを修正しました`);
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    } catch (error) {
+      console.error("Fix error:", error);
+      toast.error("データの修正に失敗しました");
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
@@ -115,20 +207,24 @@ export default function CustomerManagement() {
           <p className="text-muted-foreground">顧客情報を一覧で管理できます</p>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm border border-border">
+        <div className="bg-card rounded-[10px] shadow-medium border-none">
           <div className="p-6 border-b border-border flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="relative flex-1 w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="relative flex-1 w-full sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
                 placeholder="名前または電話番号で検索..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-12 text-lg shadow-subtle border-primary/20 focus-visible:ring-primary"
               />
             </div>
-            <Button onClick={handleAdd} className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button onClick={handleAdd} className="w-full sm:w-auto btn-primary shadow-subtle h-12 px-6">
+              <Plus className="mr-2 h-5 w-5" />
               新規顧客登録
+            </Button>
+            <Button onClick={fixMissingCustomers} variant="outline" className="w-full sm:w-auto h-12 px-6" disabled={isFixing}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isFixing ? "animate-spin" : ""}`} />
+              データ同期
             </Button>
           </div>
 
@@ -143,28 +239,39 @@ export default function CustomerManagement() {
               </div>
             ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>名前</TableHead>
-                    <TableHead>電話番号</TableHead>
-                    <TableHead>メール</TableHead>
-                    <TableHead className="text-right">アクション</TableHead>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-transparent border-b border-border">
+                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
+                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
+                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
+                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px]">アクション</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">
+                    <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-16">
+                      <TableCell className="font-bold text-foreground px-6">
                         {customer.name || "-"}
                       </TableCell>
-                      <TableCell>{customer.phone || "-"}</TableCell>
-                      <TableCell>{customer.email || "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
+                      <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
+                      <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
+                      <TableCell className="text-right px-6 font-medium">
+                        {customer.bookingCount}回
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <span className="font-bold text-foreground tabular-nums text-lg">
+                          ¥{customer.totalSpend?.toLocaleString()}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <div className="flex gap-1 justify-end">
                           {customer.lineUserId && (
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                               onClick={() => setSendingLineMessage(customer)}
                               title="LINEメッセージを送る"
                             >
@@ -174,6 +281,7 @@ export default function CustomerManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                             onClick={() => setViewingBookingHistory(customer)}
                             title="予約履歴を見る"
                           >
@@ -182,6 +290,7 @@ export default function CustomerManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                             onClick={() => handleEdit(customer)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -189,6 +298,7 @@ export default function CustomerManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
                             onClick={() => setDeletingCustomer(customer)}
                           >
                             <Trash2 className="h-4 w-4" />

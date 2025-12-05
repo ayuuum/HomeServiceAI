@@ -15,11 +15,9 @@ import ProfilePage from "./pages/ProfilePage";
 import StoreManagement from "./pages/StoreManagement";
 import ReportsPage from "./pages/ReportsPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import StaffSchedulePage from "./pages/StaffSchedulePage";
 import CustomerManagement from "./pages/CustomerManagement";
-import StaffManagement from "./pages/StaffManagement";
-import LineMessageHistory from "./pages/LineMessageHistory";
 import LineChatHistory from "./pages/LineChatHistory";
+import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +32,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<BookingPage />} />
+              <Route path="/booking/:storeId" element={<BookingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -43,19 +42,9 @@ const App = () => (
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
-              <Route path="/admin/schedule" element={
-                <ProtectedRoute>
-                  <StaffSchedulePage />
-                </ProtectedRoute>
-              } />
               <Route path="/admin/customers" element={
                 <ProtectedRoute>
                   <CustomerManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/staffs" element={
-                <ProtectedRoute>
-                  <StaffManagement />
                 </ProtectedRoute>
               } />
               <Route path="/admin/stores" element={
@@ -68,14 +57,14 @@ const App = () => (
                   <ReportsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/admin/line-messages" element={
-                <ProtectedRoute>
-                  <LineMessageHistory />
-                </ProtectedRoute>
-              } />
               <Route path="/admin/line-chat" element={
                 <ProtectedRoute>
                   <LineChatHistory />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/calendar" element={
+                <ProtectedRoute>
+                  <CalendarPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/profile" element={
