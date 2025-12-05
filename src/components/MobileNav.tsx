@@ -32,8 +32,7 @@ export function MobileNav() {
       <SheetContent side="left" className="w-[280px]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            ServiceBook
+            <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col gap-3 mt-8">

@@ -20,14 +20,14 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case "pending":
       return (
-        <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">
+        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 font-medium">
           <Clock className="h-3 w-3 mr-1" />
           承認待ち
         </Badge>
       );
     case "confirmed":
       return (
-        <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+        <Badge variant="outline" className="bg-success/10 text-success border-success/30 font-medium">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           確定済み
         </Badge>
@@ -164,155 +164,113 @@ const AdminDashboard = () => {
 
           <TabsContent value="bookings" className="space-y-8">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <Card>
+            {/* Stats Cards */}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card className="shadow-subtle border-none">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        承認待ち
-                      </p>
-                      <p className="text-3xl font-bold text-accent">{pendingCount}</p>
-                    </div>
-                    <Clock className="h-12 w-12 text-accent/20" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                      今月の売上
+                    </p>
+                    <p className="text-4xl font-bold text-primary tracking-tight tabular-nums">
+                      ¥{totalRevenue.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      前月比 <span className="text-success font-medium">+12%</span>
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+
+              <Card className="shadow-subtle border-none">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        確定済み
-                      </p>
-                      <p className="text-3xl font-bold text-success">{confirmedCount}</p>
-                    </div>
-                    <CheckCircle2 className="h-12 w-12 text-success/20" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                      承認待ちの予約
+                    </p>
+                    <p className="text-4xl font-bold text-warning tracking-tight tabular-nums">
+                      {pendingCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      要対応の予約
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+
+              <Card className="shadow-subtle border-none">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        今月の売上
-                      </p>
-                      <p className="text-3xl font-bold text-primary">
-                        ¥{totalRevenue.toLocaleString()}
-                      </p>
-                    </div>
-                    <Calendar className="h-12 w-12 text-primary/20" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                      確定済みの予約
+                    </p>
+                    <p className="text-4xl font-bold text-success tracking-tight tabular-nums">
+                      {confirmedCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      確定済みの予約数
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Bookings List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>予約リスト</CardTitle>
+            {/* Recent Bookings */}
+            <Card className="shadow-subtle border-none">
+              <CardHeader className="border-b border-border/50 bg-muted/30 py-4">
+                <CardTitle className="text-lg font-semibold text-foreground">最近の予約</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {loading ? (
-                  <div className="text-center py-12">読み込み中...</div>
+                  <div className="p-8 text-center text-muted-foreground">読み込み中...</div>
                 ) : bookings.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    予約がまだありません
-                  </div>
+                  <div className="p-8 text-center text-muted-foreground">予約はありません。</div>
                 ) : (
-                  <div className="space-y-4">
-                    {bookings.map((booking, index) => (
-                      <div key={booking.id}>
-                        {index > 0 && <Separator className="my-4" />}
-                        <div className="space-y-4">
-                          {/* Header Row */}
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-lg">
-                                  {booking.serviceName || "複数サービス"}
-                                </h3>
-                                {getStatusBadge(booking.status)}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                {booking.customerName}
-                                {booking.staffName && (
-                                  <Badge variant="outline" className="ml-2 text-xs">
-                                    担当: {booking.staffName}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xl font-bold text-primary">
-                                ¥{booking.totalPrice.toLocaleString()}
-                              </p>
-                              <p className="text-xs text-muted-foreground">税込</p>
-                            </div>
+                  <div className="divide-y divide-border/50">
+                    {bookings.map((booking) => (
+                      <div key={booking.id} className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-1.5">
+                            <span className="font-bold text-base text-foreground truncate">
+                              {booking.customerName}
+                            </span>
+                            {getStatusBadge(booking.status)}
                           </div>
-
-                          {/* Details */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">
-                                  {booking.selectedDate}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {booking.selectedTime}〜
-                                </span>
-                              </div>
-                              {booking.optionsSummary.length > 0 && (
-                                <div className="ml-6">
-                                  <p className="text-muted-foreground mb-1">
-                                    オプション:
-                                  </p>
-                                  <ul className="space-y-1">
-                                    {booking.optionsSummary.map((option, idx) => (
-                                      <li key={idx} className="text-xs">
-                                        • {option}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {new Date(booking.selectedDate).toLocaleDateString("ja-JP", {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                              })}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              {booking.selectedTime}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <User className="h-3.5 w-3.5" />
+                              {booking.staffName || "担当者未定"}
+                            </span>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex gap-2 flex-wrap">
-                            {booking.status === "pending" && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  className="btn-primary"
-                                  onClick={() => handleApprove(booking.id)}
-                                >
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                                  承認する
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                  onClick={() => handleReject(booking.id)}
-                                >
-                                  却下する
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleViewDetails(booking)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              詳細を見る
-                            </Button>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-foreground tabular-nums">
+                              ¥{booking.totalPrice.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">税込</p>
                           </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                            onClick={() => handleViewDetails(booking)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}

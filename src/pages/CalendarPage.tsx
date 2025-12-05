@@ -128,38 +128,39 @@ export default function CalendarPage() {
             <div className="container mx-auto p-4 md:p-6">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-2">
-                            <CalendarIcon className="h-8 w-8" />
+                        <h1 className="text-3xl font-bold flex items-center gap-2 text-foreground">
+                            <CalendarIcon className="h-8 w-8 text-primary" />
                             予約カレンダー
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             月ごとの予約状況を確認できます
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={prevMonth}>
-                            <ChevronLeft className="h-4 w-4" />
+                    <div className="flex items-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
+                        <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted">
+                            <ChevronLeft className="h-5 w-5" />
                         </Button>
-                        <h2 className="text-xl font-semibold min-w-[140px] text-center">
+                        <h2 className="text-xl font-bold min-w-[160px] text-center tabular-nums">
                             {format(currentDate, "yyyy年 M月", { locale: ja })}
                         </h2>
-                        <Button variant="outline" onClick={nextMonth}>
-                            <ChevronRight className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted">
+                            <ChevronRight className="h-5 w-5" />
                         </Button>
-                        <Button variant="ghost" onClick={goToToday} className="ml-2">
+                        <div className="w-px h-6 bg-border mx-1" />
+                        <Button variant="ghost" onClick={goToToday} className="text-sm font-medium hover:bg-muted px-3">
                             今日
                         </Button>
                     </div>
                 </div>
 
-                <Card>
+                <Card className="shadow-medium border-none overflow-hidden">
                     <CardContent className="p-0">
                         {/* Weekday Headers */}
-                        <div className="grid grid-cols-7 border-b">
+                        <div className="grid grid-cols-7 border-b bg-muted/40">
                             {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
                                 <div
                                     key={day}
-                                    className={`p-4 text-center font-medium ${index === 0 ? "text-red-500" : index === 6 ? "text-blue-500" : ""
+                                    className={`py-3 text-center font-bold text-sm ${index === 0 ? "text-destructive" : index === 6 ? "text-primary" : "text-muted-foreground"
                                         }`}
                                 >
                                     {day}
@@ -168,7 +169,7 @@ export default function CalendarPage() {
                         </div>
 
                         {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 auto-rows-fr">
+                        <div className="grid grid-cols-7 auto-rows-fr bg-border gap-px">
                             {days.map((day, dayIdx) => {
                                 const dayBookings = getBookingsForDay(day);
                                 const isToday = isSameDay(day, new Date());
@@ -177,41 +178,49 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={day.toString()}
-                                        className={`min-h-[120px] p-2 border-b border-r relative transition-colors hover:bg-muted/30 ${!isCurrentMonth ? "bg-muted/10 text-muted-foreground" : ""
-                                            } ${isToday ? "bg-accent/5" : ""}`}
+                                        className={`min-h-[140px] p-2 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
+                                            } ${isToday ? "ring-2 ring-inset ring-primary/50 bg-primary/5" : ""}`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <span
-                                                className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full ${isToday
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "text-muted-foreground"
+                                                className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full ${isToday
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground/80"
                                                     }`}
                                             >
                                                 {format(day, "d")}
                                             </span>
                                             {dayBookings.length > 0 && (
-                                                <Badge variant="secondary" className="text-xs">
+                                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-muted text-muted-foreground font-normal">
                                                     {dayBookings.length}件
                                                 </Badge>
                                             )}
                                         </div>
 
-                                        <div className="space-y-1">
+                                        <div className="space-y-1.5">
                                             {dayBookings.map((booking) => (
                                                 <button
                                                     key={booking.id}
                                                     onClick={() => handleBookingClick(booking)}
-                                                    className={`w-full text-left text-xs p-1.5 rounded border transition-colors truncate ${booking.status === "confirmed"
-                                                        ? "bg-success text-success-foreground border-success hover:bg-success/90"
+                                                    className={`w-full text-left p-2 rounded-[6px] border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group ${booking.status === "confirmed"
+                                                        ? "bg-success/10 text-success-foreground border-success/20 hover:bg-success/20"
                                                         : booking.status === "cancelled"
-                                                            ? "bg-muted text-muted-foreground border-border hover:bg-muted/80 line-through opacity-70"
-                                                            : "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                                                            ? "bg-muted text-muted-foreground border-border opacity-60"
+                                                            : "bg-warning/10 text-warning-foreground border-warning/20 hover:bg-warning/20"
                                                         }`}
                                                 >
-                                                    <div className="font-medium truncate">
-                                                        {booking.selectedTime} {booking.customerName}
+                                                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                        <span className={`font-bold text-xs tabular-nums opacity-90 ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : ""}`}>
+                                                            {booking.selectedTime}
+                                                        </span>
+                                                        {booking.status === "pending" && (
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                                                        )}
                                                     </div>
-                                                    <div className="truncate opacity-80 text-[10px]">
+                                                    <div className={`font-bold text-xs truncate leading-tight mb-0.5 ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : ""}`}>
+                                                        {booking.customerName}
+                                                    </div>
+                                                    <div className={`truncate text-[10px] opacity-80 leading-tight ${booking.status === "confirmed" ? "text-success/80" : booking.status === "pending" ? "text-warning/80" : ""}`}>
                                                         {booking.serviceName}
                                                     </div>
                                                 </button>

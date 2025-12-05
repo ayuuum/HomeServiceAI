@@ -298,23 +298,25 @@ const BookingPage = () => {
 
         if (existingCustomer) {
           customerId = existingCustomer.id;
-        } else {
-          // Create new customer
-          const { data: newCustomer, error: customerError } = await supabase
-            .from('customers')
-            .insert({
-              store_id: targetStoreId,
-              name: customerName.trim(),
-              email: customerEmail.trim() || null,
-              phone: customerPhone.trim() || null,
-              line_user_id: lineUserId || null,
-            })
-            .select('id')
-            .single();
+        }
+      }
 
-          if (!customerError && newCustomer) {
-            customerId = newCustomer.id;
-          }
+      // If no existing customer found (or no contact info provided), create new one
+      if (!customerId) {
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            store_id: targetStoreId,
+            name: customerName.trim(),
+            email: customerEmail.trim() || null,
+            phone: customerPhone.trim() || null,
+            line_user_id: lineUserId || null,
+          })
+          .select('id')
+          .single();
+
+        if (!customerError && newCustomer) {
+          customerId = newCustomer.id;
         }
       }
 
@@ -431,8 +433,7 @@ const BookingPage = () => {
           <div className="container max-w-6xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold">ServiceBook</h1>
+                <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
               </div>
               <Link
                 to="/admin"
@@ -447,8 +448,8 @@ const BookingPage = () => {
         {/* Hero Section */}
         <section className="bg-gradient-to-b from-primary/5 to-transparent py-12">
           <div className="container max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3 text-center">
-              プロのサービスを<br className="md:hidden" />簡単予約
+            <h2 className="text-4xl md:text-6xl font-bold mb-3 text-center text-primary">
+              ハウクリProで<br className="md:hidden" />簡単予約
             </h2>
             <p className="text-center text-muted-foreground max-w-2xl mx-auto">
               サービスを選んで、日時を選ぶだけ。<br />
@@ -461,49 +462,59 @@ const BookingPage = () => {
           {/* Section 1: Service Selection */}
           <section>
             <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="h-5 w-5 text-primary" />
               <h3 className="text-2xl font-bold">サービスを選ぶ</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
               複数のサービスを同時に選択できます。数量を調整してカートに追加してください。
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {allServices.map((service) => {
                 const selectedService = selectedServices.find(s => s.serviceId === service.id);
                 const quantity = selectedService?.quantity || 0;
 
                 return (
-                  <Card key={service.id} className={quantity > 0 ? "border-primary border-2" : ""}>
-                    <CardContent className="p-4">
-                      <div className="flex gap-3 mb-3">
-                        <img
-                          src={service.imageUrl}
-                          alt={service.title}
-                          className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold mb-1">{service.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                  <Card key={service.id} className={`overflow-hidden transition-all duration-300 ${quantity > 0 ? "ring-2 ring-primary border-transparent shadow-medium" : "border-border shadow-subtle hover:shadow-medium"}`}>
+                    <div className="aspect-video relative overflow-hidden bg-muted">
+                      <img
+                        src={service.imageUrl}
+                        alt={service.title}
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      />
+                    </div>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold text-foreground mb-2 leading-tight">{service.title}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                             {service.description}
                           </p>
-                          <p className="text-lg font-bold text-primary">
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm text-muted-foreground mb-0.5">基本料金</p>
+                          <p className="text-xl font-bold text-foreground tabular-nums">
                             ¥{service.basePrice.toLocaleString()}
                           </p>
                         </div>
                       </div>
 
-                      <QuantitySelector
-                        quantity={quantity}
-                        onQuantityChange={(newQty) => handleServiceQuantityChange(service.id, newQty)}
-                        min={0}
-                      />
-
-                      {quantity > 0 && (
-                        <Badge className="mt-2 bg-primary/10 text-primary border-primary/30">
-                          カートに追加済み
-                        </Badge>
-                      )}
+                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                            {service.duration}分
+                          </span>
+                          {quantity > 0 && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
+                              選択中
+                            </Badge>
+                          )}
+                        </div>
+                        <QuantitySelector
+                          quantity={quantity}
+                          onQuantityChange={(newQty) => handleServiceQuantityChange(service.id, newQty)}
+                          min={0}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 );

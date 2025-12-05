@@ -39,8 +39,7 @@ export function AdminHeader() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MobileNav />
-          <Building2 className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold hidden sm:block">管理画面</h1>
+          <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 ml-6">

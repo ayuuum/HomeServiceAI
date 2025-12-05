@@ -178,62 +178,66 @@ const AdminServiceManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
-            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video relative overflow-hidden bg-muted">
+            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 rounded-[10px] shadow-medium border-none group">
+              <div className="h-48 relative overflow-hidden bg-muted">
                 <img
                   src={service.imageUrl}
                   alt={service.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-              </div>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-lg">{service.title}</CardTitle>
+                <div className="absolute top-3 right-3">
                   {getCategoryBadge(service.category)}
                 </div>
+              </div>
+              <CardHeader className="pb-3 pt-4">
+                <CardTitle className="text-xl font-bold line-clamp-1">{service.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
                   {service.description}
                 </p>
 
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
+                <div className="flex items-end justify-between">
+                  <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/30 px-2 py-1 rounded">
                     <Clock className="h-4 w-4" />
-                    <span>{service.duration}分</span>
+                    <span className="text-sm font-medium">{service.duration}分</span>
                   </div>
-                  <div className="flex items-center gap-1 font-semibold text-primary">
-                    <DollarSign className="h-4 w-4" />
-                    <span>¥{service.basePrice.toLocaleString()}</span>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground mb-0.5">基本料金</p>
+                    <div className="flex items-center gap-0.5 font-bold text-primary leading-none">
+                      <span className="text-lg">¥</span>
+                      <span className="text-2xl tabular-nums">{service.basePrice.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border/50">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="col-span-2 h-9 border-primary/20 hover:bg-primary/5 hover:text-primary"
                     onClick={() => handleEditService(service)}
                   >
-                    <Edit className="h-3 w-3 mr-1" />
+                    <Edit className="h-4 w-4 mr-1.5" />
                     編集
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="col-span-1 h-9 px-0"
                     onClick={() => handleManageOptions(service)}
+                    title="オプション管理"
                   >
-                    <ListPlus className="h-3 w-3 mr-1" />
-                    オプション
+                    <ListPlus className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    className="col-span-1 h-9 px-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     onClick={() => handleDeleteClick(service.id)}
+                    title="削除"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>

@@ -114,55 +114,72 @@ export default function StoreManagement() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store) => (
-              <Card key={store.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
+              <Card key={store.id} className="hover:shadow-medium transition-all duration-300 border-none shadow-subtle overflow-hidden group">
+                <div className="h-32 bg-muted relative">
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20">
+                    <Building2 className="h-12 w-12" />
+                  </div>
+                  {store.is_hq && (
+                    <Badge className="absolute top-3 right-3 shadow-sm" variant="default">
+                      本部
+                    </Badge>
+                  )}
+                </div>
+                <CardHeader className="pb-2 pt-4">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg font-bold truncate pr-2">
                         {store.name}
                       </CardTitle>
-                      {store.is_hq && (
-                        <Badge variant="secondary" className="mt-2">
-                          本部
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setSelectedStore(store);
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setStoreToDelete(store);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ID: <span className="font-mono">{store.id.slice(0, 8)}...</span>
+                      </p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="space-y-1">
-                    {store.line_channel_token && (
-                      <p className="text-xs">LINE連携: 設定済み</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      作成日: {new Date(store.created_at).toLocaleDateString('ja-JP')}
-                    </p>
-                  </CardDescription>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">LINE連携</span>
+                      <Badge variant={store.line_channel_token ? "outline" : "secondary"} className={store.line_channel_token ? "text-success border-success/30 bg-success/5" : "text-muted-foreground"}>
+                        {store.line_channel_token ? "設定済み" : "未設定"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">登録日</span>
+                      <span className="font-medium tabular-nums">
+                        {new Date(store.created_at).toLocaleDateString('ja-JP')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-6 pt-4 border-t border-border/50">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 h-9"
+                      onClick={() => {
+                        setSelectedStore(store);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      編集
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setStoreToDelete(store);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
