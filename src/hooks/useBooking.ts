@@ -466,6 +466,31 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         return allOptions.filter(o => o.serviceId === serviceId);
     };
 
+    // Apply AI recommendation
+    const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
+        // Clear current selections
+        setSelectedServices([]);
+        setSelectedOptions([]);
+
+        // Add recommended services
+        serviceIds.forEach(serviceId => {
+            const service = allServices.find(s => s.id === serviceId);
+            if (service) {
+                setSelectedServices(prev => [...prev, { serviceId, quantity: 1, service }]);
+            }
+        });
+
+        // Add recommended options after a short delay to ensure options are loaded
+        setTimeout(() => {
+            optionIds.forEach(optionId => {
+                const option = allOptions.find(o => o.id === optionId);
+                if (option) {
+                    setSelectedOptions(prev => [...prev, { optionId, quantity: 1, option }]);
+                }
+            });
+        }, 500);
+    };
+
     return {
         allServices,
         selectedServices,
@@ -497,5 +522,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         handleRemovePhoto,
         submitBooking,
         getOptionsForService,
+        applyRecommendation,
     };
 };
