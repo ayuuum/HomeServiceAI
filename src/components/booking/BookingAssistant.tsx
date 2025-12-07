@@ -156,18 +156,47 @@ export const BookingAssistant = ({
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0, opacity: 0, rotate: -180 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8"
+            transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+            className="fixed bottom-28 right-4 z-50 md:bottom-10 md:right-10"
           >
-            <Button
+            {/* Pulse ring effect */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-primary/30"
+              animate={{ 
+                scale: [1, 1.6, 2],
+                opacity: [0.5, 0.2, 0]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeOut"
+              }}
+              style={{ width: '100%', height: '100%' }}
+            />
+            <motion.button
               onClick={() => setIsOpen(true)}
-              size="lg"
-              className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90"
+              className="relative rounded-full h-18 w-18 md:h-20 md:w-20 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center hover:shadow-primary/40 transition-all duration-300"
+              style={{ width: '4.5rem', height: '4.5rem' }}
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Sparkles className="h-6 w-6" />
-            </Button>
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 10, -10, 0]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  repeatDelay: 2 
+                }}
+              >
+                <Sparkles className="h-8 w-8 md:h-10 md:w-10" />
+              </motion.div>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
