@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useBooking } from "@/hooks/useBooking";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
@@ -6,6 +6,7 @@ import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSe
 import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
+import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 
 const BookingPage = () => {
   const { storeId } = useParams();
@@ -52,6 +53,27 @@ const BookingPage = () => {
     serviceName: string;
     totalPrice: number;
   } | null>(null);
+
+  // Section refs for scroll navigation
+  const serviceRef = useRef<HTMLDivElement>(null);
+  const dateTimeRef = useRef<HTMLDivElement>(null);
+  const customerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate current step based on form state
+  const currentStep = useMemo(() => {
+    if (!selectedServices.length) return 1;
+    if (!selectedDate || !selectedTime || !hasParking) return 2;
+    if (!customerName) return 3;
+    return 4;
+  }, [selectedServices.length, selectedDate, selectedTime, hasParking, customerName]);
+
+  const handleStepClick = (step: number) => {
+    const refs = [serviceRef, dateTimeRef, customerRef];
+    const targetRef = refs[step - 1];
+    if (targetRef?.current) {
+      targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const handleSubmit = async () => {
     const result = await submitBooking();
@@ -111,44 +133,55 @@ const BookingPage = () => {
           </div>
         </section>
 
+        {/* Step Indicator */}
+        <div className="sticky top-[73px] z-30 bg-background/95 backdrop-blur-sm border-b border-border mb-8">
+          <BookingStepIndicator currentStep={currentStep} onStepClick={handleStepClick} />
+        </div>
+
         <div className="container max-w-4xl mx-auto px-4 py-8 space-y-12">
-          <BookingServiceSelection
-            allServices={allServices}
-            selectedServices={selectedServices}
-            allOptions={allOptions}
-            selectedOptions={selectedOptions}
-            lineUserId={lineUserId}
-            onServiceQuantityChange={handleServiceQuantityChange}
-            onOptionChange={handleOptionChange}
-            onOptionQuantityChange={handleOptionQuantityChange}
-            getOptionsForService={getOptionsForService}
-          />
+          <div ref={serviceRef}>
+            <BookingServiceSelection
+              allServices={allServices}
+              selectedServices={selectedServices}
+              allOptions={allOptions}
+              selectedOptions={selectedOptions}
+              lineUserId={lineUserId}
+              onServiceQuantityChange={handleServiceQuantityChange}
+              onOptionChange={handleOptionChange}
+              onOptionQuantityChange={handleOptionQuantityChange}
+              getOptionsForService={getOptionsForService}
+            />
+          </div>
 
           {selectedServices.length > 0 && (
-            <BookingDateTimeSelection
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              selectedTime={selectedTime}
-              onTimeSelect={setSelectedTime}
-              hasParking={hasParking}
-              onParkingChange={setHasParking}
-            />
+            <div ref={dateTimeRef}>
+              <BookingDateTimeSelection
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                selectedTime={selectedTime}
+                onTimeSelect={setSelectedTime}
+                hasParking={hasParking}
+                onParkingChange={setHasParking}
+              />
+            </div>
           )}
 
           {selectedServices.length > 0 && selectedDate && selectedTime && (
-            <BookingCustomerForm
-              customerName={customerName}
-              onNameChange={setCustomerName}
-              customerEmail={customerEmail}
-              onEmailChange={setCustomerEmail}
-              customerPhone={customerPhone}
-              onPhoneChange={setCustomerPhone}
-              notes={notes}
-              onNotesChange={setNotes}
-              photos={photos}
-              onFileSelect={handleFileSelect}
-              onRemovePhoto={handleRemovePhoto}
-            />
+            <div ref={customerRef}>
+              <BookingCustomerForm
+                customerName={customerName}
+                onNameChange={setCustomerName}
+                customerEmail={customerEmail}
+                onEmailChange={setCustomerEmail}
+                customerPhone={customerPhone}
+                onPhoneChange={setCustomerPhone}
+                notes={notes}
+                onNotesChange={setNotes}
+                photos={photos}
+                onFileSelect={handleFileSelect}
+                onRemovePhoto={handleRemovePhoto}
+              />
+            </div>
           )}
         </div>
 
