@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -33,7 +33,7 @@ export const BookingConfirmationModal = ({
       <DialogContent className="max-w-md">
         <DialogHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center animate-in zoom-in duration-300">
-            <CheckCircle2 className="h-10 w-10 text-success" />
+            <Icon name="check_circle" size={48} className="text-success" />
           </div>
           <DialogTitle className="text-2xl">
             ご予約ありがとうございます！

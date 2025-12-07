@@ -12,7 +12,7 @@ import {
     subMonths,
 } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +129,7 @@ export default function CalendarPage() {
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold flex items-center gap-2 text-foreground">
-                            <CalendarIcon className="h-8 w-8 text-primary" />
+                            <Icon name="calendar_today" size={32} className="text-primary" />
                             予約カレンダー
                         </h1>
                         <p className="text-muted-foreground mt-1">
@@ -138,13 +138,13 @@ export default function CalendarPage() {
                     </div>
                     <div className="flex items-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
                         <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted">
-                            <ChevronLeft className="h-5 w-5" />
+                            <Icon name="chevron_left" size={20} />
                         </Button>
                         <h2 className="text-xl font-bold min-w-[160px] text-center tabular-nums">
                             {format(currentDate, "yyyy年 M月", { locale: ja })}
                         </h2>
                         <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted">
-                            <ChevronRight className="h-5 w-5" />
+                            <Icon name="chevron_right" size={20} />
                         </Button>
                         <div className="w-px h-6 bg-border mx-1" />
                         <Button variant="ghost" onClick={goToToday} className="text-sm font-medium hover:bg-muted px-3">

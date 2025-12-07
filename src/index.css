@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
@@ -13,147 +13,142 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Haukuri Pro Design System - Light Mode */
+    /* Design System V3 - Strict Rules */
 
     /* Backgrounds */
-    --background: 210 14% 98%;
-    /* #F8F9FA */
-    --foreground: 210 3% 12%;
-    /* #1D1E1F */
+    --background: 210 20% 98%;
+    /* #F8FAFC (Gray 50) */
+    --foreground: 222 47% 11%;
+    /* #0F172A (Gray 900) */
 
     --card: 0 0% 100%;
     /* #FFFFFF */
-    --card-foreground: 210 3% 12%;
+    --card-foreground: 222 47% 11%;
+    /* #0F172A */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 3% 12%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary Blue */
-    --primary: 219 70% 53%;
-    /* #2D6CDF */
+    /* Brand Colors */
+    --primary: 224 64% 33%;
+    /* #1E3A8A (Navy) */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 222 73% 43%;
-    /* #1E4FBF */
-    --primary-light: 216 100% 95%;
-    /* #E8F1FF */
+    --primary-hover: 221 83% 53%;
+    /* #2563EB */
+    --primary-light: 217 91% 60%;
+    /* #3B82F6 */
 
     /* Secondary / Muted */
-    --secondary: 210 14% 96%;
-    /* Light Grey for secondary actions */
-    --secondary-foreground: 215 14% 34%;
-    /* #4B5563 */
+    --secondary: 210 40% 96%;
+    /* #F1F5F9 (Gray 100) */
+    --secondary-foreground: 215 25% 27%;
+    /* #334155 (Gray 700) */
 
-    --muted: 210 14% 96%;
-    --muted-foreground: 215 14% 34%;
-    /* #4B5563 - Text Secondary */
+    --muted: 210 40% 96%;
+    /* #F1F5F9 */
+    --muted-foreground: 215 16% 47%;
+    /* #64748B (Gray 500) */
 
-    --accent: 216 100% 95%;
-    /* Primary Light */
-    --accent-foreground: 219 70% 53%;
+    --accent: 199 89% 48%;
+    /* #0EA5E9 (Blue) */
+    --accent-foreground: 0 0% 100%;
 
-    /* Functional Colors */
-    --success: 149 58% 43%;
-    /* #2EAD6B */
+    /* Status Colors (Strict: Blue/Red/Gray only) */
+    --success: 224 64% 33%;
+    /* Mapped to Primary (Navy) for "Confirmed" */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 55%;
-    /* #F6A723 */
+    --warning: 215 16% 47%;
+    /* Mapped to Gray 500 for "Pending" (visualized as gray/blue) */
     --warning-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 59%;
-    /* #E14D4D */
+    --destructive: 0 72% 51%;
+    /* #DC2626 (Deep Red) */
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 210 14% 91%;
-    /* #E5E8EB */
-    --input: 210 14% 91%;
-    --ring: 219 70% 53%;
+    --border: 212 27% 84%;
+    /* #CBD5E1 (Gray 300) */
+    --input: 212 27% 84%;
+    --ring: 217 91% 60%;
+    /* #3B82F6 */
 
-    --radius: 0.5rem;
-    /* 8px */
+    --radius: 0.625rem;
+    /* 10px */
 
-    /* Shadows */
-    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* Shadows - Removed as per user request */
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-subtle: none;
+    --shadow-medium: none;
 
-    /* Chart Colors */
-    --chart-1: 219 70% 53%;
-    /* Primary Blue */
-    --chart-2: 149 58% 43%;
-    /* Success Green */
-    --chart-3: 38 92% 55%;
-    /* Warning Orange */
-    --chart-4: 215 14% 34%;
-    /* Text Secondary */
-    --chart-5: 210 6% 63%;
-    /* Subtitle Gray */
-
-    /* Sidebar (if used) */
+    /* Sidebar */
     --sidebar: 0 0% 100%;
-    --sidebar-foreground: 210 3% 12%;
-    --sidebar-primary: 219 70% 53%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 224 64% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 14% 96%;
-    --sidebar-accent-foreground: 219 70% 53%;
-    --sidebar-border: 210 14% 91%;
-    --sidebar-ring: 219 70% 53%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 224 64% 33%;
+    --sidebar-border: 212 27% 84%;
+    --sidebar-ring: 217 91% 60%;
 
-    --font-sans: 'Inter', sans-serif;
+    --font-sans: 'Noto Sans JP', 'Inter', sans-serif;
   }
 
   .dark {
-    /* Dark Mode - Mapped to similar logic but dark */
+    /* Dark Mode - Mapped to Slate/Gray palette */
     --background: 222 47% 11%;
-    /* Deep Blue/Grey */
+    /* #0F172A */
     --foreground: 210 40% 98%;
+    /* #F8FAFC */
 
-    --card: 222 47% 11%;
+    --card: 217 33% 17%;
+    /* #1E293B */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --primary-hover: 217 91% 50%;
+    /* #3B82F6 */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 221 83% 53%;
 
-    --secondary: 217 32% 17%;
+    --secondary: 215 25% 27%;
+    /* #334155 */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 32% 17%;
+    --muted: 215 25% 27%;
     --muted-foreground: 215 20% 65%;
+    /* #94A3B8 */
 
-    --accent: 217 32% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-
-    --success: 149 58% 43%;
+    /* Status Colors */
+    --success: 217 91% 60%;
+    /* Blue */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 55%;
+    --warning: 215 20% 65%;
+    /* Gray */
     --warning-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 224 76% 48%;
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    --ring: 217 91% 60%;
 
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-
-    --sidebar: 222 47% 11%;
+    --sidebar: 217 33% 17%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 17%;
+    --sidebar-accent: 215 25% 27%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 17%;
+    --sidebar-border: 215 25% 27%;
     --sidebar-ring: 217 91% 60%;
   }
 }

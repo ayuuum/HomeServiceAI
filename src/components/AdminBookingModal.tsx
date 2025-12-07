@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon'; // Added this import
+
 import { useStore } from '@/contexts/StoreContext';
 import { QuantitySelector } from './QuantitySelector';
 import { OptionCheckbox } from './OptionCheckbox';
@@ -110,12 +111,12 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
 
   const calculateTotal = () => {
     if (!selectedService) return 0;
-    
+
     const servicePrice = selectedService.base_price * serviceQuantity;
     const optionsPrice = selectedOptions.reduce((sum, opt) => {
       return sum + (opt.price * opt.quantity);
     }, 0);
-    
+
     return servicePrice + optionsPrice;
   };
 
@@ -264,8 +265,8 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
           {selectedService && (
             <>
               <QuantitySelector
-                quantity={serviceQuantity}
-                onQuantityChange={setServiceQuantity}
+                value={serviceQuantity}
+                onChange={setServiceQuantity}
               />
 
               {selectedService.service_options?.length > 0 && (
@@ -409,7 +410,7 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
             <Button type="submit" disabled={isLoading || !selectedServiceId}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
                   作成中...
                 </>
               ) : (

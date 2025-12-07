@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 interface StickyFooterProps {
   totalPrice: number;
@@ -10,12 +10,12 @@ interface StickyFooterProps {
   buttonText?: string;
 }
 
-export const StickyFooter = ({ 
-  totalPrice, 
+export const StickyFooter = ({
+  totalPrice,
   discount = 0,
   discountRate = 0,
-  onNext, 
-  buttonText = "次へ進む" 
+  onNext,
+  buttonText = "次へ進む"
 }: StickyFooterProps) => {
   return (
     <div className="sticky-footer">
@@ -38,13 +38,13 @@ export const StickyFooter = ({
               <span className="text-sm font-normal text-muted-foreground ml-1">税込</span>
             </p>
           </div>
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             onClick={onNext}
             className="btn-primary gap-2"
           >
             {buttonText}
-            <ArrowRight className="h-4 w-4" />
+            <Icon name="arrow_forward" size={16} />
           </Button>
         </div>
       </div>

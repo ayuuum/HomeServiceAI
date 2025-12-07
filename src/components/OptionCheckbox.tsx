@@ -11,12 +11,12 @@ interface OptionCheckboxProps {
   onQuantityChange: (quantity: number) => void;
 }
 
-export const OptionCheckbox = ({ 
-  option, 
-  checked, 
+export const OptionCheckbox = ({
+  option,
+  checked,
   quantity,
   onChange,
-  onQuantityChange 
+  onQuantityChange
 }: OptionCheckboxProps) => {
   return (
     <div className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
@@ -46,14 +46,14 @@ export const OptionCheckbox = ({
           </p>
         </div>
       </div>
-      
+
       {checked && (
         <div className="mt-3 ml-8">
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground whitespace-nowrap">数量:</span>
             <QuantitySelector
-              quantity={quantity}
-              onQuantityChange={onQuantityChange}
+              value={quantity}
+              onChange={onQuantityChange}
             />
           </div>
         </div>

@@ -70,23 +70,22 @@ export default {
 			},
 			fontFamily: {
 				sans: [
+					'Noto Sans JP',
 					'Inter',
-					'ui-sans-serif',
-					'system-ui',
 					'sans-serif'
 				],
 			},
 			boxShadow: {
 				sm: 'var(--shadow-sm)',
-				DEFAULT: 'var(--shadow-subtle)',
-				medium: 'var(--shadow-medium)',
+				md: 'var(--shadow-md)',
 				lg: 'var(--shadow-lg)',
-				subtle: 'var(--shadow-subtle)'
+				DEFAULT: 'var(--shadow-md)',
 			},
 			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				lg: '1rem', // 16px (Card/Modal)
+				md: '0.5rem', // 8px (Input/Button)
+				sm: '0.25rem', // 4px
+				DEFAULT: 'var(--radius)', // 10px (Base)
 			},
 			keyframes: {
 				'accordion-down': {

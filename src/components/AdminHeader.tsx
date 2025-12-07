@@ -1,6 +1,4 @@
-
-import { Building2, LayoutDashboard, Users, MessageCircle, ExternalLink, LogOut, Store, FileText, Sparkles, Calendar } from "lucide-react";
-
+import { Icon } from "@/components/ui/icon";
 import {
   Select,
   SelectContent,
@@ -41,7 +39,7 @@ export function AdminHeader() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MobileNav />
-          
+
           <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
 
           {/* Desktop Navigation */}
@@ -59,7 +57,7 @@ export function AdminHeader() {
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
               activeClassName="bg-muted text-primary"
             >
-              <Users className="h-4 w-4" />
+              <Icon name="group" size={16} />
               顧客管理
             </NavLink>
             <NavLink
@@ -67,7 +65,7 @@ export function AdminHeader() {
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
               activeClassName="bg-muted text-primary"
             >
-              <Calendar className="h-4 w-4" />
+              <Icon name="calendar_today" size={16} />
               カレンダー
             </NavLink>
             <NavLink
@@ -75,7 +73,7 @@ export function AdminHeader() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
               activeClassName="bg-primary text-primary-foreground"
             >
-              <FileText className="h-4 w-4" />
+              <Icon name="description" size={16} />
               経営管理
             </NavLink>
             <NavLink
@@ -83,7 +81,7 @@ export function AdminHeader() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
               activeClassName="bg-primary text-primary-foreground"
             >
-              <Store className="h-4 w-4" />
+              <Icon name="store" size={16} />
               店舗管理
             </NavLink>
             <NavLink
@@ -91,14 +89,14 @@ export function AdminHeader() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
               activeClassName="bg-primary text-primary-foreground"
             >
-              <MessageCircle className="h-4 w-4" />
+              <Icon name="chat" size={16} />
               LINE
             </NavLink>
             <NavLink
               to="/"
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
             >
-              <Sparkles className="h-4 w-4" />
+              <Icon name="auto_awesome" size={16} />
               予約ページ
             </NavLink>
           </nav>
@@ -126,7 +124,7 @@ export function AdminHeader() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="icon" className="hidden sm:flex">
-                <LogOut className="h-4 w-4" />
+                <Icon name="logout" size={16} />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

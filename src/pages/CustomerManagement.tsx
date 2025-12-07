@@ -27,7 +27,7 @@ import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistory
 import { LineMessageModal } from "@/components/LineMessageModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
-import { Search, Plus, Pencil, Trash2, History, MessageCircle, RefreshCw } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
@@ -210,7 +210,7 @@ export default function CustomerManagement() {
         <div className="bg-card rounded-[10px] shadow-medium border-none">
           <div className="p-6 border-b border-border flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="relative flex-1 w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Icon name="search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="名前または電話番号で検索..."
                 value={searchTerm}
@@ -219,11 +219,11 @@ export default function CustomerManagement() {
               />
             </div>
             <Button onClick={handleAdd} className="w-full sm:w-auto btn-primary shadow-subtle h-12 px-6">
-              <Plus className="mr-2 h-5 w-5" />
+              <Icon name="add" size={20} className="mr-2" />
               新規顧客登録
             </Button>
             <Button onClick={fixMissingCustomers} variant="outline" className="w-full sm:w-auto h-12 px-6" disabled={isFixing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isFixing ? "animate-spin" : ""}`} />
+              <Icon name="sync" size={16} className={`mr-2 ${isFixing ? "animate-spin" : ""}`} />
               データ同期
             </Button>
           </div>
@@ -275,7 +275,7 @@ export default function CustomerManagement() {
                               onClick={() => setSendingLineMessage(customer)}
                               title="LINEメッセージを送る"
                             >
-                              <MessageCircle className="h-4 w-4" />
+                              <Icon name="chat" size={16} />
                             </Button>
                           )}
                           <Button
@@ -285,7 +285,7 @@ export default function CustomerManagement() {
                             onClick={() => setViewingBookingHistory(customer)}
                             title="予約履歴を見る"
                           >
-                            <History className="h-4 w-4" />
+                            <Icon name="history" size={16} />
                           </Button>
                           <Button
                             variant="ghost"
@@ -293,7 +293,7 @@ export default function CustomerManagement() {
                             className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                             onClick={() => handleEdit(customer)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Icon name="edit" size={16} />
                           </Button>
                           <Button
                             variant="ghost"
@@ -301,7 +301,7 @@ export default function CustomerManagement() {
                             className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
                             onClick={() => setDeletingCustomer(customer)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Icon name="delete" size={16} />
                           </Button>
                         </div>
                       </TableCell>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Calendar, User, Eye } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
@@ -15,20 +16,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { AdminHeader } from "@/components/AdminHeader";
 import { useStore } from "@/contexts/StoreContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { startOfDay, endOfDay, subDays, isWithinInterval } from "date-fns";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } }
+};
 
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "pending":
       return (
         <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 font-medium">
-          <Clock className="h-3 w-3 mr-1" />
+          <Icon name="schedule" size={12} className="mr-1" />
           承認待ち
         </Badge>
       );
     case "confirmed":
       return (
         <Badge variant="outline" className="bg-success/10 text-success border-success/30 font-medium">
-          <CheckCircle2 className="h-3 w-3 mr-1" />
+          <Icon name="check_circle" size={12} className="mr-1" />
           確定済み
         </Badge>
       );
@@ -44,6 +62,8 @@ const AdminDashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const { selectedStoreId } = useStore();
   const navigate = useNavigate();
 
@@ -63,7 +83,7 @@ const AdminDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedStoreId]);
+  }, [selectedStoreId, statusFilter, dateFilter]);
 
 
 
@@ -81,6 +101,25 @@ const AdminDashboard = () => {
 
     if (selectedStoreId) {
       query = query.eq('store_id', selectedStoreId);
+    }
+
+    if (statusFilter !== "all") {
+      query = query.eq('status', statusFilter);
+    }
+
+    if (dateFilter !== "all") {
+      const today = new Date();
+      let startDate = new Date();
+
+      if (dateFilter === "today") {
+        startDate = startOfDay(today);
+      } else if (dateFilter === "week") {
+        startDate = startOfDay(subDays(today, 7));
+      } else if (dateFilter === "month") {
+        startDate = startOfDay(subDays(today, 30));
+      }
+
+      query = query.gte('selected_date', startDate.toISOString().split('T')[0]);
     }
 
     const { data, error } = await query;
@@ -152,7 +191,35 @@ const AdminDashboard = () => {
             >
               ＋ 新規予約
             </Button>
+          </div>
+        </div>
 
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="w-full sm:w-[200px]">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="ステータス" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全てのステータス</SelectItem>
+                <SelectItem value="pending">承認待ち</SelectItem>
+                <SelectItem value="confirmed">確定済み</SelectItem>
+                <SelectItem value="cancelled">キャンセル</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:w-[200px]">
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="期間" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全期間</SelectItem>
+                <SelectItem value="today">今日以降</SelectItem>
+                <SelectItem value="week">1週間以内</SelectItem>
+                <SelectItem value="month">1ヶ月以内</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -166,55 +233,67 @@ const AdminDashboard = () => {
             {/* Stats Cards */}
             {/* Stats Cards */}
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="shadow-subtle border-none">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">
-                      今月の売上
-                    </p>
-                    <p className="text-4xl font-bold text-primary tracking-tight tabular-nums">
-                      ¥{totalRevenue.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      前月比 <span className="text-success font-medium">+12%</span>
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Stats Cards */}
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+              variants={container}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.div variants={item} whileHover={{ y: -5 }}>
+                <Card className="shadow-subtle border-none h-full">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        今月の売上
+                      </p>
+                      <p className="text-4xl font-bold text-primary tracking-tight tabular-nums">
+                        ¥{totalRevenue.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        前月比 <span className="text-success font-medium">+12%</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <Card className="shadow-subtle border-none">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">
-                      承認待ちの予約
-                    </p>
-                    <p className="text-4xl font-bold text-warning tracking-tight tabular-nums">
-                      {pendingCount}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      要対応の予約
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div variants={item} whileHover={{ y: -5 }}>
+                <Card className="shadow-subtle border-none h-full">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        承認待ちの予約
+                      </p>
+                      <p className="text-4xl font-bold text-warning tracking-tight tabular-nums">
+                        {pendingCount}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        要対応の予約
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <Card className="shadow-subtle border-none">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">
-                      確定済みの予約
-                    </p>
-                    <p className="text-4xl font-bold text-success tracking-tight tabular-nums">
-                      {confirmedCount}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      確定済みの予約数
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              <motion.div variants={item} whileHover={{ y: -5 }}>
+                <Card className="shadow-subtle border-none h-full">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        確定済みの予約
+                      </p>
+                      <p className="text-4xl font-bold text-success tracking-tight tabular-nums">
+                        {confirmedCount}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        確定済みの予約数
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
 
             {/* Recent Bookings */}
             <Card className="shadow-subtle border-none">
@@ -239,7 +318,7 @@ const AdminDashboard = () => {
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5" />
+                              <Icon name="calendar_today" size={14} />
                               {new Date(booking.selectedDate).toLocaleDateString("ja-JP", {
                                 year: "numeric",
                                 month: "2-digit",
@@ -247,11 +326,11 @@ const AdminDashboard = () => {
                               })}
                             </span>
                             <span className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5" />
+                              <Icon name="schedule" size={14} />
                               {booking.selectedTime}
                             </span>
                             <span className="flex items-center gap-1.5">
-                              <User className="h-3.5 w-3.5" />
+                              <Icon name="person" size={14} />
                               {booking.staffName || "担当者未定"}
                             </span>
                           </div>
@@ -269,7 +348,7 @@ const AdminDashboard = () => {
                             className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
                             onClick={() => handleViewDetails(booking)}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Icon name="visibility" size={16} />
                           </Button>
                         </div>
                       </div>
@@ -279,6 +358,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
 
           <TabsContent value="services">
             <AdminServiceManagement />

@@ -27,7 +27,7 @@ import { Service, ServiceOption } from "@/types/booking";
 import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
 import { useStore } from "@/contexts/StoreContext";
-import { Loader2, Search, UserPlus, Trash2, Plus } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 
 interface NewBookingModalProps {
     open: boolean;
@@ -78,6 +78,7 @@ export const NewBookingModal = ({
     // Date & Time
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [selectedTime, setSelectedTime] = useState<string>("");
+    const [hasParking, setHasParking] = useState<string>("");
     const [notes, setNotes] = useState("");
 
     const timeSlots = [
@@ -112,6 +113,7 @@ export const NewBookingModal = ({
         setCurrentServiceId("");
         setSelectedDate(undefined);
         setSelectedTime("");
+        setHasParking("");
         setNotes("");
     };
 
@@ -200,12 +202,68 @@ export const NewBookingModal = ({
     const handleCreateBooking = async () => {
         if (!selectedDate || !selectedTime || selectedServices.length === 0) return;
         if (!selectedCustomer && !newCustomer.name) return;
+        if (!hasParking) {
+            toast.error("駐車場の有無を選択してください");
+            return;
+        }
 
         setLoading(true);
         try {
+            // --- Double Booking Prevention ---
+            const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+            const { data: existingBookings, error: checkError } = await supabase
+                .from('bookings')
+                .select('id')
+                .eq('store_id', selectedStoreId)
+                .eq('selected_date', formattedDate)
+                .eq('selected_time', selectedTime)
+                .neq('status', 'cancelled');
+
+            if (checkError) throw checkError;
+
+            if (existingBookings && existingBookings.length > 0) {
+                toast.error("申し訳ありませんが、この日時は既に予約が入ってしまいました。");
+                setLoading(false);
+                return;
+            }
+            // ---------------------------------
+
             let customerId = selectedCustomer?.id;
 
-            // Create customer if needed
+            // Customer Merging Logic if creating new customer or if we want to update existing
+            if (!customerId && (newCustomer.email || newCustomer.phone)) {
+                // Normalize phone number for search (remove hyphens)
+                const normalizedPhone = newCustomer.phone.replace(/-/g, '');
+
+                let query = supabase
+                    .from('customers')
+                    .select('id')
+                    .eq('store_id', selectedStoreId);
+
+                const conditions = [];
+                if (newCustomer.email) conditions.push(`email.eq.${newCustomer.email}`);
+                if (normalizedPhone) conditions.push(`phone.eq.${normalizedPhone}`);
+                if (newCustomer.phone) conditions.push(`phone.eq.${newCustomer.phone}`);
+
+                if (conditions.length > 0) {
+                    query = query.or(conditions.join(','));
+                    const { data: existingCustomer } = await query.maybeSingle();
+                    if (existingCustomer) {
+                        customerId = existingCustomer.id;
+                        // Update existing
+                        await supabase
+                            .from('customers')
+                            .update({
+                                name: newCustomer.name,
+                                email: newCustomer.email || null,
+                                phone: newCustomer.phone || null,
+                            })
+                            .eq('id', customerId);
+                    }
+                }
+            }
+
+            // Create customer if needed and still not found
             if (!customerId) {
                 const { data: createdCustomer, error: customerError } = await supabase
                     .from("customers")
@@ -252,6 +310,7 @@ export const NewBookingModal = ({
                     selected_time: selectedTime,
                     total_price: total,
                     status: "confirmed",
+                    diagnosis_has_parking: hasParking === "yes",
                     diagnosis_notes: notes,
                 })
                 .select()
@@ -306,7 +365,7 @@ export const NewBookingModal = ({
                     onClick={() => setCustomerMode("search")}
                     className="flex-1"
                 >
-                    <Search className="h-4 w-4 mr-2" />
+                    <Icon name="search" size={16} className="mr-2" />
                     既存顧客を検索
                 </Button>
                 <Button
@@ -314,7 +373,7 @@ export const NewBookingModal = ({
                     onClick={() => setCustomerMode("create")}
                     className="flex-1"
                 >
-                    <UserPlus className="h-4 w-4 mr-2" />
+                    <Icon name="person_add" size={16} className="mr-2" />
                     新規顧客登録
                 </Button>
             </div>
@@ -322,7 +381,9 @@ export const NewBookingModal = ({
             {customerMode === "search" ? (
                 <div className="space-y-4">
                     <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <div className="absolute left-2 top-2.5 text-muted-foreground">
+                            <Icon name="search" size={16} />
+                        </div>
                         <Input
                             placeholder="名前、メール、電話番号で検索"
                             value={searchQuery}
@@ -331,7 +392,7 @@ export const NewBookingModal = ({
                         />
                         {loading && (
                             <div className="absolute right-2 top-2.5">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <Icon name="sync" size={16} className="animate-spin text-muted-foreground" />
                             </div>
                         )}
                     </div>
@@ -402,7 +463,7 @@ export const NewBookingModal = ({
                         </SelectContent>
                     </Select>
                     <Button onClick={handleAddService} disabled={!currentServiceId} variant="secondary">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Icon name="add" size={16} className="mr-2" />
                         追加
                     </Button>
                 </div>
@@ -425,7 +486,7 @@ export const NewBookingModal = ({
                                         onClick={() => handleRemoveService(serviceId)}
                                         className="text-destructive hover:text-destructive/90"
                                     >
-                                        <Trash2 className="h-4 w-4" />
+                                        <Icon name="delete" size={16} />
                                     </Button>
                                 </div>
 
@@ -510,6 +571,35 @@ export const NewBookingModal = ({
                 </div>
             )}
             <div>
+                <Label>駐車場の有無 *</Label>
+                <div className="flex gap-4 mt-2">
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            id="parking-yes"
+                            name="parking"
+                            value="yes"
+                            checked={hasParking === "yes"}
+                            onChange={(e) => setHasParking(e.target.value)}
+                            className="h-4 w-4 border-primary text-primary focus:ring-primary"
+                        />
+                        <Label htmlFor="parking-yes" className="cursor-pointer font-normal">あり</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            id="parking-no"
+                            name="parking"
+                            value="no"
+                            checked={hasParking === "no"}
+                            onChange={(e) => setHasParking(e.target.value)}
+                            className="h-4 w-4 border-primary text-primary focus:ring-primary"
+                        />
+                        <Label htmlFor="parking-no" className="cursor-pointer font-normal">なし</Label>
+                    </div>
+                </div>
+            </div>
+            <div>
                 <Label>備考</Label>
                 <Textarea
                     value={notes}
@@ -582,6 +672,10 @@ export const NewBookingModal = ({
                             <span>¥{total.toLocaleString()}</span>
                         </div>
                     </div>
+                    <div>
+                        <span className="font-semibold block mb-1">駐車場</span>
+                        <p>{hasParking === "yes" ? "あり" : "なし"}</p>
+                    </div>
                     {notes && (
                         <div>
                             <span className="font-semibold block mb-1">備考</span>
@@ -630,7 +724,8 @@ export const NewBookingModal = ({
                                     if (selectedServices.length > 0) setStep("datetime");
                                     else toast.error("サービスを少なくとも1つ選択してください");
                                 } else if (step === "datetime") {
-                                    if (selectedDate && selectedTime) setStep("confirm");
+                                    if (selectedDate && selectedTime && hasParking) setStep("confirm");
+                                    else if (!hasParking) toast.error("駐車場の有無を選択してください");
                                     else toast.error("日時を選択してください");
                                 }
                             }}
@@ -639,7 +734,7 @@ export const NewBookingModal = ({
                         </Button>
                     ) : (
                         <Button onClick={handleCreateBooking} disabled={loading} className="btn-primary">
-                            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                            {loading && <Icon name="sync" size={16} className="animate-spin mr-2" />}
                             予約を確定する
                         </Button>
                     )}

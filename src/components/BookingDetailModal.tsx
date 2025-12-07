@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Booking } from "@/types/booking";
-import { Calendar, Clock, User, MapPin, FileText, CheckCircle2, XCircle } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
@@ -60,19 +60,19 @@ export const BookingDetailModal = ({
             <span className="text-sm text-muted-foreground">ステータス:</span>
             {booking.status === "pending" && (
               <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">
-                <Clock className="h-3 w-3 mr-1" />
+                <Icon name="schedule" size={12} className="mr-1" />
                 承認待ち
               </Badge>
             )}
             {booking.status === "confirmed" && (
               <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
+                <Icon name="check_circle" size={12} className="mr-1" />
                 確定済み
               </Badge>
             )}
             {booking.status === "cancelled" && (
               <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-                <XCircle className="h-3 w-3 mr-1" />
+                <Icon name="cancel" size={12} className="mr-1" />
                 キャンセル
               </Badge>
             )}
@@ -83,7 +83,7 @@ export const BookingDetailModal = ({
           {/* Service Information */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+              <Icon name="description" size={20} className="text-primary" />
               サービス内容
             </h3>
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
@@ -109,7 +109,7 @@ export const BookingDetailModal = ({
           {/* Customer Information */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
+              <Icon name="person" size={20} className="text-primary" />
               お客様情報
             </h3>
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
@@ -137,18 +137,18 @@ export const BookingDetailModal = ({
           {/* Date & Time */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
+              <Icon name="calendar_today" size={20} className="text-primary" />
               予約日時
             </h3>
             <div className="bg-muted/50 p-4 rounded-lg space-y-3">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <Icon name="calendar_today" size={20} className="text-muted-foreground" />
                 <span className="font-medium">
                   {format(new Date(booking.selectedDate), "yyyy年M月d日(E)", { locale: ja })}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground" />
+                <Icon name="schedule" size={20} className="text-muted-foreground" />
                 <span className="font-medium">{booking.selectedTime}〜</span>
               </div>
             </div>
@@ -187,7 +187,7 @@ export const BookingDetailModal = ({
                   className="flex-1 btn-primary h-12"
                   onClick={handleApprove}
                 >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  <Icon name="check_circle" size={20} className="mr-2" />
                   予約を承認する
                 </Button>
                 <Button
@@ -195,7 +195,7 @@ export const BookingDetailModal = ({
                   className="flex-1 h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={handleReject}
                 >
-                  <XCircle className="h-5 w-5 mr-2" />
+                  <Icon name="cancel" size={20} className="mr-2" />
                   予約を却下する
                 </Button>
               </div>
@@ -216,9 +216,9 @@ export const BookingDetailModal = ({
                         .from('bookings')
                         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
                         .eq('id', booking.id);
-                      
+
                       if (error) throw error;
-                      
+
                       toast.success("予約をキャンセルしました");
                       onSuccess?.();
                       onOpenChange(false);
@@ -235,14 +235,14 @@ export const BookingDetailModal = ({
 
           {booking.status === "confirmed" && (
             <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
-              <CheckCircle2 className="h-8 w-8 text-success mx-auto mb-2" />
+              <Icon name="check_circle" size={32} className="text-success mx-auto mb-2" />
               <p className="text-sm font-medium text-success">この予約は承認済みです</p>
             </div>
           )}
 
           {booking.status === "cancelled" && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-center">
-              <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <Icon name="cancel" size={32} className="text-destructive mx-auto mb-2" />
               <p className="text-sm font-medium text-destructive">この予約はキャンセルされました</p>
             </div>
           )}

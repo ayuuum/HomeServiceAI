@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 import { format } from 'date-fns';
 
 interface BookingEditModalProps {
@@ -181,7 +181,7 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
                   更新中...
                 </>
               ) : (

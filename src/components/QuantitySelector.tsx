@@ -1,55 +1,54 @@
-import { Minus, Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 interface QuantitySelectorProps {
-  quantity: number;
-  onQuantityChange: (quantity: number) => void;
+  value: number;
+  onChange: (value: number) => void;
   min?: number;
   max?: number;
 }
 
-export const QuantitySelector = ({ 
-  quantity, 
-  onQuantityChange,
-  min = 1,
-  max = 10 
+export const QuantitySelector = ({
+  value,
+  onChange,
+  min = 0,
+  max = 10,
 }: QuantitySelectorProps) => {
-  const handleDecrement = () => {
-    if (quantity > min) {
-      onQuantityChange(quantity - 1);
+  const handleDecrease = () => {
+    if (value > min) {
+      onChange(value - 1);
     }
   };
 
-  const handleIncrement = () => {
-    if (quantity < max) {
-      onQuantityChange(quantity + 1);
+  const handleIncrease = () => {
+    if (value < max) {
+      onChange(value + 1);
     }
   };
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground whitespace-nowrap">台数:</span>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 rounded-full"
-          onClick={handleDecrement}
-          disabled={quantity <= min}
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        <span className="text-lg font-semibold w-8 text-center">{quantity}</span>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 rounded-full"
-          onClick={handleIncrement}
-          disabled={quantity >= max}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleDecrease}
+        disabled={value <= min}
+      >
+        <Icon name="remove" size={16} />
+      </Button>
+      <span className="w-4 text-center font-medium">{value}</span>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={handleIncrease}
+        disabled={value >= max}
+      >
+        <Icon name="add" size={16} />
+      </Button>
     </div>
   );
 };
+

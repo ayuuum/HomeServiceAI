@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 
 type AppRole = 'hq_admin' | 'store_owner' | 'store_staff' | 'admin' | 'moderator' | 'user';
 
@@ -17,7 +17,7 @@ export function RoleProtectedRoute({ children, allowedRoles }: RoleProtectedRout
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <Icon name="sync" size={32} className="animate-spin mx-auto text-primary" />
           <p className="text-muted-foreground">アクセス権限を確認中...</p>
         </div>
       </div>

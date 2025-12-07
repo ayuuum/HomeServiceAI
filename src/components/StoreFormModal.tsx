@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 
 interface StoreFormModalProps {
   open: boolean;
@@ -146,7 +146,7 @@ export default function StoreFormModal({ open, onOpenChange, store, onSuccess }:
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
                   保存中...
                 </>
               ) : (

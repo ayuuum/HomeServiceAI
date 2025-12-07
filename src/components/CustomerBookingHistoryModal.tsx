@@ -23,7 +23,7 @@ import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { BookingDetailModal } from "./BookingDetailModal";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Calendar, Clock, Eye, CheckCircle2, XCircle } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 
 interface CustomerBookingHistoryModalProps {
   customerId: string | null;
@@ -73,7 +73,7 @@ export const CustomerBookingHistoryModal = ({
     if (status === "pending") {
       return (
         <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">
-          <Clock className="h-3 w-3 mr-1" />
+          <Icon name="schedule" size={12} className="mr-1" />
           承認待ち
         </Badge>
       );
@@ -81,7 +81,7 @@ export const CustomerBookingHistoryModal = ({
     if (status === "confirmed") {
       return (
         <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-          <CheckCircle2 className="h-3 w-3 mr-1" />
+          <Icon name="check_circle" size={12} className="mr-1" />
           確定済み
         </Badge>
       );
@@ -89,7 +89,7 @@ export const CustomerBookingHistoryModal = ({
     if (status === "cancelled") {
       return (
         <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-          <XCircle className="h-3 w-3 mr-1" />
+          <Icon name="cancel" size={12} className="mr-1" />
           キャンセル
         </Badge>
       );
@@ -135,11 +135,11 @@ export const CustomerBookingHistoryModal = ({
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2 text-sm">
-                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              <Icon name="calendar_today" size={12} className="text-muted-foreground" />
                               {format(new Date(booking.selectedDate), "yyyy/MM/dd(E)", { locale: ja })}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
+                              <Icon name="schedule" size={12} />
                               {booking.selectedTime}
                             </div>
                           </div>
@@ -164,7 +164,7 @@ export const CustomerBookingHistoryModal = ({
                             size="sm"
                             onClick={() => handleViewDetail(booking)}
                           >
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Icon name="visibility" size={16} className="mr-2" />
                             詳細
                           </Button>
                         </TableCell>

@@ -1,36 +1,38 @@
+
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    console.error(
+      "404 Error: User attempted to access non-existent route:",
+      location.pathname
+    );
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center space-y-6 p-8">
-        <h1 className="mb-4 text-6xl font-bold">404</h1>
-        <p className="mb-4 text-2xl font-semibold">ページが見つかりません</p>
-        <p className="text-muted-foreground mb-8">
-          お探しのページは移動または削除された可能性があります
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-center space-y-6 p-8 bg-white rounded-xl shadow-lg max-w-md w-full mx-4">
+        <h1 className="text-6xl font-bold text-gray-900">404</h1>
+        <p className="text-xl text-gray-600">ページが見つかりません</p>
+        <p className="text-gray-500">
+          お探しのページは削除されたか、URLが変更された可能性があります。
         </p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <Button asChild variant="default" className="w-full sm:w-auto">
             <Link to="/">
-              <Home className="mr-2 h-5 w-5" />
-              予約ページに戻る
+              <Icon name="home" size={16} className="mr-2" />
+              トップページへ
             </Link>
           </Button>
-          
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link to="/admin">
-              <LayoutDashboard className="mr-2 h-5 w-5" />
-              管理画面に戻る
+              <Icon name="dashboard" size={16} className="mr-2" />
+              管理画面へ
             </Link>
           </Button>
         </div>
