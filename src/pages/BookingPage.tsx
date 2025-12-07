@@ -7,6 +7,8 @@ import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
+import { BookingAssistant } from "@/components/booking/BookingAssistant";
+import { toast } from "sonner";
 
 const BookingPage = () => {
   const { storeId } = useParams();
@@ -44,7 +46,13 @@ const BookingPage = () => {
     handleRemovePhoto,
     submitBooking,
     getOptionsForService,
+    applyRecommendation,
   } = useBooking(storeId, initialLineUserId);
+
+  const handleApplyRecommendation = (serviceIds: string[], optionIds: string[]) => {
+    applyRecommendation(serviceIds, optionIds);
+    toast.success("AIの推薦を適用しました");
+  };
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [bookingData, setBookingData] = useState<{
@@ -193,6 +201,13 @@ const BookingPage = () => {
             disabled={!selectedDate || !selectedTime || !hasParking || !customerName}
           />
         )}
+
+        {/* AI Booking Assistant */}
+        <BookingAssistant
+          services={allServices}
+          options={allOptions}
+          onApplyRecommendation={handleApplyRecommendation}
+        />
       </div>
     </>
   );
