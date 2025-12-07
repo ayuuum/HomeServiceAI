@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
+import AdminBookingModal from "@/components/AdminBookingModal";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -35,6 +36,7 @@ export default function LineChatHistory() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   // Fetch customers with LINE User ID
   const { data: customers = [] } = useQuery({
@@ -222,8 +224,16 @@ export default function LineChatHistory() {
             <CardContent className="p-0 flex flex-col h-full">
               {selectedCustomer ? (
                 <>
-                  <div className="p-4 border-b border-border">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
                     <h2 className="font-semibold">{selectedCustomer.name}</h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBookingModalOpen(true)}
+                    >
+                      <Icon name="calendar_add_on" size={16} className="mr-1" />
+                      予約作成
+                    </Button>
                   </div>
 
                   <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -301,6 +311,23 @@ export default function LineChatHistory() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Booking Modal */}
+        <AdminBookingModal
+          open={bookingModalOpen}
+          onOpenChange={setBookingModalOpen}
+          onSuccess={() => {
+            setBookingModalOpen(false);
+          }}
+          initialCustomer={
+            selectedCustomer
+              ? {
+                id: selectedCustomer.id,
+                name: selectedCustomer.name,
+              }
+              : undefined
+          }
+        />
       </div>
     </div>
   );
