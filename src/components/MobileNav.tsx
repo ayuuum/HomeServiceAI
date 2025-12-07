@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Menu, X, LayoutDashboard, Users, MessageCircle, LogOut, FileText, Store, Calendar, Sparkles } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,7 +26,7 @@ export function MobileNav() {
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
+          <Icon name="menu" size={20} />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[280px]">
@@ -41,7 +41,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <LayoutDashboard className="h-5 w-5" />
+            <Icon name="dashboard" size={20} />
             ダッシュボード
           </NavLink>
           <NavLink
@@ -49,7 +49,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <Users className="h-5 w-5" />
+            <Icon name="group" size={20} />
             顧客管理
           </NavLink>
           <NavLink
@@ -57,7 +57,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <Calendar className="h-5 w-5" />
+            <Icon name="calendar_today" size={20} />
             カレンダー
           </NavLink>
           <NavLink
@@ -65,7 +65,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <FileText className="h-5 w-5" />
+            <Icon name="description" size={20} />
             経営管理
           </NavLink>
           <NavLink
@@ -73,7 +73,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <Store className="h-5 w-5" />
+            <Icon name="store" size={20} />
             店舗管理
           </NavLink>
           <NavLink
@@ -81,7 +81,7 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <MessageCircle className="h-5 w-5" />
+            <Icon name="chat" size={20} />
             LINE
           </NavLink>
 
@@ -89,7 +89,7 @@ export function MobileNav() {
             to="/"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
           >
-            <Sparkles className="h-5 w-5" />
+            <Icon name="auto_awesome" size={20} />
             予約ページ
           </Link>
 
@@ -106,7 +106,7 @@ export function MobileNav() {
                   className="w-full justify-start gap-3"
                   onClick={handleLogout}
                 >
-                  <LogOut className="h-5 w-5" />
+                  <Icon name="logout" size={20} />
                   ログアウト
                 </Button>
               </SheetClose>

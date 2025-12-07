@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Clock, DollarSign, ListPlus } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { ServiceFormModal } from "@/components/ServiceFormModal";
 import { ServiceOptionsModal } from "@/components/ServiceOptionsModal";
 import { Service } from "@/types/booking";
@@ -19,6 +20,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } }
+};
 
 const AdminServiceManagement = () => {
   const [services, setServices] = useState<Service[]>([]);
@@ -167,7 +183,7 @@ const AdminServiceManagement = () => {
           </p>
         </div>
         <Button onClick={handleAddService} className="btn-primary gap-2">
-          <Plus className="h-4 w-4" />
+          <Icon name="add" size={16} />
           新規サービス追加
         </Button>
       </div>
@@ -176,74 +192,81 @@ const AdminServiceManagement = () => {
       {loading ? (
         <div className="text-center py-12">読み込み中...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
           {services.map((service) => (
-            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 rounded-[10px] shadow-medium border-none group">
-              <div className="h-48 relative overflow-hidden bg-muted">
-                <img
-                  src={service.imageUrl}
-                  alt={service.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute top-3 right-3">
-                  {getCategoryBadge(service.category)}
-                </div>
-              </div>
-              <CardHeader className="pb-3 pt-4">
-                <CardTitle className="text-xl font-bold line-clamp-1">{service.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-                  {service.description}
-                </p>
-
-                <div className="flex items-end justify-between">
-                  <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/30 px-2 py-1 rounded">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">{service.duration}分</span>
+            <motion.div key={service.id} variants={item} whileHover={{ y: -5 }}>
+              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 rounded-[10px] shadow-medium border-none group">
+                <div className="h-48 relative overflow-hidden bg-muted">
+                  <img
+                    src={service.imageUrl}
+                    alt={service.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute top-3 right-3">
+                    {getCategoryBadge(service.category)}
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground mb-0.5">基本料金</p>
-                    <div className="flex items-center gap-0.5 font-bold text-primary leading-none">
-                      <span className="text-lg">¥</span>
-                      <span className="text-2xl tabular-nums">{service.basePrice.toLocaleString()}</span>
+                </div>
+                <CardHeader className="pb-3 pt-4">
+                  <CardTitle className="text-xl font-bold line-clamp-1">{service.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+                    {service.description}
+                  </p>
+
+                  <div className="flex items-end justify-between">
+                    <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+                      <Icon name="schedule" size={16} />
+                      <span className="text-sm font-medium">{service.duration}分</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground mb-0.5">基本料金</p>
+                      <div className="flex items-center gap-0.5 font-bold text-primary leading-none">
+                        <span className="text-lg">¥</span>
+                        <span className="text-2xl tabular-nums">{service.basePrice.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border/50">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-2 h-9 border-primary/20 hover:bg-primary/5 hover:text-primary"
-                    onClick={() => handleEditService(service)}
-                  >
-                    <Edit className="h-4 w-4 mr-1.5" />
-                    編集
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-1 h-9 px-0"
-                    onClick={() => handleManageOptions(service)}
-                    title="オプション管理"
-                  >
-                    <ListPlus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-1 h-9 px-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={() => handleDeleteClick(service.id)}
-                    title="削除"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="col-span-2 h-9 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                      onClick={() => handleEditService(service)}
+                    >
+                      <Icon name="edit" size={16} className="mr-1.5" />
+                      編集
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="col-span-1 h-9 px-0"
+                      onClick={() => handleManageOptions(service)}
+                      title="オプション管理"
+                    >
+                      <Icon name="playlist_add" size={16} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="col-span-1 h-9 px-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleDeleteClick(service.id)}
+                      title="削除"
+                    >
+                      <Icon name="delete" size={16} />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Empty State */}
@@ -254,7 +277,7 @@ const AdminServiceManagement = () => {
               まだサービスが登録されていません
             </p>
             <Button onClick={handleAddService} className="btn-primary gap-2">
-              <Plus className="h-4 w-4" />
+              <Icon name="add" size={16} />
               最初のサービスを追加
             </Button>
           </CardContent>

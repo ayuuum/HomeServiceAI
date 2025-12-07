@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
@@ -180,7 +180,7 @@ export default function ProfilePage() {
                 <Button type="submit" disabled={isLoadingProfile}>
                   {isLoadingProfile ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
                       更新中...
                     </>
                   ) : (
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                 <Button type="submit" disabled={isLoadingPassword}>
                   {isLoadingPassword ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
                       変更中...
                     </>
                   ) : (

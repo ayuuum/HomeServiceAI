@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Service, ServiceOption } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, Plus, Loader2 } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { mapDbOptionToOption } from "@/lib/serviceMapper";
 
 interface ServiceOptionsModalProps {
@@ -141,9 +141,9 @@ export const ServiceOptionsModal = ({
                             </div>
                             <Button type="submit" size="sm" className="w-full" disabled={adding}>
                                 {adding ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <Icon name="sync" size={16} className="animate-spin mr-2" />
                                 ) : (
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Icon name="add" size={16} className="mr-2" />
                                 )}
                                 追加する
                             </Button>
@@ -180,7 +180,7 @@ export const ServiceOptionsModal = ({
                                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                             onClick={() => handleDeleteOption(option.id)}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Icon name="delete" size={16} />
                                         </Button>
                                     </div>
                                 ))}

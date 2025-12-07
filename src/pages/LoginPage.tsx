@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate input
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
@@ -50,7 +50,7 @@ export default function LoginPage() {
 
     if (error) {
       let errorMessage = "ログインに失敗しました";
-      
+
       if (error.message.includes("Invalid login credentials")) {
         errorMessage = "メールアドレスまたはパスワードが正しくありません";
       } else if (error.message.includes("Email not confirmed")) {
@@ -77,7 +77,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Building2 className="h-6 w-6 text-primary" />
+            <Icon name="business" size={24} className="text-primary" />
           </div>
           <CardTitle className="text-2xl">ハウスクリーニング</CardTitle>
           <CardDescription className="text-base">管理システム</CardDescription>
@@ -115,7 +115,7 @@ export default function LoginPage() {
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
                   ログイン中...
                 </>
               ) : (

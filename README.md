@@ -4,6 +4,12 @@
 
 **URL**: https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0
 
+## ドキュメント
+- [システムアーキテクチャ図](docs/architecture.md)
+- [デプロイガイド](docs/deployment.md)
+- [LINE連携設定ガイド](docs/line_integration_guide.md)
+- [技術スタック](docs/tech_stack.md)
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

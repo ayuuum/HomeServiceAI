@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceOption } from "@/types/booking";
 import { mapDbOptionToOption } from "@/lib/serviceMapper";
@@ -47,7 +47,7 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
       .from('service_options')
       .select('*')
       .eq('service_id', serviceId);
-    
+
     if (data) {
       setOptions(data.map(mapDbOptionToOption));
     }
@@ -123,7 +123,7 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
         <h3 className="text-lg font-semibold">サービスオプション</h3>
         {!isAdding && (
           <Button onClick={() => setIsAdding(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
+            <Icon name="add" size={16} className="mr-1" />
             オプション追加
           </Button>
         )}
@@ -137,10 +137,10 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
                 {editingId ? "オプションを編集" : "新規オプション"}
               </h4>
               <Button variant="ghost" size="icon" onClick={resetForm}>
-                <X className="h-4 w-4" />
+                <Icon name="close" size={16} />
               </Button>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="title">オプション名</Label>
@@ -151,7 +151,7 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
                   placeholder="例：お掃除機能付きエアコン"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="price">追加料金（円）</Label>
                 <Input
@@ -162,7 +162,7 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
                   placeholder="3000"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="description">説明（任意）</Label>
                 <Textarea
@@ -214,14 +214,14 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
                       variant="ghost"
                       onClick={() => handleEdit(option)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Icon name="edit" size={16} />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDelete(option.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Icon name="delete" size={16} />
                     </Button>
                   </div>
                 </div>

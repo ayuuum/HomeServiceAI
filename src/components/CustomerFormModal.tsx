@@ -19,12 +19,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Customer } from "@/types/booking";
 
 const customerSchema = z.object({
+  storeId: z.string().min(1, "店舗を選択してください"),
   name: z.string().min(1, "名前は必須です").max(100),
   phone: z.string().max(20).optional(),
   email: z.string().email("有効なメールアドレスを入力してください").max(255).optional().or(z.literal("")),
@@ -45,12 +53,13 @@ export function CustomerFormModal({
   onClose,
   customer,
 }: CustomerFormModalProps) {
-  const { selectedStoreId } = useStore();
+  const { selectedStoreId, stores } = useStore();
   const queryClient = useQueryClient();
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
+      storeId: "",
       name: "",
       phone: "",
       email: "",
@@ -62,6 +71,7 @@ export function CustomerFormModal({
   useEffect(() => {
     if (customer) {
       form.reset({
+        storeId: customer.storeId || "",
         name: customer.name || "",
         phone: customer.phone || "",
         email: customer.email || "",
@@ -70,6 +80,7 @@ export function CustomerFormModal({
       });
     } else {
       form.reset({
+        storeId: selectedStoreId || "",
         name: "",
         phone: "",
         email: "",
@@ -77,16 +88,12 @@ export function CustomerFormModal({
         lineUserId: "",
       });
     }
-  }, [customer, form]);
+  }, [customer, form, selectedStoreId]);
 
   const mutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      if (!selectedStoreId) {
-        throw new Error("店舗が選択されていません");
-      }
-
       const payload = {
-        store_id: selectedStoreId,
+        store_id: data.storeId,
         name: data.name,
         phone: data.phone || null,
         email: data.email || null,
@@ -130,6 +137,31 @@ export function CustomerFormModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="storeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>店舗 *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="店舗を選択" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {stores.map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="name"

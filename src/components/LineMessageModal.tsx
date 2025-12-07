@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import type { Customer } from "@/types/booking";
 
 interface LineMessageModalProps {
@@ -81,7 +81,7 @@ export function LineMessageModal({ open, onOpenChange, customer, storeId }: Line
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
+            <Icon name="chat" size={20} className="text-primary" />
             LINEメッセージ送信
           </DialogTitle>
           <DialogDescription>
@@ -123,12 +123,12 @@ export function LineMessageModal({ open, onOpenChange, customer, storeId }: Line
             >
               {sendMessageMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
                   送信中...
                 </>
               ) : (
                 <>
-                  <MessageCircle className="mr-2 h-4 w-4" />
+                  <Icon name="chat" size={16} className="mr-2" />
                   送信
                 </>
               )}

@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { MessageCircle, Send, User, Bot } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -169,7 +169,7 @@ export default function LineChatHistory() {
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-            <MessageCircle className="h-8 w-8 text-primary" />
+            <Icon name="chat" size={32} className="text-primary" />
             LINEチャット
           </h1>
           <p className="text-muted-foreground">顧客とのLINEでのやり取りを確認・返信できます</p>
@@ -199,7 +199,7 @@ export default function LineChatHistory() {
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarFallback>
-                              <User className="h-4 w-4" />
+                              <Icon name="person" size={16} />
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
@@ -243,13 +243,13 @@ export default function LineChatHistory() {
                             >
                               <div
                                 className={`max-w-[70%] ${isStaff
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
                                   } rounded-lg p-3`}
                               >
                                 <div className="flex items-start gap-2">
                                   {!isStaff && (
-                                    <User className="h-4 w-4 mt-1 flex-shrink-0" />
+                                    <Icon name="person" size={16} className="mt-1 flex-shrink-0" />
                                   )}
                                   <div className="flex-1">
                                     <p className="text-sm whitespace-pre-wrap break-words">
@@ -257,15 +257,15 @@ export default function LineChatHistory() {
                                     </p>
                                     <p
                                       className={`text-xs mt-1 ${isStaff
-                                          ? "text-primary-foreground/70"
-                                          : "text-muted-foreground"
+                                        ? "text-primary-foreground/70"
+                                        : "text-muted-foreground"
                                         }`}
                                     >
                                       {format(new Date(log.createdAt), "HH:mm", { locale: ja })}
                                     </p>
                                   </div>
                                   {isStaff && (
-                                    <Bot className="h-4 w-4 mt-1 flex-shrink-0" />
+                                    <Icon name="smart_toy" size={16} className="mt-1 flex-shrink-0" />
                                   )}
                                 </div>
                               </div>
@@ -288,7 +288,7 @@ export default function LineChatHistory() {
                         type="submit"
                         disabled={sendMessageMutation.isPending || !messageInput.trim()}
                       >
-                        <Send className="h-4 w-4" />
+                        <Icon name="send" size={16} />
                       </Button>
                     </div>
                   </form>
