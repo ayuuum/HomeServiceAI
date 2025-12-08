@@ -162,27 +162,25 @@ export const BookingAssistant = ({
             transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
             className="fixed bottom-28 right-4 z-50 md:bottom-10 md:right-10"
           >
-            {/* Pulse ring effect */}
-            <motion.div
-              className="absolute inset-0 rounded-full bg-primary/30"
-              animate={{ 
-                scale: [1, 1.6, 2],
-                opacity: [0.5, 0.2, 0]
-              }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                ease: "easeOut"
-              }}
-              style={{ width: '100%', height: '100%' }}
-            />
             <motion.button
               onClick={() => setIsOpen(true)}
-              className="relative rounded-full h-18 w-18 md:h-20 md:w-20 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center hover:shadow-primary/40 transition-all duration-300"
-              style={{ width: '4.5rem', height: '4.5rem' }}
-              whileHover={{ scale: 1.15, rotate: 5 }}
-              whileTap={{ scale: 0.9 }}
+              className="relative rounded-full px-4 py-3 md:px-5 md:py-4 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center gap-2 hover:shadow-primary/40 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
+              {/* Pulse ring effect */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-primary/30"
+                animate={{ 
+                  scale: [1, 1.4, 1.8],
+                  opacity: [0.4, 0.15, 0]
+                }}
+                transition={{ 
+                  duration: 2.5, 
+                  repeat: Infinity,
+                  ease: "easeOut"
+                }}
+              />
               <motion.div
                 animate={{ 
                   scale: [1, 1.2, 1],
@@ -191,11 +189,15 @@ export const BookingAssistant = ({
                 transition={{ 
                   duration: 2, 
                   repeat: Infinity, 
-                  repeatDelay: 2 
+                  repeatDelay: 3 
                 }}
               >
-                <Sparkles className="h-8 w-8 md:h-10 md:w-10" />
+                <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
               </motion.div>
+              <span className="font-medium text-sm md:text-base whitespace-nowrap">
+                <span className="md:hidden">AIおすすめ</span>
+                <span className="hidden md:inline">AIにおすすめを聞く</span>
+              </span>
             </motion.button>
           </motion.div>
         )}
