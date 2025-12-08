@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Sparkles, Check, Loader2 } from "lucide-react";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { X, Send, Sparkles, Check, Loader2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -152,7 +152,7 @@ export const BookingAssistant = ({
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Draggable */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
@@ -160,17 +160,29 @@ export const BookingAssistant = ({
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
-            className="fixed bottom-28 right-4 z-50 md:bottom-10 md:right-10"
+            className="fixed bottom-28 right-4 z-50 md:bottom-10 md:right-10 touch-none"
+            drag
+            dragConstraints={{
+              top: -window.innerHeight + 150,
+              left: -window.innerWidth + 200,
+              right: 0,
+              bottom: 0,
+            }}
+            dragElastic={0.1}
+            dragMomentum={false}
+            whileDrag={{ scale: 1.1, cursor: "grabbing" }}
           >
             <motion.button
               onClick={() => setIsOpen(true)}
-              className="relative rounded-full px-4 py-3 md:px-5 md:py-4 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center gap-2 hover:shadow-primary/40 transition-all duration-300"
+              className="relative rounded-full px-4 py-3 md:px-5 md:py-4 shadow-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center gap-2 hover:shadow-primary/40 transition-all duration-300 cursor-grab active:cursor-grabbing"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
+              {/* Drag handle indicator */}
+              <GripVertical className="h-4 w-4 opacity-50" />
               {/* Pulse ring effect */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-primary/30"
+                className="absolute inset-0 rounded-full bg-primary/30 pointer-events-none"
                 animate={{ 
                   scale: [1, 1.4, 1.8],
                   opacity: [0.4, 0.15, 0]
