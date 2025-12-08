@@ -60,23 +60,42 @@ serve(async (req) => {
 
     const budgetInfo = budget ? `\n【予算の上限】¥${budget.toLocaleString()}` : '';
 
+    // Build service list with IDs for prompt
+    const serviceListWithIds = services.map(s => 
+      `- ID: "${s.id}" | ${s.title}: ¥${s.basePrice.toLocaleString()}（${s.description}）`
+    ).join('\n');
+
+    // Build options list with IDs grouped by service
+    const optionListWithIds = Object.entries(optionsByService)
+      .map(([service, opts]) => {
+        const serviceOptions = options.filter(o => {
+          const svc = services.find(s => s.id === o.serviceId);
+          return svc?.title === service;
+        });
+        return `【${service}のオプション】\n${serviceOptions.map(o => `  - ID: "${o.id}" | ${o.title}（¥${o.price.toLocaleString()}）`).join('\n')}`;
+      })
+      .join('\n\n');
+
     const systemPrompt = `あなたはハウスクリーニングの専門アドバイザーです。お客様の状況を丁寧に聞いて、最適なサービスとオプションを推薦してください。
+
+**重要**: 推薦する際は、必ずサービスやオプションの「ID」（UUID形式）を使用してください。タイトル名ではなくIDを使ってください。
 
 推薦する際は以下のJSON形式で出力してください：
 {
-  "recommendedServices": [{"id": "サービスID", "reason": "推薦理由"}],
-  "recommendedOptions": [{"id": "オプションID", "reason": "推薦理由"}],
+  "recommendedServices": [{"id": "UUID形式のサービスID", "reason": "推薦理由"}],
+  "recommendedOptions": [{"id": "UUID形式のオプションID", "reason": "推薦理由"}],
   "message": "お客様への説明メッセージ（親しみやすく丁寧に）",
   "tips": "コスト削減のヒントや注意点"
 }
 
-【利用可能なサービス】
-${serviceList}
+【利用可能なサービス（IDを使用してください）】
+${serviceListWithIds}
 
-${optionList}
+${optionListWithIds}
 ${budgetInfo}
 
-親しみやすく、専門家として信頼感のある対応を心がけてください。`;
+親しみやすく、専門家として信頼感のある対応を心がけてください。
+必ずJSON形式で回答し、IDにはUUID形式の値を使用してください。`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
