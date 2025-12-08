@@ -47,14 +47,15 @@ export function AdminHeader() {
             <NavLink
               to="/admin"
               end
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
+              <Icon name="dashboard" size={16} />
               ダッシュボード
             </NavLink>
             <NavLink
               to="/admin/customers"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
               <Icon name="group" size={16} />
@@ -62,7 +63,7 @@ export function AdminHeader() {
             </NavLink>
             <NavLink
               to="/admin/calendar"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
               <Icon name="calendar_today" size={16} />
@@ -70,31 +71,32 @@ export function AdminHeader() {
             </NavLink>
             <NavLink
               to="/admin/reports"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
-              activeClassName="bg-primary text-primary-foreground"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
             >
               <Icon name="description" size={16} />
               経営管理
             </NavLink>
             <NavLink
               to="/admin/stores"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
-              activeClassName="bg-primary text-primary-foreground"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
             >
               <Icon name="store" size={16} />
               店舗管理
             </NavLink>
             <NavLink
               to="/admin/line-chat"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
-              activeClassName="bg-primary text-primary-foreground"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
             >
               <Icon name="chat" size={16} />
               LINE
             </NavLink>
             <NavLink
               to="/"
-              className="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted flex items-center gap-1"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
             >
               <Icon name="auto_awesome" size={16} />
               予約ページ
