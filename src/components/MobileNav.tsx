@@ -77,6 +77,14 @@ export function MobileNav() {
             店舗管理
           </NavLink>
           <NavLink
+            to="/admin/users"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <Icon name="manage_accounts" size={20} />
+            ユーザー管理
+          </NavLink>
+          <NavLink
             to="/admin/line-chat"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"

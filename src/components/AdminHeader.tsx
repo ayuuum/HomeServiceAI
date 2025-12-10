@@ -86,6 +86,14 @@ export function AdminHeader() {
               店舗管理
             </NavLink>
             <NavLink
+              to="/admin/users"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+            >
+              <Icon name="manage_accounts" size={16} />
+              ユーザー
+            </NavLink>
+            <NavLink
               to="/admin/line-chat"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
