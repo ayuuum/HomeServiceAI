@@ -16,7 +16,6 @@ import StoreManagement from "./pages/StoreManagement";
 import ReportsPage from "./pages/ReportsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CustomerManagement from "./pages/CustomerManagement";
-import UserManagement from "./pages/UserManagement";
 import LineChatHistory from "./pages/LineChatHistory";
 import CalendarPage from "./pages/CalendarPage";
 import NotFound from "./pages/NotFound";
@@ -51,11 +50,6 @@ const App = () => (
               <Route path="/admin/stores" element={
                 <ProtectedRoute>
                   <StoreManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute>
-                  <UserManagement />
                 </ProtectedRoute>
               } />
               <Route path="/admin/reports" element={
