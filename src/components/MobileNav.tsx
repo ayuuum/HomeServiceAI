@@ -68,22 +68,6 @@ export function MobileNav() {
             <Icon name="description" size={20} />
             経営管理
           </NavLink>
-          <NavLink
-            to="/admin/stores"
-            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
-            activeClassName="bg-muted text-primary font-medium"
-          >
-            <Icon name="store" size={20} />
-            店舗管理
-          </NavLink>
-          <NavLink
-            to="/admin/line-chat"
-            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
-            activeClassName="bg-muted text-primary font-medium"
-          >
-            <Icon name="chat" size={20} />
-            LINE
-          </NavLink>
 
           <Link
             to="/"

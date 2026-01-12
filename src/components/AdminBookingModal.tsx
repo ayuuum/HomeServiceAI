@@ -6,9 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Icon } from '@/components/ui/icon'; // Added this import
-
-import { useStore } from '@/contexts/StoreContext';
+import { Icon } from '@/components/ui/icon';
 import { QuantitySelector } from './QuantitySelector';
 import { OptionCheckbox } from './OptionCheckbox';
 
@@ -28,16 +26,13 @@ interface AdminBookingModalProps {
 
 export default function AdminBookingModal({ open, onOpenChange, onSuccess, initialCustomer }: AdminBookingModalProps) {
   const { toast } = useToast();
-  const { selectedStoreId } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [staffs, setStaffs] = useState<any[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [serviceQuantity, setServiceQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState('');
-  const [staffId, setStaffId] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -48,7 +43,6 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
     if (open) {
       loadServices();
       loadCustomers();
-      loadStaffs();
       
       // Pre-fill customer data if provided
       if (initialCustomer) {
@@ -58,14 +52,13 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
         setCustomerEmail(initialCustomer.email || '');
       }
     }
-  }, [open, selectedStoreId, initialCustomer]);
+  }, [open, initialCustomer]);
 
   const loadServices = async () => {
     try {
       const { data, error } = await supabase
         .from('services')
         .select('*, service_options(*)')
-        .eq('store_id', selectedStoreId)
         .eq('is_active', true)
         .order('title');
 
@@ -81,29 +74,12 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .eq('store_id', selectedStoreId)
         .order('name');
 
       if (error) throw error;
       setCustomers(data || []);
     } catch (error) {
       console.error('顧客読み込みエラー:', error);
-    }
-  };
-
-  const loadStaffs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staffs')
-        .select('*')
-        .eq('store_id', selectedStoreId)
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setStaffs(data || []);
-    } catch (error) {
-      console.error('スタッフ読み込みエラー:', error);
     }
   };
 
@@ -131,7 +107,6 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
-            store_id: selectedStoreId,
             name: customerName,
             phone: customerPhone,
             email: customerEmail,
@@ -146,9 +121,7 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
-          store_id: selectedStoreId,
           customer_id: finalCustomerId,
-          staff_id: staffId || null,
           customer_name: customerName,
           customer_phone: customerPhone,
           customer_email: customerEmail,
@@ -215,7 +188,6 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
     setServiceQuantity(1);
     setSelectedOptions([]);
     setCustomerId('');
-    setStaffId('');
     setSelectedDate('');
     setSelectedTime('');
     setCustomerName('');
@@ -369,23 +341,6 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="staff">担当スタッフ</Label>
-            <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger>
-                <SelectValue placeholder="スタッフを選択（任意）" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">未割り当て</SelectItem>
-                {staffs.map((staff) => (
-                  <SelectItem key={staff.id} value={staff.id}>
-                    {staff.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="bg-muted p-4 rounded-lg">

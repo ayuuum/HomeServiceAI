@@ -1,11 +1,4 @@
 import { Icon } from "@/components/ui/icon";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -18,14 +11,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useStore } from "@/contexts/StoreContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileNav } from "@/components/MobileNav";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 
 export function AdminHeader() {
-  const { selectedStoreId, setSelectedStoreId, stores, isLoading } = useStore();
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
 
@@ -78,22 +69,6 @@ export function AdminHeader() {
               経営管理
             </NavLink>
             <NavLink
-              to="/admin/stores"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-            >
-              <Icon name="store" size={16} />
-              店舗管理
-            </NavLink>
-            <NavLink
-              to="/admin/line-chat"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-            >
-              <Icon name="chat" size={16} />
-              LINE
-            </NavLink>
-            <NavLink
               to="/"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
@@ -105,24 +80,6 @@ export function AdminHeader() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <Select
-            value={selectedStoreId || "all"}
-            onValueChange={(value) => setSelectedStoreId(value === "all" ? null : value)}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="w-[140px] sm:w-[200px]">
-              <SelectValue placeholder="店舗を選択" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全店舗</SelectItem>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="icon" className="hidden sm:flex">

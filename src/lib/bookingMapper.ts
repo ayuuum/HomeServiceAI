@@ -30,11 +30,7 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
         : opt.option_title
     ),
     createdAt: dbBooking.created_at,
-    storeId: dbBooking.store_id,
-    storeName: dbBooking.stores?.name,
     customerId: dbBooking.customer_id,
-    staffId: dbBooking.staff_id,
-    staffName: dbBooking.staffs?.name,
   };
 };
 
