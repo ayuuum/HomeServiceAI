@@ -7,14 +7,12 @@ import { OptionCheckbox } from "@/components/OptionCheckbox";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/ui/icon";
-import { LineLoginButton } from "@/components/LineLoginButton";
 
 interface BookingServiceSelectionProps {
     allServices: Service[];
     selectedServices: SelectedService[];
     allOptions: ServiceOption[];
     selectedOptions: SelectedOption[];
-    lineUserId: string | null;
     onServiceQuantityChange: (serviceId: string, quantity: number) => void;
     onOptionChange: (optionId: string, checked: boolean) => void;
     onOptionQuantityChange: (optionId: string, quantity: number) => void;
@@ -41,7 +39,6 @@ export const BookingServiceSelection = ({
     selectedServices,
     allOptions,
     selectedOptions,
-    lineUserId,
     onServiceQuantityChange,
     onOptionChange,
     onOptionQuantityChange,
@@ -49,20 +46,10 @@ export const BookingServiceSelection = ({
 }: BookingServiceSelectionProps) => {
     return (
         <div className="space-y-12">
-            {/* Section 1: Service Selection */}
             <section>
                 <div className="flex items-center gap-2 mb-6">
                     <h3 className="text-2xl font-bold">サービスを選ぶ</h3>
                 </div>
-
-                {!lineUserId && (
-                    <div className="mb-8 p-6 bg-[#06C755]/5 border border-[#06C755]/20 rounded-xl">
-                        <p className="text-center text-sm text-muted-foreground mb-4">
-                            LINEでログインすると、お名前や連絡先が自動で入力されます
-                        </p>
-                        <LineLoginButton />
-                    </div>
-                )}
 
                 <p className="text-sm text-muted-foreground mb-6">
                     複数のサービスを同時に選択できます。数量を調整してカートに追加してください。
@@ -129,7 +116,6 @@ export const BookingServiceSelection = ({
                 </motion.div>
             </section>
 
-            {/* Section 2: Selected Services Summary */}
             {selectedServices.length > 0 && (
                 <section>
                     <Separator className="mb-6" />
@@ -140,10 +126,7 @@ export const BookingServiceSelection = ({
                     <Card>
                         <CardContent className="p-6 space-y-3">
                             {selectedServices.map(({ serviceId, quantity, service }) => {
-                                // Note: Discount calculation logic is simplified here for display purposes
-                                // Ideally, this should come from the hook or a shared utility if complex
                                 const subtotal = service.basePrice * quantity;
-
                                 return (
                                     <div key={serviceId} className="flex justify-between items-center">
                                         <div>
@@ -161,7 +144,6 @@ export const BookingServiceSelection = ({
                 </section>
             )}
 
-            {/* Section 3: Options Selection */}
             {selectedServices.length > 0 && allOptions.length > 0 && (
                 <section>
                     <Separator className="mb-6" />

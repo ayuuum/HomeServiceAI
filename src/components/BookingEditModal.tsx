@@ -3,11 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Icon } from '@/components/ui/icon';
-import { format } from 'date-fns';
 
 interface BookingEditModalProps {
   open: boolean;
@@ -21,38 +19,19 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [staffId, setStaffId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
-  const [staffs, setStaffs] = useState<any[]>([]);
 
   useEffect(() => {
     if (booking && open) {
       setSelectedDate(booking.selected_date);
       setSelectedTime(booking.selected_time);
-      setStaffId(booking.staff_id || '');
       setCustomerName(booking.customer_name);
       setCustomerPhone(booking.customer_phone || '');
       setCustomerEmail(booking.customer_email || '');
-      loadStaffs();
     }
   }, [booking, open]);
-
-  const loadStaffs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staffs')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setStaffs(data || []);
-    } catch (error) {
-      console.error('スタッフ読み込みエラー:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +43,6 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
         .update({
           selected_date: selectedDate,
           selected_time: selectedTime,
-          staff_id: staffId || null,
           customer_name: customerName,
           customer_phone: customerPhone,
           customer_email: customerEmail,
@@ -121,23 +99,6 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="staff">担当スタッフ</Label>
-            <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger>
-                <SelectValue placeholder="スタッフを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">未割り当て</SelectItem>
-                {staffs.map((staff) => (
-                  <SelectItem key={staff.id} value={staff.id}>
-                    {staff.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
