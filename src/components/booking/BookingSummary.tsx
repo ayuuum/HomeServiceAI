@@ -15,30 +15,59 @@ export const BookingSummary = ({
     disabled,
 }: BookingSummaryProps) => {
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50">
-            <div className="container max-w-4xl mx-auto flex items-center justify-between gap-4">
-                <div>
-                    <p className="text-sm text-muted-foreground">お支払い予定金額（税込）</p>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold text-primary">
-                            ¥{totalPrice.toLocaleString()}
-                        </p>
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 safe-area-inset-bottom">
+            <div className="container max-w-4xl mx-auto">
+                {/* Mobile: Stacked layout */}
+                <div className="flex flex-col gap-2 sm:hidden">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">お支払い予定金額（税込）</p>
                         {totalDiscount > 0 && (
-                            <span className="text-sm text-success font-medium">
-                                (¥{totalDiscount.toLocaleString()} お得)
+                            <span className="text-xs text-success font-medium">
+                                ¥{totalDiscount.toLocaleString()} お得
                             </span>
                         )}
                     </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="text-2xl font-bold text-primary">
+                            ¥{totalPrice.toLocaleString()}
+                        </p>
+                        <Button
+                            size="lg"
+                            onClick={onSubmit}
+                            disabled={disabled}
+                            className="flex-1 max-w-[200px] h-12 shadow-lg touch-manipulation"
+                        >
+                            予約する
+                            <Icon name="arrow_forward" size={16} className="ml-1" />
+                        </Button>
+                    </div>
                 </div>
-                <Button
-                    size="lg"
-                    onClick={onSubmit}
-                    disabled={disabled}
-                    className="shadow-lg hover:shadow-xl transition-all"
-                >
-                    予約内容を確認する
-                    <Icon name="arrow_forward" size={16} className="ml-2" />
-                </Button>
+
+                {/* Desktop: Side by side layout */}
+                <div className="hidden sm:flex items-center justify-between gap-4">
+                    <div>
+                        <p className="text-sm text-muted-foreground">お支払い予定金額（税込）</p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-primary">
+                                ¥{totalPrice.toLocaleString()}
+                            </p>
+                            {totalDiscount > 0 && (
+                                <span className="text-sm text-success font-medium">
+                                    (¥{totalDiscount.toLocaleString()} お得)
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <Button
+                        size="lg"
+                        onClick={onSubmit}
+                        disabled={disabled}
+                        className="shadow-lg hover:shadow-xl transition-all"
+                    >
+                        予約内容を確認する
+                        <Icon name="arrow_forward" size={16} className="ml-2" />
+                    </Button>
+                </div>
             </div>
         </div>
     );

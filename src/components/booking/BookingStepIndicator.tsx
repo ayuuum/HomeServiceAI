@@ -24,8 +24,8 @@ export const BookingStepIndicator = ({
   onStepClick,
 }: BookingStepIndicatorProps) => {
   return (
-    <div className="w-full pt-4 pb-8">
-      <div className="flex items-center justify-between max-w-md mx-auto px-6">
+    <div className="w-full py-3 sm:pt-4 sm:pb-8">
+      <div className="flex items-center justify-between max-w-xs sm:max-w-md mx-auto px-4 sm:px-6">
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
@@ -44,34 +44,33 @@ export const BookingStepIndicator = ({
               >
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300",
+                    "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all duration-300",
                     isCompleted && "bg-primary text-primary-foreground",
-                    isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20",
+                    isCurrent && "bg-primary text-primary-foreground ring-2 sm:ring-4 ring-primary/20",
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
                   )}
                 >
                   {isCompleted ? (
-                    <Check className="w-4 h-4" />
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                   ) : (
                     step.id
                   )}
                 </div>
                 <span
                   className={cn(
-                    "absolute -bottom-6 text-xs whitespace-nowrap transition-colors",
+                    "absolute -bottom-5 sm:-bottom-6 text-[10px] sm:text-xs whitespace-nowrap transition-colors",
                     isCurrent && "text-primary font-medium",
                     isCompleted && "text-primary",
                     !isCompleted && !isCurrent && "text-muted-foreground"
                   )}
                 >
-                  <span className="hidden sm:inline">{step.label}</span>
-                  <span className="sm:hidden">{step.shortLabel}</span>
+                  {step.shortLabel}
                 </span>
               </button>
 
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 mx-2">
+                <div className="flex-1 mx-1 sm:mx-2">
                   <div
                     className={cn(
                       "h-0.5 transition-colors duration-300",

@@ -105,17 +105,17 @@ const BookingPage = () => {
         bookingData={bookingData}
       />
 
-      <div className="min-h-screen bg-background pb-32">
+      <div className="min-h-screen bg-background pb-36 md:pb-32">
         {/* Header */}
         <header className="bg-card border-b border-border sticky top-0 z-40">
-          <div className="container max-w-6xl mx-auto px-4 py-4">
+          <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
+                <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
               </div>
               <Link
                 to="/admin"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 管理画面
               </Link>
@@ -124,24 +124,24 @@ const BookingPage = () => {
         </header>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-primary/5 to-transparent py-12">
+        <section className="bg-gradient-to-b from-primary/5 to-transparent py-8 sm:py-12">
           <div className="container max-w-6xl mx-auto px-4">
-            <h2 className="text-4xl md:text-6xl font-bold mb-3 text-center text-primary">
-              ハウクリProで<br className="md:hidden" />簡単予約
+            <h2 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-2 sm:mb-3 text-center text-primary">
+              ハウクリProで<br className="sm:hidden" />簡単予約
             </h2>
-            <p className="text-center text-muted-foreground max-w-2xl mx-auto">
-              サービスを選んで、日時を選ぶだけ。<br />
+            <p className="text-sm sm:text-base text-center text-muted-foreground max-w-2xl mx-auto">
+              サービスを選んで、日時を選ぶだけ。<br className="hidden sm:block" />
               見積もり不要、すぐに予約完了できます。
             </p>
           </div>
         </section>
 
         {/* Step Indicator */}
-        <div className="sticky top-[73px] z-30 bg-background/95 backdrop-blur-sm border-b border-border mb-8">
+        <div className="sticky top-[57px] sm:top-[65px] z-30 bg-background/95 backdrop-blur-sm border-b border-border mb-6 sm:mb-8">
           <BookingStepIndicator currentStep={currentStep} onStepClick={handleStepClick} />
         </div>
 
-        <div className="container max-w-4xl mx-auto px-4 py-8 space-y-12">
+        <div className="container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-8 sm:space-y-12">
           <div ref={serviceRef}>
             <BookingServiceSelection
               allServices={allServices}
