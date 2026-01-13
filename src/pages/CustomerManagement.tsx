@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useStore } from "@/contexts/StoreContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,35 +23,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
-import { LineMessageModal } from "@/components/LineMessageModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
-  const { selectedStoreId } = useStore();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
-  const [sendingLineMessage, setSendingLineMessage] = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
-    queryKey: ["customers", selectedStoreId],
+    queryKey: ["customers"],
     queryFn: async () => {
-      const query = supabase
+      const { data, error } = await supabase
         .from("customers")
         .select("*, bookings(id, total_price)")
         .order("created_at", { ascending: false });
 
-      if (selectedStoreId) {
-        query.eq("store_id", selectedStoreId);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
 
       return (data || []).map((c) => {
@@ -62,7 +53,6 @@ export default function CustomerManagement() {
 
         return {
           id: c.id,
-          storeId: c.store_id,
           lineUserId: c.line_user_id || undefined,
           name: c.name || "",
           phone: c.phone || undefined,
@@ -165,7 +155,6 @@ export default function CustomerManagement() {
           const { data: newCustomer, error: createError } = await supabase
             .from('customers')
             .insert({
-              store_id: booking.store_id, // Use booking's store_id
               name: booking.customer_name || '不明な顧客',
               email: booking.customer_email,
               phone: booking.customer_phone
@@ -267,17 +256,6 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell className="text-right px-6">
                         <div className="flex gap-1 justify-end">
-                          {customer.lineUserId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                              onClick={() => setSendingLineMessage(customer)}
-                              title="LINEメッセージを送る"
-                            >
-                              <Icon name="chat" size={16} />
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -325,13 +303,6 @@ export default function CustomerManagement() {
         customerName={viewingBookingHistory?.name || ""}
         open={!!viewingBookingHistory}
         onOpenChange={(open) => !open && setViewingBookingHistory(null)}
-      />
-
-      <LineMessageModal
-        open={!!sendingLineMessage}
-        onOpenChange={(open) => !open && setSendingLineMessage(null)}
-        customer={sendingLineMessage}
-        storeId={selectedStoreId}
       />
 
       <AlertDialog
