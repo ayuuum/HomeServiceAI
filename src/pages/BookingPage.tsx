@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useBooking } from "@/hooks/useBooking";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
@@ -11,10 +11,6 @@ import { BookingAssistant } from "@/components/booking/BookingAssistant";
 import { toast } from "sonner";
 
 const BookingPage = () => {
-  const { storeId } = useParams();
-  const [searchParams] = useSearchParams();
-  const initialLineUserId = searchParams.get("lineUserId");
-
   const {
     allServices,
     selectedServices,
@@ -38,7 +34,6 @@ const BookingPage = () => {
     totalPrice,
     totalDiscount,
     loading,
-    lineUserId,
     handleServiceQuantityChange,
     handleOptionChange,
     handleOptionQuantityChange,
@@ -47,7 +42,7 @@ const BookingPage = () => {
     submitBooking,
     getOptionsForService,
     applyRecommendation,
-  } = useBooking(storeId, initialLineUserId);
+  } = useBooking();
 
   const handleApplyRecommendation = (serviceIds: string[], optionIds: string[]) => {
     applyRecommendation(serviceIds, optionIds);
@@ -153,7 +148,6 @@ const BookingPage = () => {
               selectedServices={selectedServices}
               allOptions={allOptions}
               selectedOptions={selectedOptions}
-              lineUserId={lineUserId}
               onServiceQuantityChange={handleServiceQuantityChange}
               onOptionChange={handleOptionChange}
               onOptionQuantityChange={handleOptionQuantityChange}

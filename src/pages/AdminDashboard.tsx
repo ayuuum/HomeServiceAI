@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { NewBookingModal } from "@/components/NewBookingModal";
@@ -15,9 +14,8 @@ import AdminServiceManagement from "./AdminServiceManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { AdminHeader } from "@/components/AdminHeader";
-import { useStore } from "@/contexts/StoreContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { startOfDay, endOfDay, subDays, isWithinInterval } from "date-fns";
+import { startOfDay, subDays } from "date-fns";
 
 const container = {
   hidden: { opacity: 0 },
@@ -57,19 +55,16 @@ const getStatusBadge = (status: string) => {
 
 const AdminDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
-
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
-  const { selectedStoreId } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
-
 
     const channel = supabase
       .channel('bookings-changes')
@@ -83,9 +78,7 @@ const AdminDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedStoreId, statusFilter, dateFilter]);
-
-
+  }, [statusFilter, dateFilter]);
 
   const fetchBookings = async () => {
     let query = supabase
@@ -93,15 +86,9 @@ const AdminDashboard = () => {
       .select(`
         *,
         booking_services (service_title, service_quantity, service_base_price),
-        booking_options (option_title, option_price, option_quantity),
-        stores (name),
-        staffs (name)
+        booking_options (option_title, option_price, option_quantity)
       `)
       .order('created_at', { ascending: false });
-
-    if (selectedStoreId) {
-      query = query.eq('store_id', selectedStoreId);
-    }
 
     if (statusFilter !== "all") {
       query = query.eq('status', statusFilter);
@@ -231,9 +218,6 @@ const AdminDashboard = () => {
 
           <TabsContent value="bookings" className="space-y-8">
             {/* Stats Cards */}
-            {/* Stats Cards */}
-            {/* Stats Cards */}
-            {/* Stats Cards */}
             <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
               variants={container}
@@ -328,10 +312,6 @@ const AdminDashboard = () => {
                             <span className="flex items-center gap-1.5">
                               <Icon name="schedule" size={14} />
                               {booking.selectedTime}
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                              <Icon name="person" size={14} />
-                              {booking.staffName || "担当者未定"}
                             </span>
                           </div>
                         </div>

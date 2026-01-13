@@ -26,7 +26,6 @@ import { ja } from "date-fns/locale";
 import { Service, ServiceOption } from "@/types/booking";
 import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
-import { useStore } from "@/contexts/StoreContext";
 import { Icon } from "@/components/ui/icon";
 
 interface NewBookingModalProps {
@@ -54,7 +53,6 @@ export const NewBookingModal = ({
     onOpenChange,
     onBookingCreated,
 }: NewBookingModalProps) => {
-    const { selectedStoreId } = useStore();
     const [step, setStep] = useState<Step>("customer");
     const [loading, setLoading] = useState(false);
 
@@ -73,7 +71,7 @@ export const NewBookingModal = ({
     // Service & Options
     const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
     const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
-    const [currentServiceId, setCurrentServiceId] = useState<string>(""); // Temporary for adding
+    const [currentServiceId, setCurrentServiceId] = useState<string>("");
 
     // Date & Time
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -214,7 +212,6 @@ export const NewBookingModal = ({
             const { data: existingBookings, error: checkError } = await supabase
                 .from('bookings')
                 .select('id')
-                .eq('store_id', selectedStoreId)
                 .eq('selected_date', formattedDate)
                 .eq('selected_time', selectedTime)
                 .neq('status', 'cancelled');
@@ -232,22 +229,17 @@ export const NewBookingModal = ({
 
             // Customer Merging Logic if creating new customer or if we want to update existing
             if (!customerId && (newCustomer.email || newCustomer.phone)) {
-                // Normalize phone number for search (remove hyphens)
-                const normalizedPhone = newCustomer.phone.replace(/-/g, '');
-
-                let query = supabase
-                    .from('customers')
-                    .select('id')
-                    .eq('store_id', selectedStoreId);
-
                 const conditions = [];
                 if (newCustomer.email) conditions.push(`email.eq.${newCustomer.email}`);
-                if (normalizedPhone) conditions.push(`phone.eq.${normalizedPhone}`);
                 if (newCustomer.phone) conditions.push(`phone.eq.${newCustomer.phone}`);
 
                 if (conditions.length > 0) {
-                    query = query.or(conditions.join(','));
-                    const { data: existingCustomer } = await query.maybeSingle();
+                    const { data: existingCustomer } = await supabase
+                        .from('customers')
+                        .select('id')
+                        .or(conditions.join(','))
+                        .maybeSingle();
+
                     if (existingCustomer) {
                         customerId = existingCustomer.id;
                         // Update existing
@@ -268,7 +260,6 @@ export const NewBookingModal = ({
                 const { data: createdCustomer, error: customerError } = await supabase
                     .from("customers")
                     .insert({
-                        store_id: selectedStoreId,
                         name: newCustomer.name,
                         email: newCustomer.email || null,
                         phone: newCustomer.phone || null,
@@ -301,7 +292,6 @@ export const NewBookingModal = ({
             const { data: booking, error: bookingError } = await supabase
                 .from("bookings")
                 .insert({
-                    store_id: selectedStoreId,
                     customer_id: customerId,
                     customer_name: selectedCustomer ? selectedCustomer.name : newCustomer.name,
                     customer_email: selectedCustomer ? selectedCustomer.email : newCustomer.email,
@@ -455,156 +445,174 @@ export const NewBookingModal = ({
                             <SelectValue placeholder="サービスを選択" />
                         </SelectTrigger>
                         <SelectContent>
-                            {services.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                    {s.title} (¥{s.basePrice.toLocaleString()})
+                            {services.map((service) => (
+                                <SelectItem key={service.id} value={service.id}>
+                                    {service.title} - ¥{service.basePrice.toLocaleString()}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleAddService} disabled={!currentServiceId} variant="secondary">
-                        <Icon name="add" size={16} className="mr-2" />
-                        追加
+                    <Button onClick={handleAddService} disabled={!currentServiceId}>
+                        <Icon name="add" size={16} />
                     </Button>
                 </div>
             </div>
 
             {selectedServices.length > 0 && (
                 <div className="space-y-4">
-                    {selectedServices.map(({ serviceId, quantity, service }) => {
-                        const serviceOptions = getOptionsForService(serviceId);
-                        return (
-                            <div key={serviceId} className="border rounded-lg p-4 space-y-3">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h4 className="font-semibold">{service.title}</h4>
-                                        <p className="text-sm text-muted-foreground">¥{service.basePrice.toLocaleString()}</p>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleRemoveService(serviceId)}
-                                        className="text-destructive hover:text-destructive/90"
-                                    >
-                                        <Icon name="delete" size={16} />
-                                    </Button>
+                    <Label>選択したサービス</Label>
+                    {selectedServices.map(({ serviceId, quantity, service }) => (
+                        <div key={serviceId} className="p-4 border rounded-lg space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-medium">{service.title}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        ¥{service.basePrice.toLocaleString()} / 台
+                                    </p>
                                 </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Label className="text-xs">数量:</Label>
-                                    <Input
-                                        type="number"
-                                        min="1"
-                                        value={quantity}
-                                        onChange={(e) => handleServiceQuantityChange(serviceId, parseInt(e.target.value) || 1)}
-                                        className="w-20 h-8"
-                                    />
-                                </div>
-
-                                {serviceOptions.length > 0 && (
-                                    <div className="pt-2 border-t">
-                                        <Label className="text-xs mb-2 block">オプション</Label>
-                                        <div className="space-y-2">
-                                            {serviceOptions.map((option) => {
-                                                const selected = selectedOptions.find(o => o.optionId === option.id);
-                                                return (
-                                                    <div key={option.id} className="flex items-center justify-between text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <Checkbox
-                                                                checked={!!selected}
-                                                                onCheckedChange={(checked) => handleOptionChange(option.id, !!checked)}
-                                                            />
-                                                            <span>{option.title} (+¥{option.price.toLocaleString()})</span>
-                                                        </div>
-                                                        {selected && (
-                                                            <Input
-                                                                type="number"
-                                                                min="1"
-                                                                value={selected.quantity}
-                                                                onChange={(e) => handleOptionQuantityChange(option.id, parseInt(e.target.value) || 1)}
-                                                                className="w-16 h-7 text-xs"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive"
+                                    onClick={() => handleRemoveService(serviceId)}
+                                >
+                                    <Icon name="close" size={16} />
+                                </Button>
                             </div>
-                        );
-                    })}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm">台数:</Label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleServiceQuantityChange(serviceId, quantity - 1)}
+                                    disabled={quantity <= 1}
+                                >
+                                    -
+                                </Button>
+                                <span className="w-8 text-center">{quantity}</span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleServiceQuantityChange(serviceId, quantity + 1)}
+                                >
+                                    +
+                                </Button>
+                            </div>
+
+                            {/* Options for this service */}
+                            {getOptionsForService(serviceId).length > 0 && (
+                                <div className="pt-2 border-t space-y-2">
+                                    <p className="text-sm font-medium">オプション:</p>
+                                    {getOptionsForService(serviceId).map((option) => {
+                                        const selected = selectedOptions.find(o => o.optionId === option.id);
+                                        return (
+                                            <div key={option.id} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        checked={!!selected}
+                                                        onCheckedChange={(checked) =>
+                                                            handleOptionChange(option.id, !!checked)
+                                                        }
+                                                    />
+                                                    <span className="text-sm">{option.title}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        +¥{option.price.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                {selected && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0"
+                                                            onClick={() =>
+                                                                handleOptionQuantityChange(option.id, selected.quantity - 1)
+                                                            }
+                                                            disabled={selected.quantity <= 1}
+                                                        >
+                                                            -
+                                                        </Button>
+                                                        <span className="w-6 text-center text-sm">{selected.quantity}</span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0"
+                                                            onClick={() =>
+                                                                handleOptionQuantityChange(option.id, selected.quantity + 1)
+                                                            }
+                                                        >
+                                                            +
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
     );
 
     const renderDateTimeStep = () => (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div>
-                <Label>日付 *</Label>
-                <div className="border rounded-lg p-2 flex justify-center">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        locale={ja}
-                    />
+                <Label className="mb-2 block">日付を選択</Label>
+                <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    locale={ja}
+                    disabled={(date) => date < new Date()}
+                    className="rounded-md border"
+                />
+            </div>
+
+            <div>
+                <Label className="mb-2 block">時間を選択</Label>
+                <div className="grid grid-cols-3 gap-2">
+                    {timeSlots.map((time) => (
+                        <Button
+                            key={time}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            onClick={() => setSelectedTime(time)}
+                            className="w-full"
+                        >
+                            {time}
+                        </Button>
+                    ))}
                 </div>
             </div>
-            {selectedDate && (
-                <div>
-                    <Label>時間 *</Label>
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                        {timeSlots.map((time) => (
-                            <Button
-                                key={time}
-                                variant={selectedTime === time ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setSelectedTime(time)}
-                            >
-                                {time}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-            )}
+
             <div>
-                <Label>駐車場の有無 *</Label>
-                <div className="flex gap-4 mt-2">
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="radio"
-                            id="parking-yes"
-                            name="parking"
-                            value="yes"
-                            checked={hasParking === "yes"}
-                            onChange={(e) => setHasParking(e.target.value)}
-                            className="h-4 w-4 border-primary text-primary focus:ring-primary"
-                        />
-                        <Label htmlFor="parking-yes" className="cursor-pointer font-normal">あり</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="radio"
-                            id="parking-no"
-                            name="parking"
-                            value="no"
-                            checked={hasParking === "no"}
-                            onChange={(e) => setHasParking(e.target.value)}
-                            className="h-4 w-4 border-primary text-primary focus:ring-primary"
-                        />
-                        <Label htmlFor="parking-no" className="cursor-pointer font-normal">なし</Label>
-                    </div>
+                <Label className="mb-2 block">駐車場</Label>
+                <div className="flex gap-2">
+                    <Button
+                        variant={hasParking === "yes" ? "default" : "outline"}
+                        onClick={() => setHasParking("yes")}
+                        className="flex-1"
+                    >
+                        あり
+                    </Button>
+                    <Button
+                        variant={hasParking === "no" ? "default" : "outline"}
+                        onClick={() => setHasParking("no")}
+                        className="flex-1"
+                    >
+                        なし
+                    </Button>
                 </div>
             </div>
+
             <div>
-                <Label>備考</Label>
+                <Label className="mb-2 block">備考</Label>
                 <Textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="特記事項があれば入力"
+                    placeholder="特記事項があれば入力してください"
                 />
             </div>
         </div>
@@ -612,86 +620,110 @@ export const NewBookingModal = ({
 
     const renderConfirmStep = () => {
         let total = 0;
-        let totalDiscount = 0;
-
         selectedServices.forEach(({ service, quantity }) => {
             let serviceTotal = service.basePrice * quantity;
-            const { discount } = calculateDiscount(
-                service.basePrice,
-                quantity,
-                service.quantityDiscounts || []
-            );
+            const { discount } = calculateDiscount(service.basePrice, quantity, service.quantityDiscounts || []);
             serviceTotal -= discount;
             total += serviceTotal;
-            totalDiscount += discount;
         });
-
         selectedOptions.forEach(({ option, quantity }) => {
             total += option.price * quantity;
         });
 
         return (
             <div className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-sm">
+                <div className="p-4 bg-muted rounded-lg space-y-3">
                     <div>
-                        <span className="font-semibold block mb-1">顧客情報</span>
-                        {selectedCustomer ? (
-                            <p>{selectedCustomer.name} ({selectedCustomer.email || "-"})</p>
-                        ) : (
-                            <p>{newCustomer.name} ({newCustomer.email || "-"})</p>
-                        )}
-                    </div>
-                    <div>
-                        <span className="font-semibold block mb-1">日時</span>
-                        <p>
-                            {selectedDate ? format(selectedDate, "yyyy/MM/dd") : "-"} {selectedTime}
+                        <p className="text-sm text-muted-foreground">顧客</p>
+                        <p className="font-medium">
+                            {selectedCustomer ? selectedCustomer.name : newCustomer.name}
                         </p>
                     </div>
                     <div>
-                        <span className="font-semibold block mb-1">サービス内容</span>
+                        <p className="text-sm text-muted-foreground">サービス</p>
                         {selectedServices.map(({ service, quantity }) => (
-                            <div key={service.id} className="flex justify-between">
-                                <span>{service.title} × {quantity}</span>
-                                <span>¥{(service.basePrice * quantity).toLocaleString()}</span>
-                            </div>
+                            <p key={service.id} className="font-medium">
+                                {service.title} × {quantity}
+                            </p>
                         ))}
-                        {totalDiscount > 0 && (
-                            <div className="flex justify-between text-success">
-                                <span>割引</span>
-                                <span>-¥{totalDiscount.toLocaleString()}</span>
-                            </div>
-                        )}
-                        {selectedOptions.map(({ option, quantity }) => (
-                            <div key={option.id} className="flex justify-between text-muted-foreground">
-                                <span>+ {option.title} × {quantity}</span>
-                                <span>¥{(option.price * quantity).toLocaleString()}</span>
-                            </div>
-                        ))}
-                        <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg">
-                            <span>合計</span>
-                            <span>¥{total.toLocaleString()}</span>
+                    </div>
+                    {selectedOptions.length > 0 && (
+                        <div>
+                            <p className="text-sm text-muted-foreground">オプション</p>
+                            {selectedOptions.map(({ option, quantity }) => (
+                                <p key={option.id} className="font-medium">
+                                    {option.title} × {quantity}
+                                </p>
+                            ))}
                         </div>
+                    )}
+                    <div>
+                        <p className="text-sm text-muted-foreground">日時</p>
+                        <p className="font-medium">
+                            {selectedDate && format(selectedDate, "yyyy年M月d日", { locale: ja })} {selectedTime}
+                        </p>
                     </div>
                     <div>
-                        <span className="font-semibold block mb-1">駐車場</span>
-                        <p>{hasParking === "yes" ? "あり" : "なし"}</p>
+                        <p className="text-sm text-muted-foreground">駐車場</p>
+                        <p className="font-medium">{hasParking === "yes" ? "あり" : "なし"}</p>
                     </div>
                     {notes && (
                         <div>
-                            <span className="font-semibold block mb-1">備考</span>
-                            <p className="whitespace-pre-wrap">{notes}</p>
+                            <p className="text-sm text-muted-foreground">備考</p>
+                            <p className="font-medium">{notes}</p>
                         </div>
                     )}
+                    <div className="pt-2 border-t">
+                        <p className="text-sm text-muted-foreground">合計金額</p>
+                        <p className="text-2xl font-bold text-primary">¥{total.toLocaleString()}</p>
+                    </div>
                 </div>
             </div>
         );
+    };
+
+    const canProceed = () => {
+        switch (step) {
+            case "customer":
+                return selectedCustomer || newCustomer.name;
+            case "service":
+                return selectedServices.length > 0;
+            case "datetime":
+                return selectedDate && selectedTime && hasParking;
+            case "confirm":
+                return true;
+            default:
+                return false;
+        }
+    };
+
+    const handleNext = () => {
+        if (step === "customer") setStep("service");
+        else if (step === "service") setStep("datetime");
+        else if (step === "datetime") setStep("confirm");
+        else if (step === "confirm") handleCreateBooking();
+    };
+
+    const handleBack = () => {
+        if (step === "service") setStep("customer");
+        else if (step === "datetime") setStep("service");
+        else if (step === "confirm") setStep("datetime");
+    };
+
+    const getStepTitle = () => {
+        switch (step) {
+            case "customer": return "1. 顧客選択";
+            case "service": return "2. サービス選択";
+            case "datetime": return "3. 日時選択";
+            case "confirm": return "4. 確認";
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>新規予約作成</DialogTitle>
+                    <DialogTitle>{getStepTitle()}</DialogTitle>
                 </DialogHeader>
 
                 <div className="py-4">
@@ -701,43 +733,18 @@ export const NewBookingModal = ({
                     {step === "confirm" && renderConfirmStep()}
                 </div>
 
-                <DialogFooter className="flex justify-between sm:justify-between">
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            if (step === "customer") onOpenChange(false);
-                            if (step === "service") setStep("customer");
-                            if (step === "datetime") setStep("service");
-                            if (step === "confirm") setStep("datetime");
-                        }}
-                    >
-                        {step === "customer" ? "キャンセル" : "戻る"}
-                    </Button>
-
-                    {step !== "confirm" ? (
-                        <Button
-                            onClick={() => {
-                                if (step === "customer") {
-                                    if (selectedCustomer || newCustomer.name) setStep("service");
-                                    else toast.error("顧客を選択または入力してください");
-                                } else if (step === "service") {
-                                    if (selectedServices.length > 0) setStep("datetime");
-                                    else toast.error("サービスを少なくとも1つ選択してください");
-                                } else if (step === "datetime") {
-                                    if (selectedDate && selectedTime && hasParking) setStep("confirm");
-                                    else if (!hasParking) toast.error("駐車場の有無を選択してください");
-                                    else toast.error("日時を選択してください");
-                                }
-                            }}
-                        >
-                            次へ
-                        </Button>
-                    ) : (
-                        <Button onClick={handleCreateBooking} disabled={loading} className="btn-primary">
-                            {loading && <Icon name="sync" size={16} className="animate-spin mr-2" />}
-                            予約を確定する
+                <DialogFooter className="flex gap-2">
+                    {step !== "customer" && (
+                        <Button variant="outline" onClick={handleBack}>
+                            戻る
                         </Button>
                     )}
+                    <Button onClick={handleNext} disabled={!canProceed() || loading}>
+                        {loading ? (
+                            <Icon name="sync" size={16} className="animate-spin mr-2" />
+                        ) : null}
+                        {step === "confirm" ? "予約を作成" : "次へ"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

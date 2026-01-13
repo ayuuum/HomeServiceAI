@@ -18,7 +18,7 @@ export interface SelectedOption {
     option: ServiceOption;
 }
 
-export const useBooking = (storeId?: string, initialLineUserId?: string | null) => {
+export const useBooking = () => {
     // State management
     const [allServices, setAllServices] = useState<Service[]>([]);
     const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
@@ -35,7 +35,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [lineUserId, setLineUserId] = useState<string | null>(initialLineUserId || null);
 
     // Fetch all services
     useEffect(() => {
@@ -81,12 +80,11 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         };
     }, []);
 
-    // Check for authenticated user (LINE Login)
+    // Check for authenticated user
     useEffect(() => {
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                // Extract LINE profile info
                 const { user_metadata } = user;
                 if (user_metadata) {
                     if (user_metadata.full_name || user_metadata.name) {
@@ -94,10 +92,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
                     }
                     if (user_metadata.email) {
                         setCustomerEmail(user_metadata.email);
-                    }
-                    // LINE provider specific ID
-                    if (user.app_metadata.provider === 'line' && user.user_metadata.sub) {
-                        setLineUserId(user.user_metadata.sub);
                     }
                 }
             }
@@ -266,30 +260,11 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         }
 
         try {
-            // 1. Get store ID
-            let targetStoreId = storeId;
-
-            if (!targetStoreId) {
-                // Default to first non-HQ store if no storeId in URL
-                const { data: storeData } = await supabase
-                    .from('stores')
-                    .select('id')
-                    .eq('is_hq', false)
-                    .limit(1)
-                    .single();
-                targetStoreId = storeData?.id;
-            }
-
-            if (!targetStoreId) {
-                throw new Error("Store not found");
-            }
-
             // --- Double Booking Prevention ---
             const formattedDate = format(selectedDate, 'yyyy-MM-dd');
             const { data: existingBookings, error: checkError } = await supabase
                 .from('bookings')
                 .select('id')
-                .eq('store_id', targetStoreId)
                 .eq('selected_date', formattedDate)
                 .eq('selected_time', selectedTime)
                 .neq('status', 'cancelled');
@@ -316,19 +291,10 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
                 // Build query conditions
                 let query = supabase
                     .from('customers')
-                    .select('id')
-                    .eq('store_id', targetStoreId);
+                    .select('id');
 
                 const conditions = [];
                 if (customerEmail) conditions.push(`email.eq.${customerEmail}`);
-                if (normalizedPhone) conditions.push(`phone.eq.${normalizedPhone}`); // Note: This assumes phone in DB is also normalized or we search loosely. Ideally DB phone should be normalized.
-                // For now, let's try to match exact string if user entered hyphens, OR normalized if DB has no hyphens.
-                // To be safe and simple without changing DB schema right now:
-                // We will search by the exact phone string provided by user first.
-                // Ideally we should clean data on insert.
-
-                // Let's stick to the plan: Search by Email OR Phone (as provided)
-                // If the user inputs 090-1234-5678, we search for that.
                 if (customerPhone) conditions.push(`phone.eq.${customerPhone}`);
 
                 if (conditions.length > 0) {
@@ -345,8 +311,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
                                 name: customerName.trim(),
                                 email: customerEmail.trim() || null,
                                 phone: customerPhone.trim() || null,
-                                // Only update line_user_id if it's currently null or we want to overwrite
-                                ...(lineUserId ? { line_user_id: lineUserId } : {})
                             })
                             .eq('id', customerId);
                     }
@@ -358,11 +322,9 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
                 const { data: newCustomer, error: customerError } = await supabase
                     .from('customers')
                     .insert({
-                        store_id: targetStoreId,
                         name: customerName.trim(),
                         email: customerEmail.trim() || null,
                         phone: customerPhone.trim() || null,
-                        line_user_id: lineUserId || null,
                     })
                     .select('id')
                     .single();
@@ -387,7 +349,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
             const { data: bookingData, error: bookingError } = await supabase
                 .from('bookings')
                 .insert({
-                    store_id: targetStoreId,
                     customer_id: customerId,
                     customer_name: customerName.trim(),
                     customer_email: customerEmail.trim() || null,
@@ -457,7 +418,7 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
 
         } catch (error) {
             console.error("Booking error:", error);
-            toast.error("予約の送信に失敗しました");
+            toast.error("予約の送信に失敗しました。もう一度お試しください。");
             return null;
         }
     };
@@ -466,26 +427,26 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         return allOptions.filter(o => o.serviceId === serviceId);
     };
 
-    // Apply AI recommendation
+    // AI recommendation helper
     const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
-        // Clear current selections
+        // Clear existing selections
         setSelectedServices([]);
         setSelectedOptions([]);
 
         // Add recommended services
-        serviceIds.forEach(serviceId => {
-            const service = allServices.find(s => s.id === serviceId);
+        serviceIds.forEach(id => {
+            const service = allServices.find(s => s.id === id);
             if (service) {
-                setSelectedServices(prev => [...prev, { serviceId, quantity: 1, service }]);
+                setSelectedServices(prev => [...prev, { serviceId: id, quantity: 1, service }]);
             }
         });
 
-        // Add recommended options after a short delay to ensure options are loaded
+        // Add recommended options (after options are loaded)
         setTimeout(() => {
-            optionIds.forEach(optionId => {
-                const option = allOptions.find(o => o.id === optionId);
+            optionIds.forEach(id => {
+                const option = allOptions.find(o => o.id === id);
                 if (option) {
-                    setSelectedOptions(prev => [...prev, { optionId, quantity: 1, option }]);
+                    setSelectedOptions(prev => [...prev, { optionId: id, quantity: 1, option }]);
                 }
             });
         }, 500);
@@ -514,7 +475,6 @@ export const useBooking = (storeId?: string, initialLineUserId?: string | null) 
         totalPrice,
         totalDiscount,
         loading,
-        lineUserId,
         handleServiceQuantityChange,
         handleOptionChange,
         handleOptionQuantityChange,

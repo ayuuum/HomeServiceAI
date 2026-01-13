@@ -14,11 +14,10 @@ import {
 import { ja } from "date-fns/locale";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader } from "@/components/AdminHeader";
 import { MobileNav } from "@/components/MobileNav";
-import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
@@ -26,7 +25,6 @@ import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { toast } from "sonner";
 
 export default function CalendarPage() {
-    const { selectedStoreId } = useStore();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -35,7 +33,7 @@ export default function CalendarPage() {
 
     useEffect(() => {
         fetchBookings();
-    }, [currentDate, selectedStoreId]);
+    }, [currentDate]);
 
     const fetchBookings = async () => {
         try {
@@ -43,23 +41,15 @@ export default function CalendarPage() {
             const start = startOfWeek(startOfMonth(currentDate));
             const end = endOfWeek(endOfMonth(currentDate));
 
-            let query = supabase
+            const { data, error } = await supabase
                 .from("bookings")
                 .select(`
-          *,
-          booking_services (service_title, service_quantity, service_base_price),
-          booking_options (option_title, option_price, option_quantity),
-          stores (name),
-          staffs (name)
-        `)
+                    *,
+                    booking_services (service_title, service_quantity, service_base_price),
+                    booking_options (option_title, option_price, option_quantity)
+                `)
                 .gte("selected_date", format(start, "yyyy-MM-dd"))
                 .lte("selected_date", format(end, "yyyy-MM-dd"));
-
-            if (selectedStoreId) {
-                query = query.eq("store_id", selectedStoreId);
-            }
-
-            const { data, error } = await query;
 
             if (error) throw error;
 
@@ -170,7 +160,7 @@ export default function CalendarPage() {
 
                         {/* Calendar Grid */}
                         <div className="grid grid-cols-7 auto-rows-fr bg-border gap-px">
-                            {days.map((day, dayIdx) => {
+                            {days.map((day) => {
                                 const dayBookings = getBookingsForDay(day);
                                 const isToday = isSameDay(day, new Date());
                                 const isCurrentMonth = isSameMonth(day, currentDate);

@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
-import { useStore } from '@/contexts/StoreContext';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
@@ -14,17 +13,15 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 export default function ReportsPage() {
   const { toast } = useToast();
-  const { selectedStoreId, stores } = useStore();
   const [period, setPeriod] = useState('7');
   const [salesData, setSalesData] = useState<any[]>([]);
-  const [storeSalesData, setStoreSalesData] = useState<any[]>([]);
   const [serviceData, setServiceData] = useState<any[]>([]);
   const [statusData, setStatusData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadReportData();
-  }, [period, selectedStoreId]);
+  }, [period]);
 
   const loadReportData = async () => {
     try {
@@ -33,22 +30,15 @@ export default function ReportsPage() {
       const startDate = startOfDay(subDays(new Date(), days));
       const endDate = endOfDay(new Date());
 
-      let query = supabase
+      const { data: bookings, error } = await supabase
         .from('bookings')
         .select('*, booking_services(*)')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
-      if (selectedStoreId) {
-        query = query.eq('store_id', selectedStoreId);
-      }
-
-      const { data: bookings, error } = await query;
-
       if (error) throw error;
 
       processSalesData(bookings || []);
-      processStoreSalesData(bookings || []);
       processServiceData(bookings || []);
       processStatusData(bookings || []);
     } catch (error) {
@@ -88,26 +78,6 @@ export default function ReportsPage() {
     }));
 
     setSalesData(data);
-  };
-
-  const processStoreSalesData = (bookings: any[]) => {
-    const salesByStore: { [key: string]: number } = {};
-
-    bookings.forEach((booking) => {
-      if (booking.store_id) {
-        salesByStore[booking.store_id] = (salesByStore[booking.store_id] || 0) + booking.total_price;
-      }
-    });
-
-    const data = Object.entries(salesByStore).map(([storeId, amount]) => {
-      const store = stores.find(s => s.id === storeId);
-      return {
-        name: store ? store.name : '不明な店舗',
-        売上: amount,
-      };
-    }).sort((a, b) => b.売上 - a.売上);
-
-    setStoreSalesData(data);
   };
 
   const processServiceData = (bookings: any[]) => {
@@ -220,42 +190,6 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
-              {storeSalesData.length > 0 && (
-                <Card className="md:col-span-2 shadow-subtle border-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-bold">店舗別売上</CardTitle>
-                    <CardDescription>店舗ごとの売上合計</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <ResponsiveContainer width="100%" height={350}>
-                      <BarChart data={storeSalesData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" opacity={0.4} />
-                        <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(value) => `¥${value.toLocaleString()}`} />
-                        <YAxis
-                          dataKey="name"
-                          type="category"
-                          width={100}
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 500 }}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: 'none',
-                            borderRadius: '8px',
-                            boxShadow: 'var(--shadow-medium)'
-                          }}
-                          formatter={(value: number) => [`¥${value.toLocaleString()}`, '売上']}
-                        />
-                        <Legend />
-                        <Bar dataKey="売上" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={32} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
 
               <Card className="shadow-subtle border-none">
                 <CardHeader className="pb-2">
