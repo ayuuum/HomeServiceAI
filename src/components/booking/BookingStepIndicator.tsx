@@ -29,7 +29,7 @@ export const BookingStepIndicator = ({
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
-          const isClickable = step.id < currentStep;
+          const isClickable = step.id <= 3; // All main steps are always clickable
 
           return (
             <div key={step.id} className="flex items-center flex-1">
@@ -39,7 +39,7 @@ export const BookingStepIndicator = ({
                 disabled={!isClickable}
                 className={cn(
                   "relative flex flex-col items-center group",
-                  isClickable && "cursor-pointer"
+                  isClickable && "cursor-pointer hover:opacity-80"
                 )}
               >
                 <div

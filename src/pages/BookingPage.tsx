@@ -155,46 +155,40 @@ const BookingPage = () => {
             />
           </div>
 
-          {selectedServices.length > 0 && (
-            <div ref={dateTimeRef}>
-              <BookingDateTimeSelection
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-                selectedTime={selectedTime}
-                onTimeSelect={setSelectedTime}
-                hasParking={hasParking}
-                onParkingChange={setHasParking}
-              />
-            </div>
-          )}
+          <div ref={dateTimeRef}>
+            <BookingDateTimeSelection
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              selectedTime={selectedTime}
+              onTimeSelect={setSelectedTime}
+              hasParking={hasParking}
+              onParkingChange={setHasParking}
+            />
+          </div>
 
-          {selectedServices.length > 0 && selectedDate && selectedTime && (
-            <div ref={customerRef}>
-              <BookingCustomerForm
-                customerName={customerName}
-                onNameChange={setCustomerName}
-                customerEmail={customerEmail}
-                onEmailChange={setCustomerEmail}
-                customerPhone={customerPhone}
-                onPhoneChange={setCustomerPhone}
-                notes={notes}
-                onNotesChange={setNotes}
-                photos={photos}
-                onFileSelect={handleFileSelect}
-                onRemovePhoto={handleRemovePhoto}
-              />
-            </div>
-          )}
+          <div ref={customerRef}>
+            <BookingCustomerForm
+              customerName={customerName}
+              onNameChange={setCustomerName}
+              customerEmail={customerEmail}
+              onEmailChange={setCustomerEmail}
+              customerPhone={customerPhone}
+              onPhoneChange={setCustomerPhone}
+              notes={notes}
+              onNotesChange={setNotes}
+              photos={photos}
+              onFileSelect={handleFileSelect}
+              onRemovePhoto={handleRemovePhoto}
+            />
+          </div>
         </div>
 
-        {selectedServices.length > 0 && (
-          <BookingSummary
-            totalPrice={totalPrice}
-            totalDiscount={totalDiscount}
-            onSubmit={handleSubmit}
-            disabled={!selectedDate || !selectedTime || !hasParking || !customerName}
-          />
-        )}
+        <BookingSummary
+          totalPrice={totalPrice}
+          totalDiscount={totalDiscount}
+          onSubmit={handleSubmit}
+          disabled={!selectedServices.length || !selectedDate || !selectedTime || !hasParking || !customerName}
+        />
 
         {/* AI Booking Assistant */}
         <BookingAssistant
