@@ -16,6 +16,8 @@ import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { startOfDay, subDays } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "@/components/ui/input";
 
 const container = {
   hidden: { opacity: 0 },
@@ -54,6 +56,7 @@ const getStatusBadge = (status: string) => {
 };
 
 const AdminDashboard = () => {
+  const { organization } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -62,6 +65,20 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const navigate = useNavigate();
+
+  // Build full booking page URL
+  const bookingPageUrl = organization?.slug 
+    ? `${window.location.origin}/booking/${organization.slug}`
+    : '';
+
+  const copyBookingUrl = async () => {
+    if (bookingPageUrl) {
+      await navigator.clipboard.writeText(bookingPageUrl);
+      toast.success("URLをコピーしました", {
+        description: "お客様に共有してください",
+      });
+    }
+  };
 
   useEffect(() => {
     fetchBookings();
@@ -217,6 +234,43 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="bookings" className="space-y-8">
+            {/* Booking Page URL Card */}
+            {bookingPageUrl && (
+              <motion.div variants={item} initial="hidden" animate="show">
+                <Card className="shadow-subtle border-none bg-gradient-to-r from-primary/5 to-primary/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Icon name="link" size={18} className="text-primary" />
+                      あなたの予約ページURL
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      <Input
+                        value={bookingPageUrl}
+                        readOnly
+                        className="flex-1 bg-background text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button onClick={copyBookingUrl} variant="outline" className="flex-1 sm:flex-none">
+                          <Icon name="content_copy" size={16} className="mr-2" />
+                          コピー
+                        </Button>
+                        <Button asChild variant="default" className="flex-1 sm:flex-none">
+                          <a href={bookingPageUrl} target="_blank" rel="noopener noreferrer">
+                            <Icon name="open_in_new" size={16} className="mr-2" />
+                            開く
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      このURLをお客様に共有して、オンラインで予約を受け付けましょう
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
             {/* Stats Cards */}
             <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
