@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { User } from "@supabase/supabase-js";
 import { useBooking } from "@/hooks/useBooking";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
@@ -23,6 +24,8 @@ const BookingPage = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
   const [orgError, setOrgError] = useState<string | null>(null);
+  const [bookingUser, setBookingUser] = useState<User | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Fetch organization by slug
   useEffect(() => {
@@ -125,6 +128,46 @@ const BookingPage = () => {
       setShowConfirmation(true);
     }
   };
+
+  // Google login handler for booking users
+  const handleGoogleLogin = async () => {
+    setIsLoggingIn(true);
+    const currentUrl = window.location.href;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: currentUrl,
+      },
+    });
+    if (error) {
+      toast.error("ログインに失敗しました");
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Logout handler
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setBookingUser(null);
+    setCustomerName("");
+    setCustomerEmail("");
+  };
+
+  // Monitor auth state for booking users
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setBookingUser(session?.user ?? null);
+        setIsLoggingIn(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setBookingUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Show loading state
   if (orgLoading || loading) {
@@ -248,6 +291,10 @@ const BookingPage = () => {
               photos={photos}
               onFileSelect={handleFileSelect}
               onRemovePhoto={handleRemovePhoto}
+              isLoggedIn={!!bookingUser}
+              onGoogleLogin={handleGoogleLogin}
+              onLogout={handleLogout}
+              isLoggingIn={isLoggingIn}
             />
           </div>
         </div>
