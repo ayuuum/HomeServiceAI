@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import { mapDbOptionToOption } from "@/lib/serviceMapper";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ServiceOptionsModalProps {
     open: boolean;
@@ -31,6 +32,7 @@ export const ServiceOptionsModal = ({
     const [newOptionTitle, setNewOptionTitle] = useState("");
     const [newOptionPrice, setNewOptionPrice] = useState("");
     const [adding, setAdding] = useState(false);
+    const { organizationId } = useAuth();
 
     useEffect(() => {
         if (open && service) {
@@ -64,6 +66,11 @@ export const ServiceOptionsModal = ({
         e.preventDefault();
         if (!service || !newOptionTitle || !newOptionPrice) return;
 
+        if (!organizationId) {
+            toast.error("組織IDが見つかりません");
+            return;
+        }
+
         setAdding(true);
         const { data, error } = await supabase
             .from("service_options")
@@ -71,6 +78,7 @@ export const ServiceOptionsModal = ({
                 service_id: service.id,
                 title: newOptionTitle,
                 price: parseInt(newOptionPrice),
+                organization_id: organizationId
             })
             .select()
             .single();

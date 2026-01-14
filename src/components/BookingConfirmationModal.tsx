@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 interface BookingConfirmationModalProps {
   open: boolean;
@@ -27,6 +28,14 @@ export const BookingConfirmationModal = ({
   bookingData,
 }: BookingConfirmationModalProps) => {
   if (!bookingData) return null;
+
+  const googleCalendarUrl = bookingData ? generateGoogleCalendarUrl({
+    title: `予約: ${bookingData.serviceName}`,
+    details: `メニュー: ${bookingData.serviceName}\n料金: ¥${bookingData.totalPrice.toLocaleString()}`,
+    date: bookingData.date,
+    time: bookingData.time,
+    durationMinutes: 60, // Default 1 hour
+  }) : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,13 +79,23 @@ export const BookingConfirmationModal = ({
           </div>
         </div>
 
-        <Button
-          onClick={() => onOpenChange(false)}
-          size="lg"
-          className="w-full h-12 text-base"
-        >
-          画面を閉じる
-        </Button>
+        <div className="flex flex-col gap-3">
+          <Button
+            onClick={() => window.open(googleCalendarUrl, '_blank')}
+            variant="outline"
+            className="w-full h-12 text-base border-primary/20 hover:bg-primary/5 hover:text-primary"
+          >
+            <Icon name="calendar_today" size={20} className="mr-2" />
+            Googleカレンダーに追加
+          </Button>
+          <Button
+            onClick={() => onOpenChange(false)}
+            size="lg"
+            className="w-full h-12 text-base"
+          >
+            画面を閉じる
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

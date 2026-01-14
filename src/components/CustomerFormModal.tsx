@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,8 @@ export function CustomerFormModal({
 }: CustomerFormModalProps) {
   const queryClient = useQueryClient();
 
+  const { organizationId } = useAuth();
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -79,7 +82,8 @@ export function CustomerFormModal({
 
   const mutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      const payload = {
+      // Base payload for both update and insert
+      const payload: any = {
         name: data.name,
         phone: data.phone || null,
         email: data.email || null,
@@ -94,6 +98,12 @@ export function CustomerFormModal({
           .eq("id", customer.id);
         if (error) throw error;
       } else {
+        if (!organizationId) {
+          throw new Error("組織IDが見つかりません");
+        }
+        // Add organization_id for new records
+        payload.organization_id = organizationId;
+
         const { error } = await supabase.from("customers").insert(payload);
         if (error) throw error;
       }

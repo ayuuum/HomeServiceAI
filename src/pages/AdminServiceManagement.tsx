@@ -10,6 +10,7 @@ import { Service } from "@/types/booking";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDbServiceToService, mapServiceToDbService } from "@/lib/serviceMapper";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,6 +131,8 @@ const AdminServiceManagement = () => {
     }
   };
 
+  const { organizationId } = useAuth();
+
   const handleSubmit = async (values: any) => {
     const dbValues = mapServiceToDbService(values);
 
@@ -148,9 +151,19 @@ const AdminServiceManagement = () => {
       }
     } else {
       // Add new service
+      if (!organizationId) {
+        toast.error("組織IDが見つかりません");
+        return;
+      }
+
+      const newService = {
+        ...dbValues,
+        organization_id: organizationId
+      };
+
       const { error } = await supabase
         .from('services')
-        .insert([dbValues]);
+        .insert([newService]);
 
       if (error) {
         console.error('Error adding service:', error);

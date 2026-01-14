@@ -27,6 +27,7 @@ import { Service, ServiceOption } from "@/types/booking";
 import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
 import { Icon } from "@/components/ui/icon";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NewBookingModalProps {
     open: boolean;
@@ -53,6 +54,7 @@ export const NewBookingModal = ({
     onOpenChange,
     onBookingCreated,
 }: NewBookingModalProps) => {
+    const { organizationId } = useAuth();
     const [step, setStep] = useState<Step>("customer");
     const [loading, setLoading] = useState(false);
 
@@ -231,12 +233,18 @@ export const NewBookingModal = ({
             if (!customerId && (newCustomer.email || newCustomer.phone)) {
                 const conditions = [];
                 if (newCustomer.email) conditions.push(`email.eq.${newCustomer.email}`);
-                if (newCustomer.phone) conditions.push(`phone.eq.${newCustomer.phone}`);
+                if (newCustomer.phone) {
+                    const normalizedPhone = newCustomer.phone.replace(/[^\d]/g, '');
+                    conditions.push(`phone.eq.${newCustomer.phone}`);
+                    if (normalizedPhone !== newCustomer.phone) {
+                        conditions.push(`phone.eq.${normalizedPhone}`);
+                    }
+                }
 
                 if (conditions.length > 0) {
                     const { data: existingCustomer } = await supabase
                         .from('customers')
-                        .select('id')
+                        .select('id, name, email, phone')
                         .or(conditions.join(','))
                         .maybeSingle();
 
@@ -246,9 +254,9 @@ export const NewBookingModal = ({
                         await supabase
                             .from('customers')
                             .update({
-                                name: newCustomer.name,
-                                email: newCustomer.email || null,
-                                phone: newCustomer.phone || null,
+                                name: newCustomer.name || existingCustomer.name,
+                                email: newCustomer.email || existingCustomer.email,
+                                phone: newCustomer.phone || existingCustomer.phone,
                             })
                             .eq('id', customerId);
                     }
@@ -257,12 +265,18 @@ export const NewBookingModal = ({
 
             // Create customer if needed and still not found
             if (!customerId) {
+                if (!organizationId) {
+                    toast.error("組織IDが見つかりません");
+                    setLoading(false);
+                    return;
+                }
                 const { data: createdCustomer, error: customerError } = await supabase
                     .from("customers")
                     .insert({
                         name: newCustomer.name,
                         email: newCustomer.email || null,
                         phone: newCustomer.phone || null,
+                        organization_id: organizationId
                     })
                     .select()
                     .single();
@@ -288,6 +302,12 @@ export const NewBookingModal = ({
                 total += option.price * quantity;
             });
 
+            if (!organizationId) {
+                toast.error("組織IDが見つかりません");
+                setLoading(false);
+                return;
+            }
+
             // Create Booking
             const { data: booking, error: bookingError } = await supabase
                 .from("bookings")
@@ -302,6 +322,7 @@ export const NewBookingModal = ({
                     status: "confirmed",
                     diagnosis_has_parking: hasParking === "yes",
                     diagnosis_notes: notes,
+                    organization_id: organizationId
                 })
                 .select()
                 .single();

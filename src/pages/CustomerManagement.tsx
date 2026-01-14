@@ -21,6 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
 import { AdminHeader } from "@/components/AdminHeader";
@@ -34,7 +42,11 @@ export default function CustomerManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
+  const [sendingMessageCustomer, setSendingMessageCustomer] = useState<Customer | null>(null);
+  const [messageContent, setMessageContent] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
@@ -157,14 +169,27 @@ export default function CustomerManagement() {
         let customerId = null;
 
         // Try to match by email or phone first if available
+        // Try to match by email or phone first if available
         if (booking.customer_email || booking.customer_phone) {
-          const { data: existing } = await supabase
-            .from('customers')
-            .select('id')
-            .or(`email.eq.${booking.customer_email},phone.eq.${booking.customer_phone}`)
-            .maybeSingle();
+          const conditions = [];
+          if (booking.customer_email) conditions.push(`email.eq.${booking.customer_email}`);
+          if (booking.customer_phone) {
+            const normalizedPhone = booking.customer_phone.replace(/[^\d]/g, '');
+            conditions.push(`phone.eq.${booking.customer_phone}`);
+            if (normalizedPhone !== booking.customer_phone) {
+              conditions.push(`phone.eq.${normalizedPhone}`);
+            }
+          }
 
-          if (existing) customerId = existing.id;
+          if (conditions.length > 0) {
+            const { data: existing } = await supabase
+              .from('customers')
+              .select('id')
+              .or(conditions.join(','))
+              .maybeSingle();
+
+            if (existing) customerId = existing.id;
+          }
         }
 
         // If not found, try by name
@@ -185,7 +210,9 @@ export default function CustomerManagement() {
             .insert({
               name: booking.customer_name || '不明な顧客',
               email: booking.customer_email,
-              phone: booking.customer_phone
+              phone: booking.customer_phone,
+              // @ts-ignore
+              organization_id: booking.organization_id
             })
             .select('id')
             .single();
@@ -216,6 +243,31 @@ export default function CustomerManagement() {
       toast.error("データの修正に失敗しました");
     } finally {
       setIsFixing(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!sendingMessageCustomer || !sendingMessageCustomer.lineUserId || !messageContent.trim()) return;
+
+    try {
+      setIsSending(true);
+      const { error } = await supabase.functions.invoke('send-line-message', {
+        body: {
+          userId: sendingMessageCustomer.lineUserId,
+          message: messageContent.trim(),
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("LINEメッセージを送信しました");
+      setSendingMessageCustomer(null);
+      setMessageContent("");
+    } catch (error) {
+      console.error("Send message error:", error);
+      toast.error("メッセージの送信に失敗しました");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -288,6 +340,17 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell className="text-right px-6">
                         <div className="flex gap-1 justify-end">
+                          {customer.lineUserId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-[#06C755] hover:bg-[#06C755]/10 rounded-full"
+                              onClick={() => setSendingMessageCustomer(customer)}
+                              title="LINEメッセージを送信"
+                            >
+                              <Icon name="message_circle" size={16} />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -359,6 +422,63 @@ export default function CustomerManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!sendingMessageCustomer}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSendingMessageCustomer(null);
+            setMessageContent("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>LINEメッセージ送信</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-2 text-sm text-muted-foreground">
+              送信先: {sendingMessageCustomer?.name}
+            </p>
+            <Textarea
+              placeholder="メッセージを入力してください..."
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              rows={5}
+              className="resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSendingMessageCustomer(null);
+                setMessageContent("");
+              }}
+              disabled={isSending}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              disabled={!messageContent.trim() || isSending}
+              className="bg-[#06C755] hover:bg-[#06C755]/90 text-white"
+            >
+              {isSending ? (
+                <>
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                  送信中...
+                </>
+              ) : (
+                <>
+                  <Icon name="send" size={16} className="mr-2" />
+                  送信
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

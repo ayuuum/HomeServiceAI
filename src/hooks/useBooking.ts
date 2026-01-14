@@ -281,207 +281,209 @@ export const useBooking = () => {
             }
             // ---------------------------------
 
-            // 2. Find or create customer (Customer Merging)
-            let customerId: string | null = null;
+            try {
+                const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000000';
 
-            // Normalize phone number for search (remove hyphens)
-            const normalizedPhone = customerPhone.replace(/-/g, '');
+                // 1. Create or Find Customer
+                let customerId: string | undefined;
 
-            if (customerEmail || normalizedPhone) {
-                // Build query conditions
-                let query = supabase
-                    .from('customers')
-                    .select('id');
+                // Check if customer exists
+                if (customerEmail || customerPhone) {
+                    // Build query conditions
+                    let query = supabase
+                        .from('customers')
+                        .select('id, organization_id');
 
-                const conditions = [];
-                if (customerEmail) conditions.push(`email.eq.${customerEmail}`);
-                if (customerPhone) conditions.push(`phone.eq.${customerPhone}`);
+                    const conditions = [];
+                    if (customerEmail) conditions.push(`email.eq.${customerEmail}`);
 
-                if (conditions.length > 0) {
-                    query = query.or(conditions.join(','));
-                    const { data: existingCustomer } = await query.maybeSingle();
+                    if (customerPhone) {
+                        // Search for both the input format and the normalized format (no hyphens)
+                        const normalizedPhone = customerPhone.replace(/[^\d]/g, '');
+                        conditions.push(`phone.eq.${customerPhone}`);
+                        if (normalizedPhone !== customerPhone) {
+                            conditions.push(`phone.eq.${normalizedPhone}`);
+                        }
+                    }
 
-                    if (existingCustomer) {
-                        customerId = existingCustomer.id;
+                    if (conditions.length > 0) {
+                        query = query.or(conditions.join(','));
+                        const { data: existingCustomer } = await query.maybeSingle();
 
-                        // Update existing customer info to keep it fresh
-                        await supabase
-                            .from('customers')
-                            .update({
-                                name: customerName.trim(),
-                                email: customerEmail.trim() || null,
-                                phone: customerPhone.trim() || null,
-                            })
-                            .eq('id', customerId);
+                        if (existingCustomer) {
+                            customerId = existingCustomer.id;
+                            // Update existing customer info to keep it fresh
+                            await supabase
+                                .from('customers')
+                                .update({
+                                    name: customerName.trim(),
+                                    email: customerEmail.trim() || null,
+                                    phone: customerPhone.trim() || null,
+                                })
+                                .eq('id', customerId);
+                        }
                     }
                 }
-            }
 
-            // If no existing customer found, create new one
-            if (!customerId) {
-                const { data: newCustomer, error: customerError } = await supabase
-                    .from('customers')
+                if (!customerId) {
+                    const { data: newCustomer, error: customerError } = await supabase
+                        .from('customers')
+                        .insert({
+                            name: customerName,
+                            email: customerEmail,
+                            phone: customerPhone,
+                            organization_id: DEFAULT_ORG_ID
+                        })
+                        .select()
+                        .single();
+
+                    if (customerError) throw customerError;
+                    customerId = newCustomer.id;
+                }
+
+                if (!customerId) {
+                    throw new Error("Customer ID is missing");
+                }
+
+                // 2. Create Booking
+                const { data: bookingData, error: bookingError } = await supabase
+                    .from('bookings')
                     .insert({
-                        name: customerName.trim(),
-                        email: customerEmail.trim() || null,
-                        phone: customerPhone.trim() || null,
+                        customer_id: customerId,
+                        customer_name: customerName.trim(),
+                        customer_email: customerEmail.trim() || null,
+                        customer_phone: customerPhone.trim() || null,
+                        organization_id: DEFAULT_ORG_ID,
+                        selected_date: format(selectedDate, 'yyyy-MM-dd'),
+                        selected_time: selectedTime,
+                        total_price: totalPrice,
+                        total_discount: totalDiscount,
+                        status: 'pending',
+                        diagnosis_has_parking: hasParking === "yes",
+                        diagnosis_notes: notes
                     })
-                    .select('id')
+                    .select()
                     .single();
 
-                if (customerError) {
-                    console.error("Customer creation error:", customerError);
-                    throw customerError;
-                }
+                if (bookingError) throw bookingError;
 
-                if (!newCustomer) {
-                    throw new Error("Failed to create customer record");
-                }
-
-                customerId = newCustomer.id;
-            }
-
-            if (!customerId) {
-                throw new Error("Customer ID is missing");
-            }
-
-            // 3. Create booking
-            const { data: bookingData, error: bookingError } = await supabase
-                .from('bookings')
-                .insert({
-                    customer_id: customerId,
-                    customer_name: customerName.trim(),
-                    customer_email: customerEmail.trim() || null,
-                    customer_phone: customerPhone.trim() || null,
-                    selected_date: format(selectedDate, 'yyyy-MM-dd'),
-                    selected_time: selectedTime,
-                    total_price: totalPrice,
-                    status: 'pending',
-                    diagnosis_has_parking: hasParking === "yes",
-                    diagnosis_notes: notes
-                })
-                .select()
-                .single();
-
-            if (bookingError) throw bookingError;
-
-            // 4. Create booking_services records
-            const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
-                booking_id: bookingData.id,
-                service_id: serviceId,
-                service_title: service.title,
-                service_quantity: quantity,
-                service_base_price: service.basePrice
-            }));
-
-            const { error: servicesError } = await supabase
-                .from('booking_services')
-                .insert(servicesData);
-
-            if (servicesError) throw servicesError;
-
-            // 5. Create booking_options records
-            if (selectedOptions.length > 0) {
-                const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
+                // 4. Create booking_services records
+                const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
                     booking_id: bookingData.id,
-                    option_id: optionId,
-                    option_title: option.title,
-                    option_price: option.price,
-                    option_quantity: quantity
+                    service_id: serviceId,
+                    service_title: service.title,
+                    service_quantity: quantity,
+                    service_base_price: service.basePrice
                 }));
 
-                const { error: optionsError } = await supabase
-                    .from('booking_options')
-                    .insert(optionsData);
+                const { error: servicesError } = await supabase
+                    .from('booking_services')
+                    .insert(servicesData);
 
-                if (optionsError) throw optionsError;
+                if (servicesError) throw servicesError;
+
+                // 5. Create booking_options records
+                if (selectedOptions.length > 0) {
+                    const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
+                        booking_id: bookingData.id,
+                        option_id: optionId,
+                        option_title: option.title,
+                        option_price: option.price,
+                        option_quantity: quantity
+                    }));
+
+                    const { error: optionsError } = await supabase
+                        .from('booking_options')
+                        .insert(optionsData);
+
+                    if (optionsError) throw optionsError;
+                }
+
+                // Reset form
+                setSelectedServices([]);
+                setSelectedOptions([]);
+                setSelectedDate(undefined);
+                setSelectedTime(undefined);
+                setHasParking("");
+                setPhotos([]);
+                setNotes("");
+                setCustomerName("");
+                setCustomerEmail("");
+                setCustomerPhone("");
+
+                return {
+                    date: selectedDate,
+                    time: selectedTime,
+                    serviceName: selectedServices.map(s => s.service.title).join(", "),
+                    totalPrice: totalPrice,
+                };
+
+            } catch (error) {
+                console.error("Booking error:", error);
+                toast.error("予約の送信に失敗しました。もう一度お試しください。");
+                return null;
             }
+        };
 
-            // Reset form
+        const getOptionsForService = (serviceId: string) => {
+            return allOptions.filter(o => o.serviceId === serviceId);
+        };
+
+        // AI recommendation helper
+        const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
+            // Clear existing selections
             setSelectedServices([]);
             setSelectedOptions([]);
-            setSelectedDate(undefined);
-            setSelectedTime(undefined);
-            setHasParking("");
-            setPhotos([]);
-            setNotes("");
-            setCustomerName("");
-            setCustomerEmail("");
-            setCustomerPhone("");
 
-            return {
-                date: selectedDate,
-                time: selectedTime,
-                serviceName: selectedServices.map(s => s.service.title).join(", "),
-                totalPrice: totalPrice,
-            };
-
-        } catch (error) {
-            console.error("Booking error:", error);
-            toast.error("予約の送信に失敗しました。もう一度お試しください。");
-            return null;
-        }
-    };
-
-    const getOptionsForService = (serviceId: string) => {
-        return allOptions.filter(o => o.serviceId === serviceId);
-    };
-
-    // AI recommendation helper
-    const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
-        // Clear existing selections
-        setSelectedServices([]);
-        setSelectedOptions([]);
-
-        // Add recommended services
-        serviceIds.forEach(id => {
-            const service = allServices.find(s => s.id === id);
-            if (service) {
-                setSelectedServices(prev => [...prev, { serviceId: id, quantity: 1, service }]);
-            }
-        });
-
-        // Add recommended options (after options are loaded)
-        setTimeout(() => {
-            optionIds.forEach(id => {
-                const option = allOptions.find(o => o.id === id);
-                if (option) {
-                    setSelectedOptions(prev => [...prev, { optionId: id, quantity: 1, option }]);
+            // Add recommended services
+            serviceIds.forEach(id => {
+                const service = allServices.find(s => s.id === id);
+                if (service) {
+                    setSelectedServices(prev => [...prev, { serviceId: id, quantity: 1, service }]);
                 }
             });
-        }, 500);
-    };
 
-    return {
-        allServices,
-        selectedServices,
-        allOptions,
-        selectedOptions,
-        selectedDate,
-        setSelectedDate,
-        selectedTime,
-        setSelectedTime,
-        hasParking,
-        setHasParking,
-        photos,
-        notes,
-        setNotes,
-        customerName,
-        setCustomerName,
-        customerEmail,
-        setCustomerEmail,
-        customerPhone,
-        setCustomerPhone,
-        totalPrice,
-        totalDiscount,
-        loading,
-        handleServiceQuantityChange,
-        handleOptionChange,
-        handleOptionQuantityChange,
-        handleFileSelect,
-        handleRemovePhoto,
-        submitBooking,
-        getOptionsForService,
-        applyRecommendation,
+            // Add recommended options (after options are loaded)
+            setTimeout(() => {
+                optionIds.forEach(id => {
+                    const option = allOptions.find(o => o.id === id);
+                    if (option) {
+                        setSelectedOptions(prev => [...prev, { optionId: id, quantity: 1, option }]);
+                    }
+                });
+            }, 500);
+        };
+
+        return {
+            allServices,
+            selectedServices,
+            allOptions,
+            selectedOptions,
+            selectedDate,
+            setSelectedDate,
+            selectedTime,
+            setSelectedTime,
+            hasParking,
+            setHasParking,
+            photos,
+            notes,
+            setNotes,
+            customerName,
+            setCustomerName,
+            customerEmail,
+            setCustomerEmail,
+            customerPhone,
+            setCustomerPhone,
+            totalPrice,
+            totalDiscount,
+            loading,
+            handleServiceQuantityChange,
+            handleOptionChange,
+            handleOptionQuantityChange,
+            handleFileSelect,
+            handleRemovePhoto,
+            submitBooking,
+            getOptionsForService,
+            applyRecommendation,
+        };
     };
-};

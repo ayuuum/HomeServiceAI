@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -151,6 +152,25 @@ export const BookingDetailModal = ({
                 <Icon name="schedule" size={20} className="text-muted-foreground" />
                 <span className="font-medium">{booking.selectedTime}〜</span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2 border-primary/20 hover:bg-primary/5 text-primary"
+                onClick={() => {
+                  const url = generateGoogleCalendarUrl({
+                    title: `${booking.serviceName} - ${booking.customerName}様`,
+                    details: `顧客名: ${booking.customerName}\n電話: ${booking.customerPhone || 'なし'}\nメール: ${booking.customerEmail || 'なし'}\nメニュー: ${booking.serviceName}\n料金: ¥${booking.totalPrice.toLocaleString()}`,
+                    location: "お客様のご自宅",
+                    date: new Date(booking.selectedDate),
+                    time: booking.selectedTime,
+                    durationMinutes: 60,
+                  });
+                  window.open(url, '_blank');
+                }}
+              >
+                <Icon name="calendar_today" size={16} className="mr-2" />
+                Googleカレンダーに追加
+              </Button>
             </div>
           </div>
 
