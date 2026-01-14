@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -14,8 +14,12 @@ import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function MobileNav() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, organization } = useAuth();
   const navigate = useNavigate();
+  
+  const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
+    ? `/booking/${organization.slug}` 
+    : '/';
 
   const handleLogout = async () => {
     await signOut();
@@ -69,13 +73,16 @@ export function MobileNav() {
             経営管理
           </NavLink>
 
-          <Link
-            to="/"
+          <a
+            href={bookingPageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
           >
             <Icon name="auto_awesome" size={20} />
             予約ページ
-          </Link>
+            <Icon name="open_in_new" size={14} className="ml-auto text-muted-foreground" />
+          </a>
           <NavLink
             to="/admin/profile"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"

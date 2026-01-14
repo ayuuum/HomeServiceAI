@@ -4,6 +4,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -751,6 +752,9 @@ export const NewBookingModal = ({
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{getStepTitle()}</DialogTitle>
+                    <DialogDescription>
+                        予約の詳細を入力してください
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-4">

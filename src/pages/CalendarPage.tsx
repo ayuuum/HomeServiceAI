@@ -166,7 +166,12 @@ export default function CalendarPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={goToToday}
+                                onClick={() => {
+                                    goToToday();
+                                    document.getElementById('calendar-section')?.scrollIntoView({ 
+                                        behavior: 'smooth' 
+                                    });
+                                }}
                                 className="text-sm"
                             >
                                 <Icon name="calendar_today" size={16} className="mr-1" />
@@ -240,7 +245,7 @@ export default function CalendarPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-medium border-none overflow-hidden">
+                <Card id="calendar-section" className="shadow-medium border-none overflow-hidden">
                     <CardContent className="p-0">
                         {/* Weekday Headers */}
                         <div className="grid grid-cols-7 border-b bg-muted/40">
