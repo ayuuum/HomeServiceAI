@@ -2,10 +2,17 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   organizationId: string | null;
+  organization: Organization | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -18,41 +25,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchOrganization = async (userId: string) => {
+    // Fetch the user's profile to get organization_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', userId)
+      .single();
+
+    if (profile?.organization_id) {
+      setOrganizationId(profile.organization_id);
+
+      // Fetch organization details
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, name, slug')
+        .eq('id', profile.organization_id)
+        .single();
+
+      if (org) {
+        setOrganization(org);
+      }
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Fetch organization info after auth state change
+        if (session?.user) {
+          setTimeout(() => {
+            fetchOrganization(session.user.id);
+          }, 0);
+        } else {
+          setOrganizationId(null);
+          setOrganization(null);
+        }
+        
         setLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      let enhancedSession = session;
-      let enhancedUser = session?.user ?? null;
-
-      if (enhancedUser) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('id', enhancedUser.id)
-          .single();
-
-        if (profile) {
-          // We can attach it to user metadata or handle it separately.
-          // For simplicity, we'll assume it's available via a separate hook or just rely on RLS.
-          // But we need it for INSERTs.
-          // Let's store it in user_metadata just for the session duration? No, that's persistent.
-          // Better to just expose it in the Context.
-        }
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await fetchOrganization(session.user.id);
       }
-
-      setSession(enhancedSession);
-      setUser(enhancedUser);
+      
       setLoading(false);
     });
 
@@ -87,10 +116,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setOrganizationId(null);
+    setOrganization(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, organizationId, loading, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      organizationId, 
+      organization,
+      loading, 
+      signIn, 
+      signInWithGoogle, 
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );

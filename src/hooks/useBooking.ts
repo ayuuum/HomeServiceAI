@@ -18,7 +18,7 @@ export interface SelectedOption {
     option: ServiceOption;
 }
 
-export const useBooking = () => {
+export const useBooking = (organizationId?: string) => {
     // State management
     const [allServices, setAllServices] = useState<Service[]>([]);
     const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
@@ -36,13 +36,21 @@ export const useBooking = () => {
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    // Fetch all services
+    // Fetch services for the organization
     useEffect(() => {
+        if (!organizationId) {
+            setLoading(false);
+            return;
+        }
+
         const fetchServices = async () => {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('services')
                 .select('*')
+                .eq('organization_id', organizationId)
                 .order('created_at', { ascending: true });
+
+            const { data, error } = await query;
 
             if (error) {
                 console.error('Error fetching services:', error);
@@ -57,11 +65,12 @@ export const useBooking = () => {
 
         // Realtime subscription for services
         const servicesChannel = supabase
-            .channel('services-changes')
+            .channel(`services-changes-${organizationId}`)
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
-                table: 'services'
+                table: 'services',
+                filter: `organization_id=eq.${organizationId}`
             }, (payload) => {
                 if (payload.eventType === 'INSERT') {
                     setAllServices(prev => [...prev, mapDbServiceToService(payload.new)]);
@@ -78,7 +87,7 @@ export const useBooking = () => {
         return () => {
             supabase.removeChannel(servicesChannel);
         };
-    }, []);
+    }, [organizationId]);
 
     // Check for authenticated user
     useEffect(() => {
@@ -259,12 +268,18 @@ export const useBooking = () => {
             return null;
         }
 
+        if (!organizationId) {
+            toast.error("組織情報が取得できませんでした");
+            return null;
+        }
+
         try {
             // --- Double Booking Prevention ---
             const formattedDate = format(selectedDate, 'yyyy-MM-dd');
             const { data: existingBookings, error: checkError } = await supabase
                 .from('bookings')
                 .select('id')
+                .eq('organization_id', organizationId)
                 .eq('selected_date', formattedDate)
                 .eq('selected_time', selectedTime)
                 .neq('status', 'cancelled');
@@ -329,7 +344,8 @@ export const useBooking = () => {
                         .insert({
                             name: customerName,
                             email: customerEmail,
-                            phone: customerPhone
+                            phone: customerPhone,
+                            organization_id: organizationId
                         })
                         .select()
                         .single();
@@ -355,7 +371,8 @@ export const useBooking = () => {
                         total_price: totalPrice,
                         status: 'pending',
                         diagnosis_has_parking: hasParking === "yes",
-                        diagnosis_notes: notes
+                        diagnosis_notes: notes,
+                        organization_id: organizationId
                     })
                     .select()
                     .single();
