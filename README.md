@@ -1,6 +1,6 @@
-# Welcome to your Lovable project
+# Lovable プロジェクトへようこそ
 
-## Project info
+## プロジェクト情報
 
 **URL**: https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0
 
@@ -10,55 +10,57 @@
 - [LINE連携設定ガイド](docs/line_integration_guide.md)
 - [技術スタック](docs/tech_stack.md)
 
-## How can I edit this code?
+## このコードを編集するには？
 
-There are several ways of editing your application.
+アプリケーションを編集する方法はいくつかあります。
 
-**Use Lovable**
+### **Lovable を使う**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) and start prompting.
+[Lovable Project](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) にアクセスし、そのままプロンプトを入力するだけです。
 
-Changes made via Lovable will be committed automatically to this repo.
+Lovable 経由で行った変更は、自動的にこのリポジトリにコミットされます。
 
-**Use your preferred IDE**
+### **お好みの IDE を使う**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+ローカル環境で作業したい場合は、このリポジトリをクローンして変更を push してください。  
+push された変更は Lovable 側にも自動で反映されます。
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+必要なものは **Node.js と npm** のみです。  
+→ [nvm を使ったインストール方法](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Follow these steps:
+以下の手順に従ってください：
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: プロジェクトの Git URL を使ってリポジトリをクローン
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Step 2: プロジェクトディレクトリへ移動
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Step 3: 必要な依存関係をインストール
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: 自動リロード＆即時プレビュー付きで開発サーバーを起動
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### **GitHub 上で直接ファイルを編集する**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- 編集したいファイルに移動
+- 右上の「Edit（鉛筆アイコン）」をクリック
+- 変更を加えてコミット
 
-**Use GitHub Codespaces**
+### **GitHub Codespaces を使う**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- リポジトリのトップページに移動
+- 右上の「Code（緑のボタン）」をクリック
+- 「Codespaces」タブを選択
+- 「New codespace」をクリックして Codespace 環境を起動
+- Codespace 上でファイルを編集し、完了後にコミット＆push
 
-## What technologies are used for this project?
+## このプロジェクトで使われている技術
 
-This project is built with:
+このプロジェクトは以下の技術で構築されています：
 
 - Vite
 - TypeScript
@@ -66,11 +68,12 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## このプロジェクトをデプロイするには？
 
-Simply open [Lovable](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) and click on Share -> Publish.
+[Lovable](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) を開き、  
+**Share → Publish** をクリックするだけでデプロイできます。
 
-## Can I connect a custom domain to my Lovable project?
+## Lovable プロジェクトにカスタムドメインを接続できますか？
 
 Yes, you can!
 
