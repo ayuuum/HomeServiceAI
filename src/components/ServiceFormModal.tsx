@@ -33,6 +33,7 @@ import { Icon } from "@/components/ui/icon";
 import { Service } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const serviceFormSchema = z.object({
   title: z.string().min(1, "サービス名を入力してください").max(100),
@@ -58,6 +59,7 @@ export const ServiceFormModal = ({
   service,
   onSubmit,
 }: ServiceFormModalProps) => {
+  const { organizationId } = useAuth();
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -111,7 +113,12 @@ export const ServiceFormModal = ({
       throw new Error('ファイルサイズは5MB以下にしてください。');
     }
 
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    if (!organizationId) {
+      throw new Error('組織情報が見つかりません。再度ログインしてください。');
+    }
+
+    // Use organization-scoped path for storage policy compliance
+    const fileName = `${organizationId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
     const { error } = await supabase.storage
       .from('service-images')
