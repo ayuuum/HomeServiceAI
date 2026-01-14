@@ -118,7 +118,12 @@ export const NewBookingModal = ({
     };
 
     const fetchServices = async () => {
-        const { data } = await supabase.from("services").select("*").order("created_at");
+        if (!organizationId) return;
+        const { data } = await supabase
+            .from("services")
+            .select("*")
+            .eq("organization_id", organizationId)
+            .order("created_at");
         if (data) setServices(data.map(mapDbServiceToService));
     };
 
@@ -214,6 +219,7 @@ export const NewBookingModal = ({
             const { data: existingBookings, error: checkError } = await supabase
                 .from('bookings')
                 .select('id')
+                .eq('organization_id', organizationId)
                 .eq('selected_date', formattedDate)
                 .eq('selected_time', selectedTime)
                 .neq('status', 'cancelled');

@@ -17,7 +17,7 @@ import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 
 export function AdminHeader() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, organization } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -25,13 +25,25 @@ export function AdminHeader() {
     navigate('/login');
   };
 
+  // Build booking page URL with organization slug
+  const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
+    ? `/booking/${organization.slug}` 
+    : '/';
+
   return (
     <header className="border-b bg-card sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MobileNav />
 
-          <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
+          <div className="flex items-center gap-3">
+            <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
+            {organization && organization.name !== 'Default Organization' && (
+              <span className="text-sm font-medium text-muted-foreground border-l pl-3 hidden sm:inline">
+                {organization.name}
+              </span>
+            )}
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 ml-6">
@@ -69,7 +81,7 @@ export function AdminHeader() {
               経営管理
             </NavLink>
             <NavLink
-              to="/"
+              to={bookingPageUrl}
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >

@@ -111,6 +111,7 @@ export type Database = {
           diagnosis_has_parking: boolean | null
           diagnosis_notes: string | null
           id: string
+          organization_id: string | null
           selected_date: string
           selected_time: string
           status: string
@@ -126,6 +127,7 @@ export type Database = {
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
+          organization_id?: string | null
           selected_date: string
           selected_time: string
           status?: string
@@ -141,6 +143,7 @@ export type Database = {
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
+          organization_id?: string | null
           selected_date?: string
           selected_time?: string
           status?: string
@@ -155,6 +158,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bookings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       customers: {
@@ -165,6 +175,7 @@ export type Database = {
           id: string
           line_user_id: string | null
           name: string | null
+          organization_id: string | null
           phone: string | null
           updated_at: string | null
         }
@@ -175,6 +186,7 @@ export type Database = {
           id?: string
           line_user_id?: string | null
           name?: string | null
+          organization_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -185,7 +197,40 @@ export type Database = {
           id?: string
           line_user_id?: string | null
           name?: string | null
+          organization_id?: string | null
           phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -196,26 +241,38 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          organization_id: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
           id: string
           name?: string | null
+          organization_id?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
           id?: string
           name?: string | null
+          organization_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_options: {
         Row: {
           created_at: string | null
           description: string | null
           id: string
+          organization_id: string | null
           price: number
           service_id: string
           title: string
@@ -224,6 +281,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          organization_id?: string | null
           price: number
           service_id: string
           title: string
@@ -232,11 +290,19 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          organization_id?: string | null
           price?: number
           service_id?: string
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "service_options_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_options_service_id_fkey"
             columns: ["service_id"]
@@ -256,6 +322,7 @@ export type Database = {
           id: string
           image_url: string
           is_active: boolean | null
+          organization_id: string | null
           quantity_discounts: Json | null
           title: string
           updated_at: string | null
@@ -269,6 +336,7 @@ export type Database = {
           id?: string
           image_url: string
           is_active?: boolean | null
+          organization_id?: string | null
           quantity_discounts?: Json | null
           title: string
           updated_at?: string | null
@@ -282,18 +350,27 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean | null
+          organization_id?: string | null
           quantity_discounts?: Json | null
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_organization_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

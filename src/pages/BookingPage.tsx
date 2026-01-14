@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useBooking } from "@/hooks/useBooking";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
@@ -9,8 +9,48 @@ import { BookingConfirmationModal } from "@/components/BookingConfirmationModal"
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { BookingAssistant } from "@/components/booking/BookingAssistant";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 const BookingPage = () => {
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const navigate = useNavigate();
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [orgError, setOrgError] = useState<string | null>(null);
+
+  // Fetch organization by slug
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      setOrgLoading(true);
+      setOrgError(null);
+
+      // If no slug provided, use default organization
+      const slug = orgSlug || 'default';
+
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name, slug')
+        .eq('slug', slug)
+        .single();
+
+      if (error || !data) {
+        console.error('Organization not found:', error);
+        setOrgError('指定された組織が見つかりません');
+        setOrganization(null);
+      } else {
+        setOrganization(data);
+      }
+      setOrgLoading(false);
+    };
+
+    fetchOrganization();
+  }, [orgSlug]);
   const {
     allServices,
     selectedServices,
@@ -42,7 +82,7 @@ const BookingPage = () => {
     submitBooking,
     getOptionsForService,
     applyRecommendation,
-  } = useBooking();
+  } = useBooking(organization?.id);
 
   const handleApplyRecommendation = (serviceIds: string[], optionIds: string[]) => {
     applyRecommendation(serviceIds, optionIds);
@@ -86,12 +126,36 @@ const BookingPage = () => {
     }
   };
 
-  if (loading) {
+  // Show loading state
+  if (orgLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if organization not found
+  if (orgError || !organization) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-6xl mb-4">😕</div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            ページが見つかりません
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {orgError || '指定された組織が見つかりません。URLをご確認ください。'}
+          </p>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            トップページへ戻る
+          </Link>
         </div>
       </div>
     );
@@ -112,6 +176,11 @@ const BookingPage = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
+                {organization.name !== 'Default Organization' && (
+                  <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
+                    | {organization.name}
+                  </span>
+                )}
               </div>
               <Link
                 to="/admin"
@@ -127,7 +196,7 @@ const BookingPage = () => {
         <section className="bg-gradient-to-b from-primary/5 to-transparent py-8 sm:py-12">
           <div className="container max-w-6xl mx-auto px-4">
             <h2 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-2 sm:mb-3 text-center text-primary">
-              ハウクリProで<br className="sm:hidden" />簡単予約
+              {organization.name !== 'Default Organization' ? organization.name : 'ハウクリPro'}で<br className="sm:hidden" />簡単予約
             </h2>
             <p className="text-sm sm:text-base text-center text-muted-foreground max-w-2xl mx-auto">
               サービスを選んで、日時を選ぶだけ。<br className="hidden sm:block" />

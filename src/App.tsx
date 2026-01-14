@@ -27,6 +27,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public booking page with organization slug */}
+            <Route path="/booking/:orgSlug" element={<BookingPage />} />
+            {/* Default booking page (redirects to default org or shows org selector) */}
             <Route path="/" element={<BookingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
