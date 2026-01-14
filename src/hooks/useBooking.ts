@@ -465,19 +465,19 @@ export const useBooking = (organizationId?: string) => {
 
                 // For unauthenticated users or when no existing customer found, create new customer
                 if (!customerId) {
-                    const { data: newCustomer, error: customerError } = await supabase
+                    const newCustomerId = crypto.randomUUID();
+                    const { error: customerError } = await supabase
                         .from('customers')
                         .insert({
+                            id: newCustomerId,
                             name: customerName,
                             email: customerEmail,
                             phone: customerPhone,
                             organization_id: organizationId
-                        })
-                        .select()
-                        .single();
+                        });
 
                     if (customerError) throw customerError;
-                    customerId = newCustomer.id;
+                    customerId = newCustomerId;
                 }
 
                 if (!customerId) {
@@ -485,9 +485,11 @@ export const useBooking = (organizationId?: string) => {
                 }
 
                 // 2. Create Booking
-                const { data: bookingData, error: bookingError } = await supabase
+                const newBookingId = crypto.randomUUID();
+                const { error: bookingError } = await supabase
                     .from('bookings')
                     .insert({
+                        id: newBookingId,
                         customer_id: customerId,
                         customer_name: customerName.trim(),
                         customer_email: customerEmail.trim() || null,
@@ -499,15 +501,13 @@ export const useBooking = (organizationId?: string) => {
                         diagnosis_has_parking: hasParking === "yes",
                         diagnosis_notes: notes,
                         organization_id: organizationId
-                    })
-                    .select()
-                    .single();
+                    });
 
                 if (bookingError) throw bookingError;
 
                 // 4. Create booking_services records
                 const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
-                    booking_id: bookingData.id,
+                    booking_id: newBookingId,
                     service_id: serviceId,
                     service_title: service.title,
                     service_quantity: quantity,
@@ -523,7 +523,7 @@ export const useBooking = (organizationId?: string) => {
                 // 5. Create booking_options records
                 if (selectedOptions.length > 0) {
                     const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
-                        booking_id: bookingData.id,
+                        booking_id: newBookingId,
                         option_id: optionId,
                         option_title: option.title,
                         option_price: option.price,
