@@ -91,7 +91,7 @@ export function AdminHeader() {
               <Icon name="open_in_new" size={14} className="ml-0.5" />
             </a>
             <NavLink
-              to="/profile"
+              to="/admin/profile"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
