@@ -341,12 +341,12 @@ const BookingPage = () => {
           disabled={!selectedServices.length || !selectedDate || !selectedTime || !hasParking || !customerName}
         />
 
-        {/* AI Booking Assistant */}
-        <BookingAssistant
+        {/* AI Booking Assistant - 一時的に非表示 */}
+        {/* <BookingAssistant
           services={allServices}
           options={allOptions}
           onApplyRecommendation={handleApplyRecommendation}
-        />
+        /> */}
       </div>
     </>
   );
