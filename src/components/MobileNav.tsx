@@ -77,7 +77,7 @@ export function MobileNav() {
             予約ページ
           </Link>
           <NavLink
-            to="/profile"
+            to="/admin/profile"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
