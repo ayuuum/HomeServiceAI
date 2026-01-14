@@ -282,8 +282,6 @@ export const useBooking = () => {
             // ---------------------------------
 
             try {
-                const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000000';
-
                 // 1. Create or Find Customer
                 let customerId: string | undefined;
 
@@ -292,7 +290,7 @@ export const useBooking = () => {
                     // Build query conditions
                     let query = supabase
                         .from('customers')
-                        .select('id, organization_id');
+                        .select('id');
 
                     const conditions = [];
                     if (customerEmail) conditions.push(`email.eq.${customerEmail}`);
@@ -331,8 +329,7 @@ export const useBooking = () => {
                         .insert({
                             name: customerName,
                             email: customerEmail,
-                            phone: customerPhone,
-                            organization_id: DEFAULT_ORG_ID
+                            phone: customerPhone
                         })
                         .select()
                         .single();
@@ -353,11 +350,9 @@ export const useBooking = () => {
                         customer_name: customerName.trim(),
                         customer_email: customerEmail.trim() || null,
                         customer_phone: customerPhone.trim() || null,
-                        organization_id: DEFAULT_ORG_ID,
                         selected_date: format(selectedDate, 'yyyy-MM-dd'),
                         selected_time: selectedTime,
                         total_price: totalPrice,
-                        total_discount: totalDiscount,
                         status: 'pending',
                         diagnosis_has_parking: hasParking === "yes",
                         diagnosis_notes: notes
@@ -423,67 +418,72 @@ export const useBooking = () => {
                 toast.error("予約の送信に失敗しました。もう一度お試しください。");
                 return null;
             }
-        };
+        } catch (outerError) {
+            console.error("Outer booking error:", outerError);
+            toast.error("予約処理中にエラーが発生しました");
+            return null;
+        }
+    };
 
-        const getOptionsForService = (serviceId: string) => {
-            return allOptions.filter(o => o.serviceId === serviceId);
-        };
+    const getOptionsForService = (serviceId: string) => {
+        return allOptions.filter(o => o.serviceId === serviceId);
+    };
 
-        // AI recommendation helper
-        const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
-            // Clear existing selections
-            setSelectedServices([]);
-            setSelectedOptions([]);
+    // AI recommendation helper
+    const applyRecommendation = (serviceIds: string[], optionIds: string[]) => {
+        // Clear existing selections
+        setSelectedServices([]);
+        setSelectedOptions([]);
 
-            // Add recommended services
-            serviceIds.forEach(id => {
-                const service = allServices.find(s => s.id === id);
-                if (service) {
-                    setSelectedServices(prev => [...prev, { serviceId: id, quantity: 1, service }]);
+        // Add recommended services
+        serviceIds.forEach(id => {
+            const service = allServices.find(s => s.id === id);
+            if (service) {
+                setSelectedServices(prev => [...prev, { serviceId: id, quantity: 1, service }]);
+            }
+        });
+
+        // Add recommended options (after options are loaded)
+        setTimeout(() => {
+            optionIds.forEach(id => {
+                const option = allOptions.find(o => o.id === id);
+                if (option) {
+                    setSelectedOptions(prev => [...prev, { optionId: id, quantity: 1, option }]);
                 }
             });
-
-            // Add recommended options (after options are loaded)
-            setTimeout(() => {
-                optionIds.forEach(id => {
-                    const option = allOptions.find(o => o.id === id);
-                    if (option) {
-                        setSelectedOptions(prev => [...prev, { optionId: id, quantity: 1, option }]);
-                    }
-                });
-            }, 500);
-        };
-
-        return {
-            allServices,
-            selectedServices,
-            allOptions,
-            selectedOptions,
-            selectedDate,
-            setSelectedDate,
-            selectedTime,
-            setSelectedTime,
-            hasParking,
-            setHasParking,
-            photos,
-            notes,
-            setNotes,
-            customerName,
-            setCustomerName,
-            customerEmail,
-            setCustomerEmail,
-            customerPhone,
-            setCustomerPhone,
-            totalPrice,
-            totalDiscount,
-            loading,
-            handleServiceQuantityChange,
-            handleOptionChange,
-            handleOptionQuantityChange,
-            handleFileSelect,
-            handleRemovePhoto,
-            submitBooking,
-            getOptionsForService,
-            applyRecommendation,
-        };
+        }, 500);
     };
+
+    return {
+        allServices,
+        selectedServices,
+        allOptions,
+        selectedOptions,
+        selectedDate,
+        setSelectedDate,
+        selectedTime,
+        setSelectedTime,
+        hasParking,
+        setHasParking,
+        photos,
+        notes,
+        setNotes,
+        customerName,
+        setCustomerName,
+        customerEmail,
+        setCustomerEmail,
+        customerPhone,
+        setCustomerPhone,
+        totalPrice,
+        totalDiscount,
+        loading,
+        handleServiceQuantityChange,
+        handleOptionChange,
+        handleOptionQuantityChange,
+        handleFileSelect,
+        handleRemovePhoto,
+        submitBooking,
+        getOptionsForService,
+        applyRecommendation,
+    };
+};
