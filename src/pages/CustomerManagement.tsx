@@ -41,7 +41,7 @@ export default function CustomerManagement() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customers")
-        .select("*, bookings(id, total_price)")
+        .select("*, bookings(id, total_price, customer_name)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -50,6 +50,8 @@ export default function CustomerManagement() {
         const bookings = c.bookings || [];
         const bookingCount = bookings.length;
         const totalSpend = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+        // 予約に紐づく名前も収集（検索用）
+        const bookingNames = bookings.map((b) => b.customer_name).filter(Boolean);
 
         return {
           id: c.id,
@@ -60,6 +62,7 @@ export default function CustomerManagement() {
           address: c.address || undefined,
           bookingCount,
           totalSpend,
+          bookingNames,
         };
       });
     },
@@ -82,10 +85,15 @@ export default function CustomerManagement() {
 
   const filteredCustomers = customers.filter((customer) => {
     const search = searchTerm.toLowerCase();
+    // 予約の名前も検索対象に含める
+    const matchesBookingName = customer.bookingNames?.some((name: string) =>
+      name?.toLowerCase().includes(search)
+    );
     return (
       customer.name?.toLowerCase().includes(search) ||
       customer.phone?.toLowerCase().includes(search) ||
-      customer.email?.toLowerCase().includes(search)
+      customer.email?.toLowerCase().includes(search) ||
+      matchesBookingName
     );
   });
 
@@ -109,7 +117,35 @@ export default function CustomerManagement() {
   const fixMissingCustomers = async () => {
     try {
       setIsFixing(true);
-      // 1. Get bookings with no customer_id
+      let fixedCount = 0;
+
+      // 1. 顧客名を最新の予約名で同期
+      const { data: customersWithBookings } = await supabase
+        .from('customers')
+        .select('id, name, bookings(customer_name, created_at)');
+
+      if (customersWithBookings) {
+        for (const customer of customersWithBookings) {
+          const bookings = customer.bookings || [];
+          if (bookings.length === 0) continue;
+
+          // 最新の予約を取得
+          const latestBooking = bookings.sort((a, b) =>
+            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+          )[0];
+
+          // 名前が異なる場合は更新
+          if (latestBooking?.customer_name && latestBooking.customer_name !== customer.name) {
+            await supabase
+              .from('customers')
+              .update({ name: latestBooking.customer_name })
+              .eq('id', customer.id);
+            fixedCount++;
+          }
+        }
+      }
+
+      // 2. customer_id が null の予約を修正
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
@@ -117,15 +153,7 @@ export default function CustomerManagement() {
 
       if (bookingsError) throw bookingsError;
 
-      if (!bookings || bookings.length === 0) {
-        toast.info("修正が必要なデータはありませんでした");
-        return;
-      }
-
-      let fixedCount = 0;
-
-      for (const booking of bookings) {
-        // 2. Check if customer exists by name/email/phone
+      for (const booking of bookings || []) {
         let customerId = null;
 
         // Try to match by email or phone first if available
@@ -150,7 +178,7 @@ export default function CustomerManagement() {
           if (existingByName) customerId = existingByName.id;
         }
 
-        // 3. If still not found, create new customer
+        // If still not found, create new customer
         if (!customerId) {
           const { data: newCustomer, error: createError } = await supabase
             .from('customers')
@@ -167,7 +195,7 @@ export default function CustomerManagement() {
           }
         }
 
-        // 4. Update booking with customer_id
+        // Update booking with customer_id
         if (customerId) {
           await supabase
             .from('bookings')
@@ -177,7 +205,11 @@ export default function CustomerManagement() {
         }
       }
 
-      toast.success(`${fixedCount}件のデータを修正しました`);
+      if (fixedCount === 0) {
+        toast.info("修正が必要なデータはありませんでした");
+      } else {
+        toast.success(`${fixedCount}件のデータを修正しました`);
+      }
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     } catch (error) {
       console.error("Fix error:", error);
