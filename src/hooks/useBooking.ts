@@ -89,23 +89,41 @@ export const useBooking = (organizationId?: string) => {
         };
     }, [organizationId]);
 
-    // Check for authenticated user
+    // Monitor auth state and auto-fill user info
     useEffect(() => {
-        const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { user_metadata } = user;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                if (session?.user) {
+                    const { user_metadata } = session.user;
+                    if (user_metadata) {
+                        if (user_metadata.full_name || user_metadata.name) {
+                            setCustomerName(user_metadata.full_name || user_metadata.name);
+                        }
+                    }
+                    // Also set email from session
+                    if (user_metadata?.email || session.user.email) {
+                        setCustomerEmail(user_metadata?.email || session.user.email || "");
+                    }
+                }
+            }
+        );
+
+        // Initial check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                const { user_metadata } = session.user;
                 if (user_metadata) {
                     if (user_metadata.full_name || user_metadata.name) {
                         setCustomerName(user_metadata.full_name || user_metadata.name);
                     }
-                    if (user_metadata.email) {
-                        setCustomerEmail(user_metadata.email);
-                    }
+                }
+                if (user_metadata?.email || session.user.email) {
+                    setCustomerEmail(user_metadata?.email || session.user.email || "");
                 }
             }
-        };
-        checkUser();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     // Fetch options for selected services
