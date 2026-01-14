@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,14 +29,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Icon } from "@/components/ui/icon";
 import { Service } from "@/types/booking";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const serviceFormSchema = z.object({
   title: z.string().min(1, "サービス名を入力してください").max(100),
   description: z.string().min(1, "説明を入力してください").max(500),
   basePrice: z.coerce.number().min(0, "価格は0以上である必要があります"),
   duration: z.coerce.number().min(15, "所要時間は15分以上である必要があります"),
-  imageUrl: z.string().url("有効なURLを入力してください"),
+  imageUrl: z.string().optional(),
   category: z.string().min(1, "カテゴリーを選択してください"),
 });
 
@@ -55,6 +58,11 @@ export const ServiceFormModal = ({
   service,
   onSubmit,
 }: ServiceFormModalProps) => {
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceFormSchema),
     defaultValues: {
@@ -77,6 +85,7 @@ export const ServiceFormModal = ({
         imageUrl: service.imageUrl,
         category: service.category,
       });
+      setPreviewUrl(service.imageUrl);
     } else {
       form.reset({
         title: "",
@@ -86,12 +95,96 @@ export const ServiceFormModal = ({
         imageUrl: "",
         category: "cleaning",
       });
+      setPreviewUrl("");
     }
-  }, [service, form]);
+  }, [service, form, open]);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    
+    if (!fileExt || !allowedExtensions.includes(fileExt)) {
+      throw new Error('サポートされていないファイル形式です。JPG、PNG、GIF、WebPのみ対応しています。');
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('ファイルサイズは5MB以下にしてください。');
+    }
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('service-images')
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('service-images')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
+  const handleFileChange = async (file: File | null) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setPreviewUrl(url);
+      form.setValue('imageUrl', url);
+      toast.success('画像をアップロードしました');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error instanceof Error ? error.message : '画像のアップロードに失敗しました');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileChange(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileChange(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const removeImage = () => {
+    setPreviewUrl("");
+    form.setValue('imageUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = (values: ServiceFormValues) => {
+    if (!values.imageUrl) {
+      toast.error('サービス画像をアップロードしてください');
+      return;
+    }
     onSubmit(values);
     form.reset();
+    setPreviewUrl("");
     onOpenChange(false);
   };
 
@@ -198,17 +291,74 @@ export const ServiceFormModal = ({
             <FormField
               control={form.control}
               name="imageUrl"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>画像URL</FormLabel>
+                  <FormLabel>サービス画像</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="https://example.com/image.jpg"
-                      {...field}
-                    />
+                    <div className="space-y-4">
+                      {previewUrl ? (
+                        <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={previewUrl}
+                            alt="プレビュー"
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2"
+                            onClick={removeImage}
+                          >
+                            <Icon name="close" size={16} />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          className={`
+                            flex flex-col items-center justify-center w-full h-40
+                            border-2 border-dashed rounded-lg cursor-pointer
+                            transition-colors duration-200
+                            ${isDragging 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-muted-foreground/30 hover:border-primary hover:bg-muted/50'
+                            }
+                            ${isUploading ? 'pointer-events-none opacity-50' : ''}
+                          `}
+                        >
+                          {isUploading ? (
+                            <>
+                              <Icon name="progress_activity" size={40} className="text-muted-foreground animate-spin" />
+                              <span className="mt-2 text-sm text-muted-foreground">アップロード中...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="cloud_upload" size={40} className="text-muted-foreground" />
+                              <span className="mt-2 text-sm text-muted-foreground">
+                                クリックまたはドラッグ&ドロップで画像をアップロード
+                              </span>
+                              <span className="mt-1 text-xs text-muted-foreground">
+                                JPG, PNG, GIF, WebP (最大5MB)
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleInputChange}
+                        className="hidden"
+                      />
+                    </div>
                   </FormControl>
                   <FormDescription>
-                    サービスのイメージ画像のURLを入力してください
+                    サービスのイメージ画像をアップロードしてください
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -223,7 +373,7 @@ export const ServiceFormModal = ({
               >
                 キャンセル
               </Button>
-              <Button type="submit" className="btn-primary">
+              <Button type="submit" className="btn-primary" disabled={isUploading}>
                 {service ? "更新" : "追加"}
               </Button>
             </DialogFooter>
