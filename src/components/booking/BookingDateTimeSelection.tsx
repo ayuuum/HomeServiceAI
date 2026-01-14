@@ -6,6 +6,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/ui/icon";
 import { ja } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { DayAvailability, TimeSlotAvailability } from "@/hooks/useAvailability";
 
 interface BookingDateTimeSelectionProps {
     selectedDate: Date | undefined;
@@ -14,11 +16,32 @@ interface BookingDateTimeSelectionProps {
     onTimeSelect: (time: string) => void;
     hasParking: string;
     onParkingChange: (value: string) => void;
+    timeSlots: string[];
+    dayTimeSlots: TimeSlotAvailability[];
+    getAvailabilityForDate: (date: Date) => DayAvailability | undefined;
+    onMonthChange?: (date: Date) => void;
+    loadingDay?: boolean;
 }
 
-const timeSlots = [
-    "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
-];
+// 空き状況ドットコンポーネント
+const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => {
+    if (!status) return null;
+
+    const colorClass = {
+        available: "bg-green-500",
+        partial: "bg-orange-500",
+        full: "bg-red-500",
+    }[status];
+
+    return (
+        <span
+            className={cn(
+                "absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full",
+                colorClass
+            )}
+        />
+    );
+};
 
 export const BookingDateTimeSelection = ({
     selectedDate,
@@ -27,7 +50,16 @@ export const BookingDateTimeSelection = ({
     onTimeSelect,
     hasParking,
     onParkingChange,
+    timeSlots,
+    dayTimeSlots,
+    getAvailabilityForDate,
+    onMonthChange,
+    loadingDay,
 }: BookingDateTimeSelectionProps) => {
+    const getSlotInfo = (time: string): TimeSlotAvailability | undefined => {
+        return dayTimeSlots.find((s) => s.time === time);
+    };
+
     return (
         <div className="space-y-8 sm:space-y-12">
             {/* Section 4: Date & Time Selection */}
@@ -42,15 +74,53 @@ export const BookingDateTimeSelection = ({
                 <div className="space-y-4 sm:space-y-6">
                     <div>
                         <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">希望日</Label>
-                        <Card className="p-2 sm:p-4 flex justify-center overflow-x-auto">
+                        <Card className="p-2 sm:p-4 flex flex-col items-center overflow-x-auto">
                             <Calendar
                                 mode="single"
                                 selected={selectedDate}
                                 onSelect={onDateSelect}
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                onMonthChange={onMonthChange}
+                                disabled={(date) => {
+                                    const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                    const availability = getAvailabilityForDate(date);
+                                    const isFull = availability?.status === "full";
+                                    return isPast || isFull;
+                                }}
                                 locale={ja}
                                 className="rounded-md scale-90 sm:scale-100 origin-center"
+                                modifiers={{
+                                    available: (date) => getAvailabilityForDate(date)?.status === "available",
+                                    partial: (date) => getAvailabilityForDate(date)?.status === "partial",
+                                    full: (date) => getAvailabilityForDate(date)?.status === "full",
+                                }}
+                                components={{
+                                    DayContent: ({ date }) => {
+                                        const availability = getAvailabilityForDate(date);
+                                        const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                        return (
+                                            <div className="relative flex items-center justify-center w-full h-full">
+                                                <span>{date.getDate()}</span>
+                                                {!isPast && <AvailabilityDot status={availability?.status} />}
+                                            </div>
+                                        );
+                                    },
+                                }}
                             />
+                            {/* 凡例 */}
+                            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3 pt-3 border-t border-border text-xs sm:text-sm text-muted-foreground w-full">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                                    <span>空きあり</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                                    <span>残りわずか</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span>満席</span>
+                                </div>
+                            </div>
                         </Card>
                     </div>
 
@@ -58,19 +128,41 @@ export const BookingDateTimeSelection = ({
                         <div>
                             <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">
                                 希望時間帯
+                                {loadingDay && (
+                                    <span className="ml-2 text-xs text-muted-foreground font-normal">
+                                        読み込み中...
+                                    </span>
+                                )}
                             </Label>
                             <div className="grid grid-cols-3 gap-2">
-                                {timeSlots.map((time) => (
-                                    <Button
-                                        key={time}
-                                        variant={selectedTime === time ? "default" : "outline"}
-                                        onClick={() => onTimeSelect(time)}
-                                        className="w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation"
-                                    >
-                                        {time}
-                                    </Button>
-                                ))}
+                                {timeSlots.map((time) => {
+                                    const slotInfo = getSlotInfo(time);
+                                    const isBooked = slotInfo?.isBooked ?? false;
+
+                                    return (
+                                        <Button
+                                            key={time}
+                                            variant={selectedTime === time ? "default" : "outline"}
+                                            onClick={() => !isBooked && onTimeSelect(time)}
+                                            disabled={isBooked}
+                                            className={cn(
+                                                "w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation relative",
+                                                isBooked && "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            <span className={cn(isBooked && "line-through")}>{time}</span>
+                                            {isBooked && (
+                                                <span className="absolute top-1 right-1 text-[10px] text-destructive font-medium">
+                                                    ×
+                                                </span>
+                                            )}
+                                        </Button>
+                                    );
+                                })}
                             </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                ※ × マークの時間帯は既に予約が入っています
+                            </p>
                         </div>
                     )}
                 </div>
