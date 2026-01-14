@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Service, ServiceOption } from "@/types/booking";
 import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useBookingStorage } from "./useBookingStorage";
 
 export interface SelectedService {
     serviceId: string;
@@ -35,6 +36,11 @@ export const useBooking = (organizationId?: string) => {
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
+    
+    // Storage hook for form persistence
+    const { saveBookingData, loadBookingData, clearBookingData } = useBookingStorage(organizationId || '');
+    const hasRestoredRef = useRef(false);
+    const isRestoringRef = useRef(false);
 
     // Fetch services for the organization
     useEffect(() => {
@@ -88,6 +94,104 @@ export const useBooking = (organizationId?: string) => {
             supabase.removeChannel(servicesChannel);
         };
     }, [organizationId]);
+
+    // Restore saved data from localStorage after services are loaded
+    useEffect(() => {
+        if (!organizationId || allServices.length === 0 || hasRestoredRef.current) return;
+        
+        const storedData = loadBookingData();
+        if (!storedData) return;
+        
+        hasRestoredRef.current = true;
+        isRestoringRef.current = true;
+        
+        // Restore services
+        if (storedData.selectedServices?.length > 0) {
+            const restoredServices: SelectedService[] = [];
+            storedData.selectedServices.forEach(s => {
+                const service = allServices.find(svc => svc.id === s.serviceId);
+                if (service) {
+                    restoredServices.push({ serviceId: s.serviceId, quantity: s.quantity, service });
+                }
+            });
+            if (restoredServices.length > 0) {
+                setSelectedServices(restoredServices);
+            }
+        }
+        
+        // Restore other fields
+        if (storedData.selectedDate) setSelectedDate(new Date(storedData.selectedDate));
+        if (storedData.selectedTime) setSelectedTime(storedData.selectedTime);
+        if (storedData.hasParking) setHasParking(storedData.hasParking);
+        if (storedData.customerName) setCustomerName(storedData.customerName);
+        if (storedData.customerEmail) setCustomerEmail(storedData.customerEmail);
+        if (storedData.customerPhone) setCustomerPhone(storedData.customerPhone);
+        if (storedData.notes) setNotes(storedData.notes);
+        
+        // Wait for options to load then restore them
+        if (storedData.selectedOptions?.length > 0) {
+            // Options will be restored after allOptions is populated
+            const restoreOptions = () => {
+                const restoredOptions: SelectedOption[] = [];
+                storedData.selectedOptions.forEach(o => {
+                    const option = allOptions.find(opt => opt.id === o.optionId);
+                    if (option) {
+                        restoredOptions.push({ optionId: o.optionId, quantity: o.quantity, option });
+                    }
+                });
+                if (restoredOptions.length > 0) {
+                    setSelectedOptions(restoredOptions);
+                }
+            };
+            // Delay to wait for options fetch
+            setTimeout(restoreOptions, 1000);
+        }
+        
+        toast.info("前回の入力内容を復元しました");
+        
+        setTimeout(() => {
+            isRestoringRef.current = false;
+        }, 1500);
+    }, [organizationId, allServices, loadBookingData, allOptions]);
+
+    // Auto-save form data to localStorage (debounced)
+    useEffect(() => {
+        if (!organizationId || isRestoringRef.current) return;
+        
+        const timeoutId = setTimeout(() => {
+            saveBookingData({
+                selectedServices: selectedServices.map(s => ({ 
+                    serviceId: s.serviceId, 
+                    quantity: s.quantity 
+                })),
+                selectedOptions: selectedOptions.map(o => ({ 
+                    optionId: o.optionId, 
+                    quantity: o.quantity 
+                })),
+                selectedDate: selectedDate?.toISOString() || null,
+                selectedTime: selectedTime || null,
+                hasParking,
+                customerName,
+                customerEmail,
+                customerPhone,
+                notes,
+            });
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+    }, [
+        organizationId,
+        selectedServices, 
+        selectedOptions, 
+        selectedDate, 
+        selectedTime,
+        hasParking, 
+        customerName, 
+        customerEmail, 
+        customerPhone, 
+        notes,
+        saveBookingData
+    ]);
 
     // Monitor auth state and auto-fill user info
     useEffect(() => {
@@ -429,7 +533,8 @@ export const useBooking = (organizationId?: string) => {
                     if (optionsError) throw optionsError;
                 }
 
-                // Reset form
+                // Reset form and clear storage
+                clearBookingData();
                 setSelectedServices([]);
                 setSelectedOptions([]);
                 setSelectedDate(undefined);
@@ -520,5 +625,6 @@ export const useBooking = (organizationId?: string) => {
         submitBooking,
         getOptionsForService,
         applyRecommendation,
+        clearBookingData,
     };
 };
