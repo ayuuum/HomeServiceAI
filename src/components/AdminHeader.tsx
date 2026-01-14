@@ -69,8 +69,8 @@ export function AdminHeader() {
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
-              <Icon name="calendar_today" size={16} />
-              カレンダー
+              <Icon name="event_note" size={16} />
+              予約管理
             </NavLink>
             <NavLink
               to="/admin/reports"

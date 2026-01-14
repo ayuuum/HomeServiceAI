@@ -57,8 +57,8 @@ export function MobileNav() {
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
           >
-            <Icon name="calendar_today" size={20} />
-            カレンダー
+            <Icon name="event_note" size={20} />
+            予約管理
           </NavLink>
           <NavLink
             to="/admin/reports"
