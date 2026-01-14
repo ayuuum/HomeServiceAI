@@ -76,6 +76,14 @@ export function MobileNav() {
             <Icon name="auto_awesome" size={20} />
             予約ページ
           </Link>
+          <NavLink
+            to="/profile"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <Icon name="settings" size={20} />
+            設定
+          </NavLink>
 
           <Separator className="my-4" />
 
