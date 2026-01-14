@@ -136,14 +136,23 @@ export const ServiceFormModal = ({
   const handleFileChange = async (file: File | null) => {
     if (!file) return;
 
+    // 選択直後にローカルプレビューを表示
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(localPreviewUrl);
+
     setIsUploading(true);
     try {
       const url = await uploadImage(file);
+      // アップロード成功後、URLを本番のものに置き換え
+      URL.revokeObjectURL(localPreviewUrl);
       setPreviewUrl(url);
       form.setValue('imageUrl', url);
       toast.success('画像をアップロードしました');
     } catch (error) {
       console.error('Upload error:', error);
+      // アップロード失敗時はプレビューをクリア
+      URL.revokeObjectURL(localPreviewUrl);
+      setPreviewUrl("");
       toast.error(error instanceof Error ? error.message : '画像のアップロードに失敗しました');
     } finally {
       setIsUploading(false);
@@ -185,10 +194,7 @@ export const ServiceFormModal = ({
   };
 
   const handleSubmit = (values: ServiceFormValues) => {
-    if (!values.imageUrl) {
-      toast.error('サービス画像をアップロードしてください');
-      return;
-    }
+    // 画像は任意なのでチェックを削除
     onSubmit(values);
     form.reset();
     setPreviewUrl("");
@@ -308,17 +314,25 @@ export const ServiceFormModal = ({
                           <img
                             src={previewUrl}
                             alt="プレビュー"
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover ${isUploading ? 'opacity-50' : ''}`}
                           />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={removeImage}
-                          >
-                            <Icon name="close" size={16} />
-                          </Button>
+                          {isUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <Icon name="progress_activity" size={32} className="text-white animate-spin" />
+                              <span className="ml-2 text-white text-sm font-medium">アップロード中...</span>
+                            </div>
+                          )}
+                          {!isUploading && (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2"
+                              onClick={removeImage}
+                            >
+                              <Icon name="close" size={16} />
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <div
@@ -365,7 +379,7 @@ export const ServiceFormModal = ({
                     </div>
                   </FormControl>
                   <FormDescription>
-                    サービスのイメージ画像をアップロードしてください
+                    サービスのイメージ画像をアップロードしてください（任意）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

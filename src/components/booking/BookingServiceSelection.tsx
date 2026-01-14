@@ -69,11 +69,17 @@ export const BookingServiceSelection = ({
                             <motion.div key={service.id} variants={item} whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
                                 <Card className={`overflow-hidden transition-all duration-300 ${quantity > 0 ? "ring-2 ring-primary border-transparent shadow-medium" : "border-border shadow-subtle hover:shadow-medium"}`}>
                                     <div className="aspect-[16/10] sm:aspect-video relative overflow-hidden bg-muted">
-                                        <img
-                                            src={service.imageUrl}
-                                            alt={service.title}
-                                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                                        />
+                                        {service.imageUrl ? (
+                                            <img
+                                                src={service.imageUrl}
+                                                alt={service.title}
+                                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                <Icon name="home_repair_service" size={48} className="text-muted-foreground/50" />
+                                            </div>
+                                        )}
                                     </div>
                                     <CardContent className="p-4 sm:p-6">
                                         <div className="flex justify-between items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
