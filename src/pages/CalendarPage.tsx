@@ -119,11 +119,11 @@ export default function CalendarPage() {
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold flex items-center gap-2 text-foreground">
-                            <Icon name="calendar_today" size={32} className="text-primary" />
-                            予約カレンダー
+                            <Icon name="event_note" size={32} className="text-primary" />
+                            予約管理
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            月ごとの予約状況を確認できます
+                            予約の確認・承認・管理ができます
                         </p>
                     </div>
                     <div className="flex items-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
