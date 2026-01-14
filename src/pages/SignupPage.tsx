@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 const signupSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
+  businessName: z.string().min(1, { message: "事業者名を入力してください" }),
   email: z.string().email({ message: "有効なメールアドレスを入力してください" }),
   password: z.string().min(6, { message: "パスワードは6文字以上で入力してください" }),
   confirmPassword: z.string()
@@ -21,6 +22,7 @@ const signupSchema = z.object({
 
 export default function SignupPage() {
   const [name, setName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +41,7 @@ export default function SignupPage() {
     e.preventDefault();
 
     try {
-      const validatedData = signupSchema.parse({ name, email, password, confirmPassword });
+      const validatedData = signupSchema.parse({ name, businessName, email, password, confirmPassword });
       setIsLoading(true);
 
       const { supabase } = await import('@/integrations/supabase/client');
@@ -49,6 +51,7 @@ export default function SignupPage() {
         options: {
           data: {
             name: validatedData.name,
+            business_name: validatedData.businessName,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -85,15 +88,15 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">アカウント登録</CardTitle>
+          <CardTitle className="text-2xl font-bold">事業者アカウント登録</CardTitle>
           <CardDescription>
-            新しいアカウントを作成します
+            新しい事業者アカウントを作成します
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">名前</Label>
+              <Label htmlFor="name">担当者名</Label>
               <Input
                 id="name"
                 type="text"
@@ -103,6 +106,21 @@ export default function SignupPage() {
                 disabled={isLoading}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="businessName">事業者名（店舗名）</Label>
+              <Input
+                id="businessName"
+                type="text"
+                placeholder="例: やまだクリーニング"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                disabled={isLoading}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                お客様に表示される名前です
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">メールアドレス</Label>
