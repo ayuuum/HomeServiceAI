@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -55,6 +56,14 @@ export default function ProfilePage() {
   const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   const [slugError, setSlugError] = useState('');
+  
+  // QR Code ref
+  const qrRef = useRef<HTMLDivElement>(null);
+  
+  // Generate booking page URL
+  const bookingPageUrl = organization?.slug 
+    ? `${window.location.origin}/booking/${organization.slug}`
+    : '';
 
   useEffect(() => {
     if (user) {
@@ -278,16 +287,216 @@ export default function ProfilePage() {
     setSlug(sanitized);
   };
 
+  const handleDownloadQR = () => {
+    if (!qrRef.current) return;
+    
+    const svg = qrRef.current.querySelector('svg');
+    if (!svg) return;
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const size = 400;
+    canvas.width = size;
+    canvas.height = size + 80; // Extra space for text
+    
+    if (!ctx) return;
+    
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Convert SVG to image
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, size, size);
+      
+      // Add text below QR
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(organization?.name || '予約ページ', size / 2, size + 30);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#666666';
+      ctx.fillText('上記QRコードを読み取ってご予約ください', size / 2, size + 55);
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `qr-code-${organization?.slug || 'booking'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+  
+  const handlePrintQR = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "印刷ウィンドウを開けませんでした",
+      });
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QRコード - ${organization?.name || '予約'}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              font-family: sans-serif;
+            }
+            .qr-container {
+              text-align: center;
+              padding: 40px;
+              border: 2px solid #e5e5e5;
+              border-radius: 16px;
+            }
+            .qr-code {
+              width: 300px;
+              height: 300px;
+            }
+            h1 {
+              margin: 24px 0 8px;
+              font-size: 24px;
+              color: #333;
+            }
+            p {
+              margin: 0;
+              color: #666;
+              font-size: 16px;
+            }
+            .url {
+              margin-top: 16px;
+              font-size: 12px;
+              color: #999;
+              word-break: break-all;
+            }
+            @media print {
+              .qr-container {
+                border: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            ${qrRef.current?.innerHTML || ''}
+            <h1>${organization?.name || '予約ページ'}</h1>
+            <p>上記QRコードを読み取ってご予約ください</p>
+            <p class="url">${bookingPageUrl}</p>
+          </div>
+          <script>
+            window.onload = () => {
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 250);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
       <AdminHeader />
       <div className="container mx-auto p-4 md:p-6 max-w-4xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">プロフィール設定</h1>
-          <p className="text-muted-foreground mt-2">アカウント情報の確認・変更</p>
+          <h1 className="text-3xl font-bold">設定</h1>
+          <p className="text-muted-foreground mt-2">アカウント情報・組織設定の管理</p>
         </div>
 
         <div className="space-y-6">
+          {/* QR Code Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="qr_code" size={24} />
+                予約ページQRコード
+              </CardTitle>
+              <CardDescription>店舗に掲示してお客様に予約ページを案内できます</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-6 items-center">
+                <div 
+                  ref={qrRef}
+                  className="bg-white p-4 rounded-lg border shadow-sm"
+                >
+                  {bookingPageUrl ? (
+                    <QRCodeSVG
+                      value={bookingPageUrl}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  ) : (
+                    <div className="w-[200px] h-[200px] flex items-center justify-center bg-muted rounded">
+                      <p className="text-sm text-muted-foreground text-center p-4">
+                        組織設定を完了するとQRコードが表示されます
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">予約ページURL</Label>
+                    <p className="text-sm font-mono bg-muted px-3 py-2 rounded mt-1 break-all">
+                      {bookingPageUrl || '未設定'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadQR}
+                      disabled={!bookingPageUrl}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      画像をダウンロード
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handlePrintQR}
+                      disabled={!bookingPageUrl}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      印刷する
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(bookingPageUrl);
+                        toast({
+                          title: "コピーしました",
+                          description: "URLをクリップボードにコピーしました",
+                        });
+                      }}
+                      disabled={!bookingPageUrl}
+                    >
+                      <Icon name="content_copy" size={16} className="mr-2" />
+                      URLをコピー
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    ダウンロードした画像を印刷して店舗のカウンターや入口に掲示してください
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>プロフィール情報</CardTitle>
