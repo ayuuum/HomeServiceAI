@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { useBooking } from "@/hooks/useBooking";
+import { useAvailability } from "@/hooks/useAvailability";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
 import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
@@ -87,6 +88,24 @@ const BookingPage = () => {
     applyRecommendation,
   } = useBooking(organization?.id);
 
+  // Availability hook
+  const {
+    dayTimeSlots,
+    loadingDay,
+    fetchDayAvailability,
+    checkRealTimeAvailability,
+    getAvailabilityForDate,
+    handleMonthChange,
+    TIME_SLOTS,
+  } = useAvailability(organization?.id);
+
+  // Fetch day availability when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      fetchDayAvailability(selectedDate);
+    }
+  }, [selectedDate, fetchDayAvailability]);
+
   const handleApplyRecommendation = (serviceIds: string[], optionIds: string[]) => {
     applyRecommendation(serviceIds, optionIds);
     toast.success("AIの推薦を適用しました");
@@ -122,6 +141,17 @@ const BookingPage = () => {
   };
 
   const handleSubmit = async () => {
+    // 送信直前に再度空き状況を確認
+    if (selectedDate && selectedTime) {
+      const isStillAvailable = await checkRealTimeAvailability(selectedDate, selectedTime);
+      if (!isStillAvailable) {
+        toast.error("申し訳ありません。この時間帯は他の方が予約されました。別の時間帯を選択してください。");
+        // 空き状況を再取得
+        await fetchDayAvailability(selectedDate);
+        return;
+      }
+    }
+
     const result = await submitBooking();
     if (result) {
       setBookingData(result);
@@ -275,6 +305,11 @@ const BookingPage = () => {
               onTimeSelect={setSelectedTime}
               hasParking={hasParking}
               onParkingChange={setHasParking}
+              timeSlots={TIME_SLOTS}
+              dayTimeSlots={dayTimeSlots}
+              getAvailabilityForDate={getAvailabilityForDate}
+              onMonthChange={handleMonthChange}
+              loadingDay={loadingDay}
             />
           </div>
 
