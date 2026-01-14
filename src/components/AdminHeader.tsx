@@ -80,14 +80,16 @@ export function AdminHeader() {
               <Icon name="description" size={16} />
               経営管理
             </NavLink>
-            <NavLink
-              to={bookingPageUrl}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
-              activeClassName="bg-muted text-primary"
+            <a
+              href={bookingPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
             >
               <Icon name="auto_awesome" size={16} />
               予約ページ
-            </NavLink>
+              <Icon name="open_in_new" size={14} className="ml-0.5" />
+            </a>
           </nav>
         </div>
 
