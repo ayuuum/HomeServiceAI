@@ -90,6 +90,14 @@ export function AdminHeader() {
               予約ページ
               <Icon name="open_in_new" size={14} className="ml-0.5" />
             </a>
+            <NavLink
+              to="/profile"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+            >
+              <Icon name="settings" size={16} />
+              設定
+            </NavLink>
           </nav>
         </div>
 
