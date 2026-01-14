@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -26,8 +27,18 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const slugSchema = z.string()
+  .min(3, { message: "3文字以上で入力してください" })
+  .max(50, { message: "50文字以内で入力してください" })
+  .regex(/^[a-z0-9-]+$/, { message: "英小文字、数字、ハイフンのみ使用可能です" })
+  .refine((val) => !['admin', 'api', 'booking', 'login', 'signup', 'profile', 'settings'].includes(val), {
+    message: "この名前は予約されています",
+  });
+
+const RESERVED_SLUGS = ['admin', 'api', 'booking', 'login', 'signup', 'profile', 'settings'];
+
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, organization, refreshOrganization } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +47,14 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
+  
+  // Organization settings state
+  const [organizationName, setOrganizationName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [originalSlug, setOriginalSlug] = useState('');
+  const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
+  const [slugError, setSlugError] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -43,6 +62,56 @@ export default function ProfilePage() {
       loadProfile();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (organization) {
+      setOrganizationName(organization.name);
+      setSlug(organization.slug);
+      setOriginalSlug(organization.slug);
+    }
+  }, [organization]);
+
+  // Debounced slug availability check
+  useEffect(() => {
+    if (!slug || slug === originalSlug) {
+      setSlugStatus('idle');
+      setSlugError('');
+      return;
+    }
+
+    // Validate slug format first
+    const result = slugSchema.safeParse(slug);
+    if (!result.success) {
+      setSlugStatus('invalid');
+      setSlugError(result.error.errors[0].message);
+      return;
+    }
+
+    setSlugStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('slug', slug)
+          .neq('id', organization?.id || '')
+          .maybeSingle();
+
+        if (data) {
+          setSlugStatus('taken');
+          setSlugError('このURLは既に使用されています');
+        } else {
+          setSlugStatus('available');
+          setSlugError('');
+        }
+      } catch (error) {
+        console.error('Slug check error:', error);
+        setSlugStatus('idle');
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [slug, originalSlug, organization?.id]);
 
   const loadProfile = async () => {
     try {
@@ -138,6 +207,77 @@ export default function ProfilePage() {
     }
   };
 
+  const handleOrganizationUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // If slug changed, validate it
+    if (slug !== originalSlug) {
+      const result = slugSchema.safeParse(slug);
+      if (!result.success) {
+        toast({
+          variant: "destructive",
+          title: "入力エラー",
+          description: result.error.errors[0].message,
+        });
+        return;
+      }
+
+      if (slugStatus === 'taken') {
+        toast({
+          variant: "destructive",
+          title: "入力エラー",
+          description: "このURLは既に使用されています",
+        });
+        return;
+      }
+
+      if (slugStatus === 'checking') {
+        toast({
+          variant: "destructive",
+          title: "確認中",
+          description: "URLの確認中です。しばらくお待ちください",
+        });
+        return;
+      }
+    }
+
+    try {
+      setIsLoadingOrganization(true);
+
+      const { error } = await supabase
+        .from('organizations')
+        .update({ 
+          name: organizationName.trim(),
+          slug: slug.toLowerCase().trim()
+        })
+        .eq('id', organization?.id);
+
+      if (error) throw error;
+
+      setOriginalSlug(slug);
+      await refreshOrganization();
+
+      toast({
+        title: "更新成功",
+        description: "組織設定を更新しました",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : "組織設定の更新に失敗しました",
+      });
+    } finally {
+      setIsLoadingOrganization(false);
+    }
+  };
+
+  const handleSlugChange = (value: string) => {
+    // Convert to lowercase and replace invalid characters
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setSlug(sanitized);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
       <AdminHeader />
@@ -185,6 +325,82 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     'プロフィールを更新'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>組織設定</CardTitle>
+              <CardDescription>予約ページのURLを管理します</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleOrganizationUpdate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="organizationName">組織名</Label>
+                  <Input
+                    id="organizationName"
+                    type="text"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                    disabled={isLoadingOrganization}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slug">予約ページURL</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">/booking/</span>
+                    <div className="relative flex-1">
+                      <Input
+                        id="slug"
+                        type="text"
+                        value={slug}
+                        onChange={(e) => handleSlugChange(e.target.value)}
+                        disabled={isLoadingOrganization}
+                        className={`pr-10 ${
+                          slugStatus === 'taken' || slugStatus === 'invalid' 
+                            ? 'border-destructive focus-visible:ring-destructive' 
+                            : slugStatus === 'available' 
+                            ? 'border-green-500 focus-visible:ring-green-500' 
+                            : ''
+                        }`}
+                        required
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {slugStatus === 'checking' && (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        {slugStatus === 'available' && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                        {(slugStatus === 'taken' || slugStatus === 'invalid') && (
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {slugError ? (
+                    <p className="text-sm text-destructive">{slugError}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      英小文字、数字、ハイフンのみ使用可能（例: tanaka-cleaning）
+                    </p>
+                  )}
+                </div>
+                <Button 
+                  type="submit" 
+                  disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
+                >
+                  {isLoadingOrganization ? (
+                    <>
+                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                      更新中...
+                    </>
+                  ) : (
+                    '組織設定を保存'
                   )}
                 </Button>
               </form>

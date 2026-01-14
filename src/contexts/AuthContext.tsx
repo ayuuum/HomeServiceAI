@@ -17,6 +17,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshOrganization: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -120,6 +121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganization(null);
   };
 
+  const refreshOrganization = async () => {
+    if (user) {
+      await fetchOrganization(user.id);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -129,7 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading, 
       signIn, 
       signInWithGoogle, 
-      signOut 
+      signOut,
+      refreshOrganization
     }}>
       {children}
     </AuthContext.Provider>
