@@ -14,7 +14,7 @@ import {
 import { ja } from "date-fns/locale";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader } from "@/components/AdminHeader";
 import { MobileNav } from "@/components/MobileNav";
@@ -79,6 +79,15 @@ export default function CalendarPage() {
         );
     };
 
+    const getTodayBookings = () => {
+        const today = new Date();
+        return bookings
+            .filter((booking) => isSameDay(new Date(booking.selectedDate), today))
+            .sort((a, b) => a.selectedTime.localeCompare(b.selectedTime));
+    };
+
+    const todayBookings = getTodayBookings();
+
     const handleBookingClick = (booking: Booking) => {
         setSelectedBooking(booking);
         setIsModalOpen(true);
@@ -142,6 +151,94 @@ export default function CalendarPage() {
                         </Button>
                     </div>
                 </div>
+
+                {/* 今日の予約リスト */}
+                <Card className="mb-6 shadow-subtle border-none">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                                <Icon name="today" size={20} className="text-primary" />
+                                今日の予約
+                                <Badge variant="secondary" className="ml-2">
+                                    {todayBookings.length}件
+                                </Badge>
+                            </CardTitle>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={goToToday}
+                                className="text-sm"
+                            >
+                                <Icon name="calendar_today" size={16} className="mr-1" />
+                                カレンダーで見る
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Icon name="progress_activity" size={24} className="animate-spin text-muted-foreground" />
+                            </div>
+                        ) : todayBookings.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <Icon name="event_available" size={48} className="mx-auto mb-2 opacity-50" />
+                                <p>今日の予約はありません</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {todayBookings.map((booking) => (
+                                    <button
+                                        key={booking.id}
+                                        onClick={() => handleBookingClick(booking)}
+                                        className={`w-full text-left p-4 rounded-lg border transition-all hover:shadow-md flex items-center justify-between gap-4 ${
+                                            booking.status === "confirmed"
+                                                ? "bg-success/5 border-success/20 hover:bg-success/10"
+                                                : booking.status === "cancelled"
+                                                    ? "bg-muted border-border opacity-60"
+                                                    : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`text-lg font-bold tabular-nums ${
+                                                booking.status === "confirmed" ? "text-success" : 
+                                                booking.status === "pending" ? "text-warning" : "text-muted-foreground"
+                                            }`}>
+                                                {booking.selectedTime}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-foreground">
+                                                    {booking.customerName}
+                                                </span>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {booking.serviceName}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-bold text-foreground">
+                                                ¥{booking.totalPrice.toLocaleString()}
+                                            </span>
+                                            <Badge
+                                                variant={
+                                                    booking.status === "confirmed" ? "default" :
+                                                    booking.status === "pending" ? "secondary" : "outline"
+                                                }
+                                                className={
+                                                    booking.status === "confirmed" ? "bg-success text-success-foreground" :
+                                                    booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
+                                                }
+                                            >
+                                                {booking.status === "confirmed" ? "確定" :
+                                                 booking.status === "pending" ? "承認待ち" : "キャンセル"}
+                                            </Badge>
+                                            <Icon name="chevron_right" size={20} className="text-muted-foreground" />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 <Card className="shadow-medium border-none overflow-hidden">
                     <CardContent className="p-0">
