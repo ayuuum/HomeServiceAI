@@ -422,8 +422,11 @@ export const useBooking = (organizationId?: string) => {
                 // 1. Create or Find Customer
                 let customerId: string | undefined;
 
-                // Check if customer exists
-                if (customerEmail || customerPhone) {
+                // Check if user is authenticated - only authenticated users can search existing customers
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // Only search for existing customer if user is authenticated (has SELECT permission)
+                if (user && (customerEmail || customerPhone)) {
                     // Build query conditions
                     let query = supabase
                         .from('customers')
@@ -460,6 +463,7 @@ export const useBooking = (organizationId?: string) => {
                     }
                 }
 
+                // For unauthenticated users or when no existing customer found, create new customer
                 if (!customerId) {
                     const { data: newCustomer, error: customerError } = await supabase
                         .from('customers')
