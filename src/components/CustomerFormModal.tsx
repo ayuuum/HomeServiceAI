@@ -30,6 +30,7 @@ const customerSchema = z.object({
   email: z.string().email("有効なメールアドレスを入力してください").max(255).optional().or(z.literal("")),
   postalCode: z.string().max(10).optional(),
   address: z.string().max(500).optional(),
+  addressBuilding: z.string().max(200).optional(),
   lineUserId: z.string().max(100).optional(),
 });
 
@@ -58,6 +59,7 @@ export function CustomerFormModal({
       email: "",
       postalCode: "",
       address: "",
+      addressBuilding: "",
       lineUserId: "",
     },
   });
@@ -70,6 +72,7 @@ export function CustomerFormModal({
         email: customer.email || "",
         postalCode: customer.postalCode || "",
         address: customer.address || "",
+        addressBuilding: customer.addressBuilding || "",
         lineUserId: customer.lineUserId || "",
       });
     } else {
@@ -79,6 +82,7 @@ export function CustomerFormModal({
         email: "",
         postalCode: "",
         address: "",
+        addressBuilding: "",
         lineUserId: "",
       });
     }
@@ -93,6 +97,7 @@ export function CustomerFormModal({
         email: data.email || null,
         postal_code: data.postalCode || null,
         address: data.address || null,
+        address_building: data.addressBuilding || null,
         line_user_id: data.lineUserId || null,
       };
 
@@ -206,6 +211,20 @@ export function CustomerFormModal({
                   <FormLabel>住所</FormLabel>
                   <FormControl>
                     <Input placeholder="東京都渋谷区..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="addressBuilding"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>建物名・部屋番号</FormLabel>
+                  <FormControl>
+                    <Input placeholder="○○マンション 101号室" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -17,6 +17,8 @@ interface BookingCustomerFormProps {
     onPostalCodeChange: (value: string) => void;
     address: string;
     onAddressChange: (value: string) => void;
+    addressBuilding: string;
+    onAddressBuildingChange: (value: string) => void;
     notes: string;
     onNotesChange: (value: string) => void;
     photos: File[];
@@ -39,6 +41,8 @@ export const BookingCustomerForm = ({
     onPostalCodeChange,
     address,
     onAddressChange,
+    addressBuilding,
+    onAddressBuildingChange,
     notes,
     onNotesChange,
     photos,
@@ -143,6 +147,8 @@ export const BookingCustomerForm = ({
                         onPostalCodeChange={onPostalCodeChange}
                         address={address}
                         onAddressChange={onAddressChange}
+                        addressBuilding={addressBuilding}
+                        onAddressBuildingChange={onAddressBuildingChange}
                         required={true}
                     />
                 </div>

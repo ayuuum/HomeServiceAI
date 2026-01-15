@@ -73,6 +73,7 @@ export default function CustomerManagement() {
           email: c.email || undefined,
           postalCode: c.postal_code || undefined,
           address: c.address || undefined,
+          addressBuilding: c.address_building || undefined,
           bookingCount,
           totalSpend,
           bookingNames,
@@ -332,9 +333,14 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
                       <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
-                      <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px] truncate" title={customer.address || ""}>
-                        {customer.postalCode && `〒${customer.postalCode} `}
-                        {customer.address || "-"}
+                      <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px]" title={`${customer.address || ""}${customer.addressBuilding ? ` ${customer.addressBuilding}` : ""}`}>
+                        <div className="truncate">
+                          {customer.postalCode && `〒${customer.postalCode} `}
+                          {customer.address || "-"}
+                        </div>
+                        {customer.addressBuilding && (
+                          <div className="truncate text-xs">{customer.addressBuilding}</div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right px-6 font-medium">
                         {customer.bookingCount}回

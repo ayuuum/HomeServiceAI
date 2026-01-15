@@ -12,6 +12,7 @@ export interface StoredBookingData {
   customerPhone: string;
   customerPostalCode: string;
   customerAddress: string;
+  customerAddressBuilding: string;
   notes: string;
   organizationId: string;
   savedAt: number;
@@ -57,6 +58,7 @@ export const useBookingStorage = (organizationId: string) => {
         customerPhone: data.customerPhone ?? existing?.customerPhone ?? "",
         customerPostalCode: data.customerPostalCode ?? existing?.customerPostalCode ?? "",
         customerAddress: data.customerAddress ?? existing?.customerAddress ?? "",
+        customerAddressBuilding: data.customerAddressBuilding ?? existing?.customerAddressBuilding ?? "",
         notes: data.notes ?? existing?.notes ?? "",
         organizationId,
         savedAt: Date.now(),

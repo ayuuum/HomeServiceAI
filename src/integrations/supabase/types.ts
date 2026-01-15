@@ -105,6 +105,7 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_address: string | null
+          customer_address_building: string | null
           customer_email: string | null
           customer_id: string | null
           customer_name: string
@@ -123,6 +124,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           customer_address?: string | null
+          customer_address_building?: string | null
           customer_email?: string | null
           customer_id?: string | null
           customer_name: string
@@ -141,6 +143,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           customer_address?: string | null
+          customer_address_building?: string | null
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string
@@ -176,6 +179,7 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          address_building: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -188,6 +192,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_building?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -200,6 +205,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_building?: string | null
           created_at?: string | null
           email?: string | null
           id?: string

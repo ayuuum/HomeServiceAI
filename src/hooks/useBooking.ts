@@ -35,6 +35,7 @@ export const useBooking = (organizationId?: string) => {
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerPostalCode, setCustomerPostalCode] = useState("");
     const [customerAddress, setCustomerAddress] = useState("");
+    const [customerAddressBuilding, setCustomerAddressBuilding] = useState("");
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -130,6 +131,7 @@ export const useBooking = (organizationId?: string) => {
         if (storedData.customerPhone) setCustomerPhone(storedData.customerPhone);
         if (storedData.customerPostalCode) setCustomerPostalCode(storedData.customerPostalCode);
         if (storedData.customerAddress) setCustomerAddress(storedData.customerAddress);
+        if (storedData.customerAddressBuilding) setCustomerAddressBuilding(storedData.customerAddressBuilding);
         if (storedData.notes) setNotes(storedData.notes);
         
         // Wait for options to load then restore them
@@ -180,6 +182,7 @@ export const useBooking = (organizationId?: string) => {
                 customerPhone,
                 customerPostalCode,
                 customerAddress,
+                customerAddressBuilding,
                 notes,
             });
         }, 500);
@@ -197,6 +200,7 @@ export const useBooking = (organizationId?: string) => {
         customerPhone,
         customerPostalCode,
         customerAddress,
+        customerAddressBuilding,
         notes,
         saveBookingData
     ]);
@@ -467,6 +471,7 @@ export const useBooking = (organizationId?: string) => {
                                     phone: customerPhone.trim() || null,
                                     postal_code: customerPostalCode.trim() || null,
                                     address: customerAddress.trim() || null,
+                                    address_building: customerAddressBuilding.trim() || null,
                                 })
                                 .eq('id', customerId);
                         }
@@ -485,6 +490,7 @@ export const useBooking = (organizationId?: string) => {
                             phone: customerPhone,
                             postal_code: customerPostalCode || null,
                             address: customerAddress || null,
+                            address_building: customerAddressBuilding || null,
                             organization_id: organizationId
                         });
 
@@ -507,6 +513,7 @@ export const useBooking = (organizationId?: string) => {
                         customer_email: customerEmail.trim() || null,
                         customer_phone: customerPhone.trim() || null,
                         customer_address: customerAddress.trim() || null,
+                        customer_address_building: customerAddressBuilding.trim() || null,
                         customer_postal_code: customerPostalCode.trim() || null,
                         selected_date: format(selectedDate, 'yyyy-MM-dd'),
                         selected_time: selectedTime,
@@ -565,6 +572,7 @@ export const useBooking = (organizationId?: string) => {
                 setCustomerPhone("");
                 setCustomerPostalCode("");
                 setCustomerAddress("");
+                setCustomerAddressBuilding("");
 
                 return {
                     date: selectedDate,
@@ -638,6 +646,8 @@ export const useBooking = (organizationId?: string) => {
         setCustomerPostalCode,
         customerAddress,
         setCustomerAddress,
+        customerAddressBuilding,
+        setCustomerAddressBuilding,
         totalPrice,
         totalDiscount,
         loading,

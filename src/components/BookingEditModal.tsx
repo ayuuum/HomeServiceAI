@@ -25,6 +25,7 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPostalCode, setCustomerPostalCode] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [customerAddressBuilding, setCustomerAddressBuilding] = useState('');
 
   useEffect(() => {
     if (booking && open) {
@@ -35,6 +36,7 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
       setCustomerEmail(booking.customer_email || '');
       setCustomerPostalCode(booking.customer_postal_code || '');
       setCustomerAddress(booking.customer_address || '');
+      setCustomerAddressBuilding(booking.customer_address_building || '');
     }
   }, [booking, open]);
 
@@ -53,6 +55,7 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
           customer_email: customerEmail,
           customer_postal_code: customerPostalCode || null,
           customer_address: customerAddress || null,
+          customer_address_building: customerAddressBuilding || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', booking.id);
@@ -145,6 +148,8 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
             onPostalCodeChange={setCustomerPostalCode}
             address={customerAddress}
             onAddressChange={setCustomerAddress}
+            addressBuilding={customerAddressBuilding}
+            onAddressBuildingChange={setCustomerAddressBuilding}
           />
 
           <div className="flex gap-2 justify-end">
