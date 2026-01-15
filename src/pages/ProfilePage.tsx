@@ -13,6 +13,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
 import { CheckCircle2, XCircle, Loader2, Download, Printer } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { LineSettingsForm } from '@/components/LineSettingsForm';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -610,11 +611,14 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     '組織設定を保存'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
+              )}
+            </Button>
+          </form>
+        </CardContent>
           </Card>
+
+          {/* LINE Settings */}
+          <LineSettingsForm />
 
           <Card>
             <CardHeader>

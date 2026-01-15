@@ -226,10 +226,67 @@ export type Database = {
           },
         ]
       }
+      line_messages: {
+        Row: {
+          content: string
+          created_at: string
+          customer_id: string | null
+          direction: string
+          id: string
+          line_message_id: string | null
+          line_user_id: string
+          message_type: string
+          organization_id: string
+          sent_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          customer_id?: string | null
+          direction: string
+          id?: string
+          line_message_id?: string | null
+          line_user_id: string
+          message_type?: string
+          organization_id: string
+          sent_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          customer_id?: string | null
+          direction?: string
+          id?: string
+          line_message_id?: string | null
+          line_user_id?: string
+          message_type?: string
+          organization_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_messages_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "line_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
           id: string
+          line_bot_user_id: string | null
+          line_channel_secret: string | null
+          line_channel_token: string | null
           name: string
           slug: string
           updated_at: string | null
@@ -237,6 +294,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          line_bot_user_id?: string | null
+          line_channel_secret?: string | null
+          line_channel_token?: string | null
           name: string
           slug: string
           updated_at?: string | null
@@ -244,6 +304,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          line_bot_user_id?: string | null
+          line_channel_secret?: string | null
+          line_channel_token?: string | null
           name?: string
           slug?: string
           updated_at?: string | null
