@@ -130,6 +130,15 @@ export const BookingDetailModal = ({
                   <span className="font-medium">{booking.customerPhone}</span>
                 </div>
               )}
+              {(booking.customerPostalCode || booking.customerAddress) && (
+                <div className="flex items-start gap-2">
+                  <span className="text-sm text-muted-foreground w-24">住所:</span>
+                  <span className="font-medium">
+                    {booking.customerPostalCode && `〒${booking.customerPostalCode} `}
+                    {booking.customerAddress || ""}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

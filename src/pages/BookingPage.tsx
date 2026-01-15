@@ -75,6 +75,10 @@ const BookingPage = () => {
     setCustomerEmail,
     customerPhone,
     setCustomerPhone,
+    customerPostalCode,
+    setCustomerPostalCode,
+    customerAddress,
+    setCustomerAddress,
     totalPrice,
     totalDiscount,
     loading,
@@ -321,6 +325,10 @@ const BookingPage = () => {
               onEmailChange={setCustomerEmail}
               customerPhone={customerPhone}
               onPhoneChange={setCustomerPhone}
+              postalCode={customerPostalCode}
+              onPostalCodeChange={setCustomerPostalCode}
+              address={customerAddress}
+              onAddressChange={setCustomerAddress}
               notes={notes}
               onNotesChange={setNotes}
               photos={photos}

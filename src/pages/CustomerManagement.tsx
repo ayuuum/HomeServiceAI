@@ -71,6 +71,7 @@ export default function CustomerManagement() {
           name: c.name || "",
           phone: c.phone || undefined,
           email: c.email || undefined,
+          postalCode: c.postal_code || undefined,
           address: c.address || undefined,
           bookingCount,
           totalSpend,
@@ -317,6 +318,7 @@ export default function CustomerManagement() {
                     <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
                     <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
                     <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell">住所</TableHead>
                     <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
                     <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
                     <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px]">アクション</TableHead>
@@ -330,6 +332,10 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
                       <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
+                      <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px] truncate" title={customer.address || ""}>
+                        {customer.postalCode && `〒${customer.postalCode} `}
+                        {customer.address || "-"}
+                      </TableCell>
                       <TableCell className="text-right px-6 font-medium">
                         {customer.bookingCount}回
                       </TableCell>

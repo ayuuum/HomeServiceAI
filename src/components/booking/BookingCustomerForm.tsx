@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/ui/icon";
+import { AddressInput } from "@/components/AddressInput";
 
 interface BookingCustomerFormProps {
     customerName: string;
@@ -12,6 +13,10 @@ interface BookingCustomerFormProps {
     onEmailChange: (value: string) => void;
     customerPhone: string;
     onPhoneChange: (value: string) => void;
+    postalCode: string;
+    onPostalCodeChange: (value: string) => void;
+    address: string;
+    onAddressChange: (value: string) => void;
     notes: string;
     onNotesChange: (value: string) => void;
     photos: File[];
@@ -30,6 +35,10 @@ export const BookingCustomerForm = ({
     onEmailChange,
     customerPhone,
     onPhoneChange,
+    postalCode,
+    onPostalCodeChange,
+    address,
+    onAddressChange,
     notes,
     onNotesChange,
     photos,
@@ -127,6 +136,15 @@ export const BookingCustomerForm = ({
                             className={`h-11 sm:h-10 text-base sm:text-sm ${isLoggedIn ? 'bg-muted cursor-not-allowed' : ''}`}
                         />
                     </div>
+                    
+                    {/* Address with postal code auto-fill */}
+                    <AddressInput
+                        postalCode={postalCode}
+                        onPostalCodeChange={onPostalCodeChange}
+                        address={address}
+                        onAddressChange={onAddressChange}
+                        required={true}
+                    />
                 </div>
             </section>
 

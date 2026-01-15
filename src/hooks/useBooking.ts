@@ -33,6 +33,8 @@ export const useBooking = (organizationId?: string) => {
     const [customerName, setCustomerName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
+    const [customerPostalCode, setCustomerPostalCode] = useState("");
+    const [customerAddress, setCustomerAddress] = useState("");
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -126,6 +128,8 @@ export const useBooking = (organizationId?: string) => {
         if (storedData.customerName) setCustomerName(storedData.customerName);
         if (storedData.customerEmail) setCustomerEmail(storedData.customerEmail);
         if (storedData.customerPhone) setCustomerPhone(storedData.customerPhone);
+        if (storedData.customerPostalCode) setCustomerPostalCode(storedData.customerPostalCode);
+        if (storedData.customerAddress) setCustomerAddress(storedData.customerAddress);
         if (storedData.notes) setNotes(storedData.notes);
         
         // Wait for options to load then restore them
@@ -174,6 +178,8 @@ export const useBooking = (organizationId?: string) => {
                 customerName,
                 customerEmail,
                 customerPhone,
+                customerPostalCode,
+                customerAddress,
                 notes,
             });
         }, 500);
@@ -188,7 +194,9 @@ export const useBooking = (organizationId?: string) => {
         hasParking, 
         customerName, 
         customerEmail, 
-        customerPhone, 
+        customerPhone,
+        customerPostalCode,
+        customerAddress,
         notes,
         saveBookingData
     ]);
@@ -457,6 +465,8 @@ export const useBooking = (organizationId?: string) => {
                                     name: customerName.trim(),
                                     email: customerEmail.trim() || null,
                                     phone: customerPhone.trim() || null,
+                                    postal_code: customerPostalCode.trim() || null,
+                                    address: customerAddress.trim() || null,
                                 })
                                 .eq('id', customerId);
                         }
@@ -473,6 +483,8 @@ export const useBooking = (organizationId?: string) => {
                             name: customerName,
                             email: customerEmail,
                             phone: customerPhone,
+                            postal_code: customerPostalCode || null,
+                            address: customerAddress || null,
                             organization_id: organizationId
                         });
 
@@ -494,6 +506,8 @@ export const useBooking = (organizationId?: string) => {
                         customer_name: customerName.trim(),
                         customer_email: customerEmail.trim() || null,
                         customer_phone: customerPhone.trim() || null,
+                        customer_address: customerAddress.trim() || null,
+                        customer_postal_code: customerPostalCode.trim() || null,
                         selected_date: format(selectedDate, 'yyyy-MM-dd'),
                         selected_time: selectedTime,
                         total_price: totalPrice,
@@ -549,6 +563,8 @@ export const useBooking = (organizationId?: string) => {
                 setCustomerName("");
                 setCustomerEmail("");
                 setCustomerPhone("");
+                setCustomerPostalCode("");
+                setCustomerAddress("");
 
                 return {
                     date: selectedDate,
@@ -618,6 +634,10 @@ export const useBooking = (organizationId?: string) => {
         setCustomerEmail,
         customerPhone,
         setCustomerPhone,
+        customerPostalCode,
+        setCustomerPostalCode,
+        customerAddress,
+        setCustomerAddress,
         totalPrice,
         totalDiscount,
         loading,

@@ -104,10 +104,12 @@ export type Database = {
       bookings: {
         Row: {
           created_at: string | null
+          customer_address: string | null
           customer_email: string | null
           customer_id: string | null
           customer_name: string
           customer_phone: string | null
+          customer_postal_code: string | null
           diagnosis_has_parking: boolean | null
           diagnosis_notes: string | null
           id: string
@@ -120,10 +122,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          customer_address?: string | null
           customer_email?: string | null
           customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
+          customer_postal_code?: string | null
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
@@ -136,10 +140,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          customer_address?: string | null
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
+          customer_postal_code?: string | null
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
@@ -177,6 +183,7 @@ export type Database = {
           name: string | null
           organization_id: string | null
           phone: string | null
+          postal_code: string | null
           updated_at: string | null
         }
         Insert: {
@@ -188,6 +195,7 @@ export type Database = {
           name?: string | null
           organization_id?: string | null
           phone?: string | null
+          postal_code?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -199,6 +207,7 @@ export type Database = {
           name?: string | null
           organization_id?: string | null
           phone?: string | null
+          postal_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
