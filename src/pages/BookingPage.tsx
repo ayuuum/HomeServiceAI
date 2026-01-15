@@ -123,6 +123,11 @@ const BookingPage = () => {
     time: string;
     serviceName: string;
     totalPrice: number;
+    customerName?: string;
+    customerPhone?: string;
+    customerPostalCode?: string;
+    customerAddress?: string;
+    customerAddressBuilding?: string;
   } | null>(null);
 
   // Section refs for scroll navigation

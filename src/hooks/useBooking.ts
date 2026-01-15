@@ -579,6 +579,11 @@ export const useBooking = (organizationId?: string) => {
                     time: selectedTime,
                     serviceName: selectedServices.map(s => s.service.title).join(", "),
                     totalPrice: totalPrice,
+                    customerName,
+                    customerPhone,
+                    customerPostalCode,
+                    customerAddress,
+                    customerAddressBuilding,
                 };
 
             } catch (error) {

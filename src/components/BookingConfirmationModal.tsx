@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui/icon";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
+import { extractCityDistrict } from "@/lib/addressUtils";
 
 interface BookingConfirmationModalProps {
   open: boolean;
@@ -19,6 +20,11 @@ interface BookingConfirmationModalProps {
     time: string;
     serviceName: string;
     totalPrice: number;
+    customerName?: string;
+    customerPhone?: string;
+    customerPostalCode?: string;
+    customerAddress?: string;
+    customerAddressBuilding?: string;
   } | null;
 }
 
@@ -29,13 +35,51 @@ export const BookingConfirmationModal = ({
 }: BookingConfirmationModalProps) => {
   if (!bookingData) return null;
 
-  const googleCalendarUrl = bookingData ? generateGoogleCalendarUrl({
-    title: `予約: ${bookingData.serviceName}`,
-    details: `メニュー: ${bookingData.serviceName}\n料金: ¥${bookingData.totalPrice.toLocaleString()}`,
+  // 住所から区・市を抽出してタイトルに追加
+  const locationSuffix = bookingData.customerAddress
+    ? extractCityDistrict(bookingData.customerAddress)
+    : null;
+
+  const calendarTitle = locationSuffix
+    ? `予約: ${bookingData.serviceName}（${locationSuffix}）`
+    : `予約: ${bookingData.serviceName}`;
+
+  // 場所情報を組み立て
+  const locationParts = [
+    bookingData.customerPostalCode ? `〒${bookingData.customerPostalCode}` : '',
+    bookingData.customerAddress,
+    bookingData.customerAddressBuilding,
+  ].filter(Boolean);
+  const location = locationParts.join(' ');
+
+  // 詳細情報を組み立て
+  const detailsLines = [
+    `【メニュー】`,
+    bookingData.serviceName,
+    ``,
+    `【料金】`,
+    `¥${bookingData.totalPrice.toLocaleString()}`,
+  ];
+
+  if (bookingData.customerName || bookingData.customerPhone) {
+    detailsLines.push(``);
+    detailsLines.push(`【お客様情報】`);
+    if (bookingData.customerName) {
+      detailsLines.push(`${bookingData.customerName} 様`);
+    }
+    if (bookingData.customerPhone) {
+      detailsLines.push(bookingData.customerPhone);
+    }
+  }
+
+  const googleCalendarUrl = generateGoogleCalendarUrl({
+    title: calendarTitle,
+    details: detailsLines.join('\n'),
+    location: location || undefined,
     date: bookingData.date,
     time: bookingData.time,
-    durationMinutes: 60, // Default 1 hour
-  }) : "";
+    durationMinutes: 60,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
