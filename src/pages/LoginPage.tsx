@@ -4,10 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Icon } from '@/components/ui/icon';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { Mail, Lock, Eye, EyeOff, Loader2, Building2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "有効なメールアドレスを入力してください" }),
@@ -17,6 +17,7 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
@@ -73,49 +74,103 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Icon name="business" size={24} className="text-primary" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background with gradient circles */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/15 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+      
+      {/* Subtle grid pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <Card className="w-full max-w-md shadow-2xl border-border/50 backdrop-blur-sm bg-card/95 relative z-10">
+        <CardHeader className="space-y-4 text-center pb-2">
+          {/* Logo and Brand */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25">
+              <Building2 className="w-8 h-8 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">Haukuri Pro</h1>
+              <p className="text-sm text-muted-foreground mt-1">ビジネス管理システム</p>
+            </div>
           </div>
-          <CardTitle className="text-2xl">Haukuri Pro</CardTitle>
-          <CardDescription className="text-base">管理システム</CardDescription>
+          
+          {/* Service Description */}
+          <div className="bg-muted/50 rounded-lg p-4 text-left border border-border/50">
+            <p className="text-sm font-medium text-foreground">予約管理をシンプルに</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              予約・顧客・スケジュールを一元管理。ビジネスの効率化を実現します。
+            </p>
+          </div>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="pt-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-                required
-              />
+              <Label htmlFor="email" className="text-sm font-medium">
+                メールアドレス
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                  className="pl-10 h-11"
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="password">パスワード</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSubmitting}
-                required
-              />
+              <Label htmlFor="password" className="text-sm font-medium">
+                パスワード
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                  className="pl-10 pr-10 h-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
+
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-11 font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ログイン中...
                 </>
               ) : (
@@ -124,12 +179,12 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="relative my-4">
+          <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-card px-3 text-muted-foreground">
                 または
               </span>
             </div>
@@ -138,7 +193,7 @@ export default function LoginPage() {
           <Button
             variant="outline"
             type="button"
-            className="w-full"
+            className="w-full h-11 font-medium hover:bg-muted/50 transition-all"
             disabled={isSubmitting}
             onClick={async () => {
               setIsSubmitting(true);
@@ -159,18 +214,16 @@ export default function LoginPage() {
             Googleでログイン
           </Button>
 
-          <div className="mt-4 text-center text-sm space-y-2">
-            <div>
+          <div className="mt-6 flex flex-col items-center gap-2 text-sm">
+            <div className="text-muted-foreground">
               アカウントをお持ちでないですか？{' '}
-              <Link to="/signup" className="text-primary hover:underline">
+              <Link to="/signup" className="text-primary font-medium hover:underline">
                 新規登録
               </Link>
             </div>
-            <div>
-              <Link to="/forgot-password" className="text-primary hover:underline">
-                パスワードをお忘れの方
-              </Link>
-            </div>
+            <Link to="/forgot-password" className="text-muted-foreground hover:text-primary transition-colors">
+              パスワードをお忘れの方
+            </Link>
           </div>
         </CardContent>
       </Card>
