@@ -21,16 +21,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
+import { LineChatModal } from "@/components/LineChatModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
@@ -44,9 +37,7 @@ export default function CustomerManagement() {
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
 
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
-  const [sendingMessageCustomer, setSendingMessageCustomer] = useState<Customer | null>(null);
-  const [messageContent, setMessageContent] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  const [chattingCustomer, setChattingCustomer] = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
@@ -248,31 +239,6 @@ export default function CustomerManagement() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!sendingMessageCustomer || !sendingMessageCustomer.lineUserId || !messageContent.trim()) return;
-
-    try {
-      setIsSending(true);
-      const { error } = await supabase.functions.invoke('send-line-message', {
-        body: {
-          userId: sendingMessageCustomer.lineUserId,
-          message: messageContent.trim(),
-        },
-      });
-
-      if (error) throw error;
-
-      toast.success("LINEメッセージを送信しました");
-      setSendingMessageCustomer(null);
-      setMessageContent("");
-    } catch (error) {
-      console.error("Send message error:", error);
-      toast.error("メッセージの送信に失敗しました");
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
@@ -352,17 +318,20 @@ export default function CustomerManagement() {
                       </TableCell>
                       <TableCell className="text-right px-6">
                         <div className="flex gap-1 justify-end">
-                          {customer.lineUserId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 w-9 p-0 text-muted-foreground hover:text-[#06C755] hover:bg-[#06C755]/10 rounded-full"
-                              onClick={() => setSendingMessageCustomer(customer)}
-                              title="LINEメッセージを送信"
-                            >
-                              <Icon name="message_circle" size={16} />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-9 w-9 p-0 rounded-full ${
+                              customer.lineUserId 
+                                ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10" 
+                                : "text-muted-foreground/40 cursor-not-allowed"
+                            }`}
+                            onClick={() => customer.lineUserId && setChattingCustomer(customer)}
+                            disabled={!customer.lineUserId}
+                            title={customer.lineUserId ? "LINEチャット" : "LINE未連携"}
+                          >
+                            <Icon name="chat" size={16} />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -435,62 +404,13 @@ export default function CustomerManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog
-        open={!!sendingMessageCustomer}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSendingMessageCustomer(null);
-            setMessageContent("");
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>LINEメッセージ送信</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="mb-2 text-sm text-muted-foreground">
-              送信先: {sendingMessageCustomer?.name}
-            </p>
-            <Textarea
-              placeholder="メッセージを入力してください..."
-              value={messageContent}
-              onChange={(e) => setMessageContent(e.target.value)}
-              rows={5}
-              className="resize-none"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSendingMessageCustomer(null);
-                setMessageContent("");
-              }}
-              disabled={isSending}
-            >
-              キャンセル
-            </Button>
-            <Button
-              onClick={handleSendMessage}
-              disabled={!messageContent.trim() || isSending}
-              className="bg-[#06C755] hover:bg-[#06C755]/90 text-white"
-            >
-              {isSending ? (
-                <>
-                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                  送信中...
-                </>
-              ) : (
-                <>
-                  <Icon name="send" size={16} className="mr-2" />
-                  送信
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LineChatModal
+        open={!!chattingCustomer}
+        onOpenChange={(open) => !open && setChattingCustomer(null)}
+        customerId={chattingCustomer?.id || ''}
+        lineUserId={chattingCustomer?.lineUserId}
+        customerName={chattingCustomer?.name || ''}
+      />
     </div>
   );
 }
