@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Icon } from '@/components/ui/icon';
+import { AddressInput } from '@/components/AddressInput';
 
 interface BookingEditModalProps {
   open: boolean;
@@ -22,6 +23,8 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPostalCode, setCustomerPostalCode] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
 
   useEffect(() => {
     if (booking && open) {
@@ -30,6 +33,8 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
       setCustomerName(booking.customer_name);
       setCustomerPhone(booking.customer_phone || '');
       setCustomerEmail(booking.customer_email || '');
+      setCustomerPostalCode(booking.customer_postal_code || '');
+      setCustomerAddress(booking.customer_address || '');
     }
   }, [booking, open]);
 
@@ -46,6 +51,8 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
           customer_name: customerName,
           customer_phone: customerPhone,
           customer_email: customerEmail,
+          customer_postal_code: customerPostalCode || null,
+          customer_address: customerAddress || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', booking.id);
@@ -132,6 +139,13 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
               onChange={(e) => setCustomerEmail(e.target.value)}
             />
           </div>
+
+          <AddressInput
+            postalCode={customerPostalCode}
+            onPostalCodeChange={setCustomerPostalCode}
+            address={customerAddress}
+            onAddressChange={setCustomerAddress}
+          />
 
           <div className="flex gap-2 justify-end">
             <Button

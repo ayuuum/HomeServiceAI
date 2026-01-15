@@ -53,6 +53,8 @@ export interface Booking {
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerAddress?: string;
+  customerPostalCode?: string;
   serviceQuantity: number;
   diagnosisHasParking?: boolean;
   diagnosisNotes?: string;
@@ -68,6 +70,7 @@ export interface Customer {
   phone?: string;
   email?: string;
   address?: string;
+  postalCode?: string;
   bookingCount?: number;
   totalSpend?: number;
 }
