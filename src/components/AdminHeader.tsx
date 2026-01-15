@@ -25,10 +25,11 @@ export function AdminHeader() {
     navigate('/login');
   };
 
-  // Build booking page URL with organization slug
+  // Build booking page URL with organization slug (using public URL for customer sharing)
+  const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://cleaning-booking.lovable.app';
   const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
-    ? `/booking/${organization.slug}` 
-    : '/';
+    ? `${publicBaseUrl}/booking/${organization.slug}` 
+    : publicBaseUrl;
 
   return (
     <header className="border-b bg-card sticky top-0 z-50">

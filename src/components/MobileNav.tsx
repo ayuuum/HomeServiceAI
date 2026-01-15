@@ -17,9 +17,11 @@ export function MobileNav() {
   const { signOut, user, organization } = useAuth();
   const navigate = useNavigate();
   
+  // Build booking page URL with organization slug (using public URL for customer sharing)
+  const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://cleaning-booking.lovable.app';
   const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
-    ? `/booking/${organization.slug}` 
-    : '/';
+    ? `${publicBaseUrl}/booking/${organization.slug}` 
+    : publicBaseUrl;
 
   const handleLogout = async () => {
     await signOut();
