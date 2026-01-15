@@ -19,16 +19,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const { signIn, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate('/admin', { replace: true });
+    if (user && !isExiting) {
+      setIsExiting(true);
+      // Wait for animation to complete before navigating
+      setTimeout(() => {
+        navigate('/admin', { replace: true });
+      }, 400);
     }
-  }, [user, navigate]);
+  }, [user, navigate, isExiting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,12 +79,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className={`min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-opacity duration-400 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       {/* Background with gradient circles */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/15 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+      <div className={`absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10 transition-all duration-500 ${isExiting ? 'scale-110' : 'scale-100'}`} />
+      <div className={`absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isExiting ? 'scale-150 opacity-0' : ''}`} />
+      <div className={`absolute bottom-0 right-0 w-96 h-96 bg-primary/15 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 transition-all duration-500 ${isExiting ? 'scale-150 opacity-0' : ''}`} />
+      <div className={`absolute top-1/2 left-1/2 w-64 h-64 bg-accent/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isExiting ? 'scale-150 opacity-0' : ''}`} />
       
       {/* Subtle grid pattern */}
       <div 
@@ -89,7 +94,7 @@ export default function LoginPage() {
         }}
       />
 
-      <Card className="w-full max-w-md shadow-2xl border-border/50 backdrop-blur-sm bg-card/95 relative z-10">
+      <Card className={`w-full max-w-md shadow-2xl border-border/50 backdrop-blur-sm bg-card/95 relative z-10 transition-all duration-400 ${isExiting ? 'scale-95 opacity-0 translate-y-4' : 'scale-100 opacity-100 translate-y-0'}`}>
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo and Brand */}
           <div className="flex flex-col items-center gap-3">
