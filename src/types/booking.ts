@@ -54,6 +54,7 @@ export interface Booking {
   customerEmail?: string;
   customerPhone?: string;
   customerAddress?: string;
+  customerAddressBuilding?: string;
   customerPostalCode?: string;
   serviceQuantity: number;
   diagnosisHasParking?: boolean;
@@ -70,6 +71,7 @@ export interface Customer {
   phone?: string;
   email?: string;
   address?: string;
+  addressBuilding?: string;
   postalCode?: string;
   bookingCount?: number;
   totalSpend?: number;

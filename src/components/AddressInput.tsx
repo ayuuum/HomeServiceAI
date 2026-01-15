@@ -10,6 +10,8 @@ interface AddressInputProps {
   onPostalCodeChange: (value: string) => void;
   address: string;
   onAddressChange: (value: string) => void;
+  addressBuilding?: string;
+  onAddressBuildingChange?: (value: string) => void;
   required?: boolean;
   disabled?: boolean;
 }
@@ -25,6 +27,8 @@ export const AddressInput = ({
   onPostalCodeChange,
   address,
   onAddressChange,
+  addressBuilding = "",
+  onAddressBuildingChange,
   required = false,
   disabled = false,
 }: AddressInputProps) => {
@@ -139,9 +143,28 @@ export const AddressInput = ({
           className="h-11 sm:h-10 text-base sm:text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          建物名・部屋番号は手動で追記してください
+          番地まで入力してください
         </p>
       </div>
+
+      {onAddressBuildingChange && (
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label htmlFor="addressBuilding" className="text-sm sm:text-base">
+            建物名・部屋番号（任意）
+          </Label>
+          <Input
+            id="addressBuilding"
+            placeholder="○○マンション 101号室"
+            value={addressBuilding}
+            onChange={(e) => onAddressBuildingChange(e.target.value)}
+            disabled={disabled}
+            className="h-11 sm:h-10 text-base sm:text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            マンション・アパートの場合はご記入ください
+          </p>
+        </div>
+      )}
     </div>
   );
 };
