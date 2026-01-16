@@ -15,6 +15,7 @@ import { ja } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
+import { extractCityDistrict } from "@/lib/addressUtils";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -171,10 +172,47 @@ export const BookingDetailModal = ({
                 size="sm"
                 className="w-full mt-2 border-primary/20 hover:bg-primary/5 text-primary"
                 onClick={() => {
+                  // 住所から区・市を抽出してタイトルに追加
+                  const locationSuffix = booking.customerAddress
+                    ? extractCityDistrict(booking.customerAddress)
+                    : null;
+
+                  const calendarTitle = locationSuffix
+                    ? `予約: ${booking.serviceName}（${locationSuffix}）- ${booking.customerName}様`
+                    : `予約: ${booking.serviceName} - ${booking.customerName}様`;
+
+                  // 場所情報を組み立て
+                  const locationParts = [
+                    booking.customerPostalCode ? `〒${booking.customerPostalCode}` : '',
+                    booking.customerAddress,
+                    booking.customerAddressBuilding,
+                  ].filter(Boolean);
+                  const calendarLocation = locationParts.length > 0 
+                    ? locationParts.join(' ') 
+                    : undefined;
+
+                  // 詳細情報を組み立て
+                  const detailsLines = [
+                    `【メニュー】`,
+                    booking.serviceName,
+                    ``,
+                    `【料金】`,
+                    `¥${booking.totalPrice.toLocaleString()}`,
+                    ``,
+                    `【お客様情報】`,
+                    `${booking.customerName} 様`,
+                  ];
+                  if (booking.customerPhone) {
+                    detailsLines.push(booking.customerPhone);
+                  }
+                  if (booking.customerEmail) {
+                    detailsLines.push(booking.customerEmail);
+                  }
+
                   const url = generateGoogleCalendarUrl({
-                    title: `${booking.serviceName} - ${booking.customerName}様`,
-                    details: `顧客名: ${booking.customerName}\n電話: ${booking.customerPhone || 'なし'}\nメール: ${booking.customerEmail || 'なし'}\nメニュー: ${booking.serviceName}\n料金: ¥${booking.totalPrice.toLocaleString()}`,
-                    location: "お客様のご自宅",
+                    title: calendarTitle,
+                    details: detailsLines.join('\n'),
+                    location: calendarLocation,
                     date: new Date(booking.selectedDate),
                     time: booking.selectedTime,
                     durationMinutes: 60,
