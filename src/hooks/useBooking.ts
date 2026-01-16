@@ -480,18 +480,16 @@ export const useBooking = (organizationId?: string) => {
 
                 // For unauthenticated users or when no existing customer found, create new customer
                 if (!customerId) {
-                    const newCustomerId = crypto.randomUUID();
-                    const { error: customerError } = await supabase
-                        .from('customers')
-                        .insert({
-                            id: newCustomerId,
-                            name: customerName,
-                            email: customerEmail,
-                            phone: customerPhone,
-                            postal_code: customerPostalCode || null,
-                            address: customerAddress || null,
-                            address_building: customerAddressBuilding || null,
-                            organization_id: organizationId
+                    // Use secure RPC function to create customer with organization validation
+                    const { data: newCustomerId, error: customerError } = await supabase
+                        .rpc('create_customer_secure', {
+                            p_organization_id: organizationId,
+                            p_name: customerName,
+                            p_email: customerEmail || null,
+                            p_phone: customerPhone || null,
+                            p_postal_code: customerPostalCode || null,
+                            p_address: customerAddress || null,
+                            p_address_building: customerAddressBuilding || null
                         });
 
                     if (customerError) throw customerError;

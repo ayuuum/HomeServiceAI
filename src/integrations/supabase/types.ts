@@ -448,6 +448,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_customer_secure: {
+        Args: {
+          p_address?: string
+          p_address_building?: string
+          p_email?: string
+          p_line_user_id?: string
+          p_name?: string
+          p_organization_id: string
+          p_phone?: string
+          p_postal_code?: string
+        }
+        Returns: string
+      }
       get_organization_public: {
         Args: { org_slug: string }
         Returns: {
