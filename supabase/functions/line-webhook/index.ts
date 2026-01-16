@@ -129,21 +129,18 @@ serve(async (req) => {
           }
         }
 
-        // Create new customer
-        const { data: newCustomer, error: createError } = await supabase
-          .from("customers")
-          .insert({
-            organization_id: org.id,
-            line_user_id: lineUserId,
-            name: displayName,
-          })
-          .select("id")
-          .single();
+        // Create new customer using secure RPC function
+        const { data: newCustomerId, error: createError } = await supabase
+          .rpc('create_customer_secure', {
+            p_organization_id: org.id,
+            p_name: displayName,
+            p_line_user_id: lineUserId
+          });
 
         if (createError) {
           console.error("Failed to create customer:", createError);
         } else {
-          customerId = newCustomer.id;
+          customerId = newCustomerId;
         }
       }
 
