@@ -151,10 +151,22 @@ export const NewBookingModal = ({
 
     const handleSearchCustomer = async (query: string) => {
         setLoading(true);
+        
+        // Sanitize input - remove special PostgREST characters to prevent query injection
+        const sanitizedQuery = query
+            .replace(/[,().%]/g, '')  // Remove query syntax characters
+            .trim();
+        
+        if (!sanitizedQuery) {
+            setSearchResults([]);
+            setLoading(false);
+            return;
+        }
+        
         const { data } = await supabase
             .from("customers")
             .select("*")
-            .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+            .or(`name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%,phone.ilike.%${sanitizedQuery}%`)
             .limit(5);
         setSearchResults(data || []);
         setLoading(false);
