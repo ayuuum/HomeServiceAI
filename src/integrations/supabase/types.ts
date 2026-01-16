@@ -448,6 +448,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_organization_public: {
+        Args: { org_slug: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }[]
+      }
       get_user_organization_id: { Args: never; Returns: string }
     }
     Enums: {

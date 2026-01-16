@@ -37,18 +37,18 @@ const BookingPage = () => {
       // If no slug provided, use default organization
       const slug = orgSlug || 'default';
 
+      // Use the RPC function to get public org info (without sensitive LINE credentials)
       const { data, error } = await supabase
-        .from('organizations')
-        .select('id, name, slug')
-        .eq('slug', slug)
-        .single();
+        .rpc('get_organization_public', { org_slug: slug });
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         console.error('Organization not found:', error);
         setOrgError('指定された組織が見つかりません');
         setOrganization(null);
       } else {
-        setOrganization(data);
+        // RPC returns an array, get the first item
+        const orgData = Array.isArray(data) ? data[0] : data;
+        setOrganization(orgData as Organization);
       }
       setOrgLoading(false);
     };
