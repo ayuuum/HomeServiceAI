@@ -99,7 +99,7 @@ export const AddressInput = ({
             </span>
             <Input
               id="postalCode"
-              placeholder="100-0001"
+              placeholder="例：100-0001"
               value={postalCode}
               onChange={handlePostalCodeChange}
               disabled={disabled}
@@ -112,13 +112,13 @@ export const AddressInput = ({
             variant="outline"
             onClick={() => searchAddress()}
             disabled={disabled || isSearching || postalCode.replace(/[^\d]/g, "").length !== 7}
-            className="h-11 sm:h-10 px-3 sm:px-4 touch-manipulation"
+            className="h-11 sm:h-10 px-3 sm:px-4 touch-manipulation flex items-center justify-center gap-1.5"
           >
             {isSearching ? (
               <Icon name="sync" size={16} className="animate-spin" />
             ) : (
               <>
-                <Icon name="search" size={16} className="mr-1 sm:mr-2" />
+                <Icon name="search" size={16} className="shrink-0" />
                 <span className="hidden sm:inline">住所検索</span>
                 <span className="sm:hidden">検索</span>
               </>
@@ -136,7 +136,7 @@ export const AddressInput = ({
         </Label>
         <Input
           id="address"
-          placeholder="東京都千代田区千代田1-1-1"
+          placeholder="例：東京都千代田区千代田1-1-1"
           value={address}
           onChange={(e) => onAddressChange(e.target.value)}
           disabled={disabled}
@@ -154,7 +154,7 @@ export const AddressInput = ({
           </Label>
           <Input
             id="addressBuilding"
-            placeholder="○○マンション 101号室"
+            placeholder="例：○○マンション 101号室"
             value={addressBuilding}
             onChange={(e) => onAddressBuildingChange(e.target.value)}
             disabled={disabled}

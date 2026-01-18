@@ -117,7 +117,7 @@ export const BookingCustomerForm = ({
                             />
                         </div>
                         <div className="space-y-1.5 sm:space-y-2">
-                            <Label htmlFor="phone" className="text-sm sm:text-base">電話番号</Label>
+                            <Label htmlFor="phone" className="text-sm sm:text-base">電話番号 <span className="text-muted-foreground text-xs font-normal">（任意）</span></Label>
                             <Input
                                 id="phone"
                                 type="tel"
@@ -129,7 +129,7 @@ export const BookingCustomerForm = ({
                         </div>
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="email" className="text-sm sm:text-base">メールアドレス</Label>
+                        <Label htmlFor="email" className="text-sm sm:text-base">メールアドレス <span className="text-muted-foreground text-xs font-normal">（任意）</span></Label>
                         <Input
                             id="email"
                             type="email"
@@ -162,7 +162,7 @@ export const BookingCustomerForm = ({
                             現場写真のアップロード（任意）
                         </Label>
                         <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                            事前に写真をお送りいただくと、より正確なお見積もりが可能です（最大5枚）
+                            事前に写真をお送りいただくと、当日の作業がスムーズになります（最大5枚）
                         </p>
                         <div className="space-y-3">
                             {photos.length < 5 && (
