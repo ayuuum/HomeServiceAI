@@ -284,6 +284,7 @@ export type Database = {
         Row: {
           brand_color: string | null
           created_at: string | null
+          header_layout: string | null
           id: string
           line_bot_user_id: string | null
           line_channel_secret: string | null
@@ -297,6 +298,7 @@ export type Database = {
         Insert: {
           brand_color?: string | null
           created_at?: string | null
+          header_layout?: string | null
           id?: string
           line_bot_user_id?: string | null
           line_channel_secret?: string | null
@@ -310,6 +312,7 @@ export type Database = {
         Update: {
           brand_color?: string | null
           created_at?: string | null
+          header_layout?: string | null
           id?: string
           line_bot_user_id?: string | null
           line_channel_secret?: string | null
@@ -475,6 +478,7 @@ export type Database = {
         Returns: {
           brand_color: string
           created_at: string
+          header_layout: string
           id: string
           logo_url: string
           name: string

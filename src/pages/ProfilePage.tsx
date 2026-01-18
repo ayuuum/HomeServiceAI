@@ -63,6 +63,7 @@ export default function ProfilePage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [brandColor, setBrandColor] = useState('#1E3A8A');
   const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [headerLayout, setHeaderLayout] = useState<'logo_only' | 'logo_and_name' | 'name_only'>('logo_and_name');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +92,7 @@ export default function ProfilePage() {
       setLogoUrl(organization.logo_url || null);
       setBrandColor(organization.brand_color || '#1E3A8A');
       setWelcomeMessage(organization.welcome_message || '');
+      setHeaderLayout((organization.header_layout as 'logo_only' | 'logo_and_name' | 'name_only') || 'logo_and_name');
     }
   }, [organization]);
 
@@ -420,6 +422,7 @@ export default function ProfilePage() {
         .update({
           brand_color: brandColor,
           welcome_message: welcomeMessage || null,
+          header_layout: headerLayout,
         })
         .eq('id', organization?.id);
 
@@ -772,6 +775,42 @@ export default function ProfilePage() {
 
               <Separator />
 
+              {/* Header Layout */}
+              <div className="space-y-3">
+                <Label>ヘッダー表示形式</Label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'logo_only', label: 'ロゴのみ', description: 'ロゴ画像だけを表示' },
+                    { value: 'logo_and_name', label: 'ロゴ + 組織名', description: '推奨：ロゴと組織名を両方表示' },
+                    { value: 'name_only', label: '組織名のみ', description: '組織名をテキストで大きく表示' },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        headerLayout === option.value 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-muted-foreground'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="headerLayout"
+                        value={option.value}
+                        checked={headerLayout === option.value}
+                        onChange={(e) => setHeaderLayout(e.target.value as 'logo_only' | 'logo_and_name' | 'name_only')}
+                        className="mt-1"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{option.label}</p>
+                        <p className="text-xs text-muted-foreground">{option.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Welcome Message */}
               <div className="space-y-3">
                 <Label htmlFor="welcomeMessage">ウェルカムメッセージ</Label>
@@ -798,10 +837,24 @@ export default function ProfilePage() {
                   }}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt="ロゴ" className="h-6 max-w-[100px] object-contain" />
+                    {headerLayout === 'name_only' ? (
+                      <span 
+                        className="text-base font-bold"
+                        style={{ color: brandColor }}
+                      >
+                        {organization?.name || '店舗名'}
+                      </span>
                     ) : (
-                      <div className="h-6 w-20 bg-muted rounded" />
+                      <>
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="ロゴ" className="h-6 max-w-[100px] object-contain" />
+                        ) : (
+                          <div className="h-6 w-20 bg-muted rounded" />
+                        )}
+                        {headerLayout === 'logo_and_name' && (
+                          <span className="text-sm text-muted-foreground">| {organization?.name || '店舗名'}</span>
+                        )}
+                      </>
                     )}
                   </div>
                   <p 

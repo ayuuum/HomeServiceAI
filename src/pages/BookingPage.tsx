@@ -20,6 +20,7 @@ interface Organization {
   logo_url?: string;
   brand_color?: string;
   welcome_message?: string;
+  header_layout?: string;
 }
 
 const BookingPage = () => {
@@ -265,19 +266,31 @@ const BookingPage = () => {
           <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {organization.logo_url ? (
-                  <img 
-                    src={organization.logo_url} 
-                    alt={organization.name} 
-                    className="h-7 sm:h-8 w-auto max-w-[150px] object-contain" 
-                  />
-                ) : (
-                  <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
-                )}
-                {!organization.logo_url && organization.name !== 'Default Organization' && (
-                  <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
-                    | {organization.name}
+                {/* Header layout: logo_only, logo_and_name, name_only */}
+                {organization.header_layout === 'name_only' ? (
+                  <span 
+                    className="text-lg sm:text-xl font-bold"
+                    style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+                  >
+                    {organization.name}
                   </span>
+                ) : (
+                  <>
+                    {organization.logo_url ? (
+                      <img 
+                        src={organization.logo_url} 
+                        alt={organization.name} 
+                        className="h-7 sm:h-8 w-auto max-w-[150px] object-contain" 
+                      />
+                    ) : (
+                      <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
+                    )}
+                    {organization.header_layout !== 'logo_only' && organization.name !== 'Default Organization' && (
+                      <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
+                        | {organization.name}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               <Link
