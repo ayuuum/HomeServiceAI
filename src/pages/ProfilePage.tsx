@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
-import { CheckCircle2, XCircle, Loader2, Download, Printer } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
 
@@ -57,6 +58,14 @@ export default function ProfilePage() {
   const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   const [slugError, setSlugError] = useState('');
+
+  // Branding settings state
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [brandColor, setBrandColor] = useState('#1E3A8A');
+  const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   
   // QR Code ref
   const qrRef = useRef<HTMLDivElement>(null);
@@ -78,6 +87,10 @@ export default function ProfilePage() {
       setOrganizationName(organization.name);
       setSlug(organization.slug);
       setOriginalSlug(organization.slug);
+      // Load branding settings
+      setLogoUrl(organization.logo_url || null);
+      setBrandColor(organization.brand_color || '#1E3A8A');
+      setWelcomeMessage(organization.welcome_message || '');
     }
   }, [organization]);
 
@@ -288,6 +301,155 @@ export default function ProfilePage() {
     setSlug(sanitized);
   };
 
+  // Branding handlers
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "ファイルサイズエラー",
+        description: "ファイルサイズは2MB以下にしてください",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "ファイル形式エラー",
+        description: "画像ファイルを選択してください",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo.${fileExt}`;
+      const filePath = `${organization?.id}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('organization-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-logos')
+        .getPublicUrl(filePath);
+
+      // Add timestamp to bust cache
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+      setLogoUrl(urlWithTimestamp);
+
+      // Save to organization
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ logo_url: urlWithTimestamp })
+        .eq('id', organization?.id);
+
+      if (updateError) throw updateError;
+
+      await refreshOrganization();
+      toast({
+        title: "アップロード完了",
+        description: "ロゴ画像をアップロードしました",
+      });
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      toast({
+        variant: "destructive",
+        title: "アップロード失敗",
+        description: error instanceof Error ? error.message : "ロゴのアップロードに失敗しました",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) {
+        logoInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteLogo = async () => {
+    if (!logoUrl || !organization?.id) return;
+
+    setIsUploadingLogo(true);
+    try {
+      // Delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('organization-logos')
+        .remove([`${organization.id}/logo.png`, `${organization.id}/logo.jpg`, `${organization.id}/logo.jpeg`, `${organization.id}/logo.webp`]);
+
+      // Update organization (clear logo_url)
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ logo_url: null })
+        .eq('id', organization.id);
+
+      if (updateError) throw updateError;
+
+      setLogoUrl(null);
+      await refreshOrganization();
+      toast({
+        title: "削除完了",
+        description: "ロゴ画像を削除しました",
+      });
+    } catch (error) {
+      console.error('Logo delete error:', error);
+      toast({
+        variant: "destructive",
+        title: "削除失敗",
+        description: error instanceof Error ? error.message : "ロゴの削除に失敗しました",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleBrandingUpdate = async () => {
+    setIsSavingBranding(true);
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          brand_color: brandColor,
+          welcome_message: welcomeMessage || null,
+        })
+        .eq('id', organization?.id);
+
+      if (error) throw error;
+
+      await refreshOrganization();
+      toast({
+        title: "更新完了",
+        description: "ブランディング設定を更新しました",
+      });
+    } catch (error) {
+      console.error('Branding update error:', error);
+      toast({
+        variant: "destructive",
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : "ブランディング設定の更新に失敗しました",
+      });
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
+  const COLOR_PRESETS = [
+    { name: 'ネイビー', value: '#1E3A8A' },
+    { name: 'ブルー', value: '#2563EB' },
+    { name: 'グリーン', value: '#16A34A' },
+    { name: 'オレンジ', value: '#EA580C' },
+    { name: 'パープル', value: '#7C3AED' },
+  ];
+
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
     
@@ -495,6 +657,179 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Branding Settings Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                ブランディング設定
+              </CardTitle>
+              <CardDescription>予約ページの見た目をカスタマイズできます</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Logo Upload */}
+              <div className="space-y-3">
+                <Label>ロゴ画像</Label>
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  <div className="w-48 h-20 bg-muted rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
+                    {logoUrl ? (
+                      <img 
+                        src={logoUrl} 
+                        alt="ロゴ" 
+                        className="max-w-full max-h-full object-contain p-2"
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">未設定</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                    >
+                      {isUploadingLogo ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      画像をアップロード
+                    </Button>
+                    {logoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteLogo}
+                        disabled={isUploadingLogo}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        削除
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      推奨: 200x60px、2MB以下
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Brand Color */}
+              <div className="space-y-3">
+                <Label>ブランドカラー</Label>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setBrandColor(preset.value)}
+                      className={`w-10 h-10 rounded-full border-2 transition-all ${
+                        brandColor === preset.value 
+                          ? 'border-foreground ring-2 ring-foreground ring-offset-2' 
+                          : 'border-transparent hover:border-muted-foreground'
+                      }`}
+                      style={{ backgroundColor: preset.value }}
+                      title={preset.name}
+                    />
+                  ))}
+                  <div className="flex items-center gap-2 ml-2">
+                    <Label htmlFor="customColor" className="text-sm text-muted-foreground">カスタム:</Label>
+                    <Input
+                      id="customColor"
+                      type="text"
+                      value={brandColor}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                          setBrandColor(value);
+                        }
+                      }}
+                      className="w-24 font-mono text-sm"
+                      placeholder="#1E3A8A"
+                    />
+                    <div 
+                      className="w-8 h-8 rounded border"
+                      style={{ backgroundColor: brandColor }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Welcome Message */}
+              <div className="space-y-3">
+                <Label htmlFor="welcomeMessage">ウェルカムメッセージ</Label>
+                <Textarea
+                  id="welcomeMessage"
+                  value={welcomeMessage}
+                  onChange={(e) => setWelcomeMessage(e.target.value)}
+                  placeholder="サービスを選んで、日時を選ぶだけ。見積もり不要、すぐに予約完了できます。"
+                  className="resize-none"
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  予約ページのヒーローセクションに表示されます
+                </p>
+              </div>
+
+              {/* Preview */}
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <p className="text-sm font-medium mb-2">プレビュー</p>
+                <div 
+                  className="p-4 rounded-lg"
+                  style={{ 
+                    background: `linear-gradient(to bottom, ${brandColor}15, transparent)` 
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="ロゴ" className="h-6 max-w-[100px] object-contain" />
+                    ) : (
+                      <div className="h-6 w-20 bg-muted rounded" />
+                    )}
+                  </div>
+                  <p 
+                    className="text-lg font-bold"
+                    style={{ color: brandColor }}
+                  >
+                    {organization?.name || '店舗名'}で簡単予約
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {welcomeMessage || 'サービスを選んで、日時を選ぶだけ。'}
+                  </p>
+                </div>
+              </div>
+
+              <Button 
+                type="button"
+                onClick={handleBrandingUpdate}
+                disabled={isSavingBranding}
+              >
+                {isSavingBranding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    保存中...
+                  </>
+                ) : (
+                  'ブランディング設定を保存'
+                )}
+              </Button>
             </CardContent>
           </Card>
 

@@ -17,6 +17,9 @@ interface Organization {
   id: string;
   name: string;
   slug: string;
+  logo_url?: string;
+  brand_color?: string;
+  welcome_message?: string;
 }
 
 const BookingPage = () => {
@@ -255,12 +258,23 @@ const BookingPage = () => {
 
       <div className="min-h-screen bg-background pb-36 md:pb-32">
         {/* Header */}
-        <header className="bg-card border-b border-border sticky top-0 z-40">
+        <header 
+          className="bg-card border-b border-border sticky top-0 z-40"
+          style={organization.brand_color ? { borderColor: `${organization.brand_color}20` } : undefined}
+        >
           <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
-                {organization.name !== 'Default Organization' && (
+                {organization.logo_url ? (
+                  <img 
+                    src={organization.logo_url} 
+                    alt={organization.name} 
+                    className="h-7 sm:h-8 w-auto max-w-[150px] object-contain" 
+                  />
+                ) : (
+                  <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
+                )}
+                {!organization.logo_url && organization.name !== 'Default Organization' && (
                   <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
                     | {organization.name}
                   </span>
@@ -277,14 +291,26 @@ const BookingPage = () => {
         </header>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-primary/5 to-transparent py-8 sm:py-12">
+        <section 
+          className="py-8 sm:py-12"
+          style={{
+            background: organization.brand_color 
+              ? `linear-gradient(to bottom, ${organization.brand_color}10, transparent)` 
+              : 'linear-gradient(to bottom, hsl(var(--primary) / 0.05), transparent)'
+          }}
+        >
           <div className="container max-w-6xl mx-auto px-4">
-            <h2 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-2 sm:mb-3 text-center text-primary">
+            <h2 
+              className="text-2xl sm:text-4xl md:text-6xl font-bold mb-2 sm:mb-3 text-center"
+              style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+            >
               {organization.name !== 'Default Organization' ? organization.name : 'ハウクリPro'}で<br className="sm:hidden" />簡単予約
             </h2>
             <p className="text-sm sm:text-base text-center text-muted-foreground max-w-2xl mx-auto">
-              サービスを選んで、日時を選ぶだけ。<br className="hidden sm:block" />
-              見積もり不要、すぐに予約完了できます。
+              {organization.welcome_message || (
+                <>サービスを選んで、日時を選ぶだけ。<br className="hidden sm:block" />
+                見積もり不要、すぐに予約完了できます。</>
+              )}
             </p>
           </div>
         </section>
@@ -356,6 +382,7 @@ const BookingPage = () => {
           totalDiscount={totalDiscount}
           onSubmit={handleSubmit}
           disabled={!selectedServices.length || !selectedDate || !selectedTime || !hasParking || !customerName}
+          brandColor={organization.brand_color}
         />
 
         {/* AI Booking Assistant - 一時的に非表示 */}

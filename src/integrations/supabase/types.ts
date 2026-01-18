@@ -282,34 +282,43 @@ export type Database = {
       }
       organizations: {
         Row: {
+          brand_color: string | null
           created_at: string | null
           id: string
           line_bot_user_id: string | null
           line_channel_secret: string | null
           line_channel_token: string | null
+          logo_url: string | null
           name: string
           slug: string
           updated_at: string | null
+          welcome_message: string | null
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string | null
           id?: string
           line_bot_user_id?: string | null
           line_channel_secret?: string | null
           line_channel_token?: string | null
+          logo_url?: string | null
           name: string
           slug: string
           updated_at?: string | null
+          welcome_message?: string | null
         }
         Update: {
+          brand_color?: string | null
           created_at?: string | null
           id?: string
           line_bot_user_id?: string | null
           line_channel_secret?: string | null
           line_channel_token?: string | null
+          logo_url?: string | null
           name?: string
           slug?: string
           updated_at?: string | null
+          welcome_message?: string | null
         }
         Relationships: []
       }
@@ -464,11 +473,14 @@ export type Database = {
       get_organization_public: {
         Args: { org_slug: string }
         Returns: {
+          brand_color: string
           created_at: string
           id: string
+          logo_url: string
           name: string
           slug: string
           updated_at: string
+          welcome_message: string
         }[]
       }
       get_user_organization_id: { Args: never; Returns: string }
