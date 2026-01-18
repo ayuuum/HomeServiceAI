@@ -18,14 +18,25 @@ export const OptionCheckbox = ({
   onChange,
   onQuantityChange
 }: OptionCheckboxProps) => {
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Prevent toggle if clicking on QuantitySelector buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    onChange(!checked);
+  };
+
   return (
-    <div className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors">
+    <div 
+      className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-pointer touch-manipulation"
+      onClick={handleContainerClick}
+    >
       <div className="flex items-start space-x-3">
         <Checkbox
           id={option.id}
           checked={checked}
           onCheckedChange={onChange}
-          className="mt-1"
+          className="mt-0.5"
+          onClick={(e) => e.stopPropagation()}
         />
         <div className="flex-1">
           <Label
@@ -48,7 +59,7 @@ export const OptionCheckbox = ({
       </div>
 
       {checked && (
-        <div className="mt-3 ml-8">
+        <div className="mt-4 ml-9 sm:ml-8">
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground whitespace-nowrap">数量:</span>
             <QuantitySelector

@@ -28,25 +28,27 @@ export const QuantitySelector = ({
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="h-11 w-11 sm:h-9 sm:w-9 touch-manipulation"
         onClick={handleDecrease}
         disabled={value <= min}
       >
-        <Icon name="remove" size={16} />
+        <Icon name="remove" size={18} className="sm:hidden" />
+        <Icon name="remove" size={16} className="hidden sm:block" />
       </Button>
-      <span className="w-4 text-center font-medium">{value}</span>
+      <span className="w-6 text-center font-medium text-base">{value}</span>
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="h-11 w-11 sm:h-9 sm:w-9 touch-manipulation"
         onClick={handleIncrease}
         disabled={value >= max}
       >
-        <Icon name="add" size={16} />
+        <Icon name="add" size={18} className="sm:hidden" />
+        <Icon name="add" size={16} className="hidden sm:block" />
       </Button>
     </div>
   );
