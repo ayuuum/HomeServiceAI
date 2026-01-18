@@ -23,23 +23,27 @@ interface BookingDateTimeSelectionProps {
     loadingDay?: boolean;
 }
 
-// 空き状況ドットコンポーネント
+// 空き状況ドット+記号コンポーネント（色覚多様性対応）
 const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => {
     if (!status) return null;
 
-    const colorClass = {
-        available: "bg-green-500",
-        partial: "bg-orange-500",
-        full: "bg-red-500",
+    const config = {
+        available: { colorClass: "bg-green-500", symbol: "○" },
+        partial: { colorClass: "bg-orange-500", symbol: "△" },
+        full: { colorClass: "bg-red-500", symbol: "×" },
     }[status];
 
     return (
         <span
             className={cn(
-                "absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full",
-                colorClass
+                "absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-3 h-3 text-[6px] font-bold rounded-full",
+                config.colorClass,
+                "text-white"
             )}
-        />
+            aria-label={status === "available" ? "空きあり" : status === "partial" ? "残りわずか" : "満席"}
+        >
+            {config.symbol}
+        </span>
     );
 };
 
@@ -106,18 +110,18 @@ export const BookingDateTimeSelection = ({
                                     },
                                 }}
                             />
-                            {/* 凡例 */}
+                            {/* 凡例（色覚多様性対応：色+記号） */}
                             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3 pt-3 border-t border-border text-xs sm:text-sm text-muted-foreground w-full">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                                    <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[8px] font-bold text-white">○</span>
                                     <span>空きあり</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                                    <span className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-[8px] font-bold text-white">△</span>
                                     <span>残りわずか</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white">×</span>
                                     <span>満席</span>
                                 </div>
                             </div>
@@ -127,13 +131,16 @@ export const BookingDateTimeSelection = ({
                     {selectedDate && (
                         <div>
                             <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">
-                                希望時間帯
+                                ご希望の開始時間
                                 {loadingDay && (
                                     <span className="ml-2 text-xs text-muted-foreground font-normal">
                                         読み込み中...
                                     </span>
                                 )}
                             </Label>
+                            <p className="text-xs text-muted-foreground mb-3">
+                                ※ 作業開始予定の時間をお選びください
+                            </p>
                             <div className="grid grid-cols-3 gap-2">
                                 {timeSlots.map((time) => {
                                     const slotInfo = getSlotInfo(time);
@@ -145,6 +152,7 @@ export const BookingDateTimeSelection = ({
                                             variant={selectedTime === time ? "default" : "outline"}
                                             onClick={() => !isBooked && onTimeSelect(time)}
                                             disabled={isBooked}
+                                            aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
                                             className={cn(
                                                 "w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation relative",
                                                 isBooked && "opacity-50 cursor-not-allowed"
@@ -152,7 +160,7 @@ export const BookingDateTimeSelection = ({
                                         >
                                             <span className={cn(isBooked && "line-through")}>{time}</span>
                                             {isBooked && (
-                                                <span className="absolute top-1 right-1 text-[10px] text-destructive font-medium">
+                                                <span className="absolute top-0.5 right-1 text-sm text-destructive font-bold" aria-hidden="true">
                                                     ×
                                                 </span>
                                             )}
