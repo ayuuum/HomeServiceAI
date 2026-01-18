@@ -9,6 +9,7 @@ interface Organization {
   logo_url?: string;
   brand_color?: string;
   welcome_message?: string;
+  header_layout?: string;
 }
 
 interface AuthContextType {
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fetch organization details
       const { data: org } = await supabase
         .from('organizations')
-        .select('id, name, slug, logo_url, brand_color, welcome_message')
+        .select('id, name, slug, logo_url, brand_color, welcome_message, header_layout')
         .eq('id', profile.organization_id)
         .single();
 
