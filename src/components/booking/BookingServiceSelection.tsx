@@ -66,7 +66,7 @@ export const BookingServiceSelection = ({
                         const quantity = selectedService?.quantity || 0;
 
                         return (
-                            <motion.div key={service.id} variants={item} whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
+                            <motion.div key={service.id} variants={item} whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }} className="touch-manipulation">
                                 <Card className={`overflow-hidden transition-all duration-300 ${quantity > 0 ? "ring-2 ring-primary border-transparent shadow-medium" : "border-border shadow-subtle hover:shadow-medium"}`}>
                                     <div className="aspect-[16/10] sm:aspect-video relative overflow-hidden bg-muted">
                                         {service.imageUrl ? (

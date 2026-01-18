@@ -91,7 +91,7 @@ export const BookingDateTimeSelection = ({
                                     return isPast || isFull;
                                 }}
                                 locale={ja}
-                                className="rounded-md scale-90 sm:scale-100 origin-center"
+                                className="rounded-md scale-95 sm:scale-100 origin-center"
                                 modifiers={{
                                     available: (date) => getAvailabilityForDate(date)?.status === "available",
                                     partial: (date) => getAvailabilityForDate(date)?.status === "partial",
@@ -192,14 +192,14 @@ export const BookingDateTimeSelection = ({
                                 駐車場の有無 <span className="text-destructive">*</span>
                             </Label>
                             <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-2">
-                                <div className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-border active:bg-muted/50 touch-manipulation">
-                                    <RadioGroupItem value="yes" id="parking-yes" className="h-5 w-5" />
+                                <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/30 active:bg-muted/50 touch-manipulation">
+                                    <RadioGroupItem value="yes" id="parking-yes" className="h-6 w-6" />
                                     <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-sm sm:text-base">
                                         駐車場あり
                                     </Label>
                                 </div>
-                                <div className="flex items-center space-x-3 p-3 sm:p-4 rounded-lg border border-border active:bg-muted/50 touch-manipulation">
-                                    <RadioGroupItem value="no" id="parking-no" className="h-5 w-5" />
+                                <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/30 active:bg-muted/50 touch-manipulation">
+                                    <RadioGroupItem value="no" id="parking-no" className="h-6 w-6" />
                                     <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-sm sm:text-base">
                                         駐車場なし
                                     </Label>
