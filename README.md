@@ -9,6 +9,7 @@
 - [デプロイガイド](docs/deployment.md)
 - [LINE連携設定ガイド](docs/line_integration_guide.md)
 - [技術スタック](docs/tech_stack.md)
+- [セキュリティ・認証・インフラ](docs/security.md)
 
 ## このコードを編集するには？
 
