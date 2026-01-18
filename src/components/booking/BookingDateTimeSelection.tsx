@@ -36,7 +36,7 @@ const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => 
     return (
         <span
             className={cn(
-                "absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-3 h-3 text-[6px] font-bold rounded-full",
+                "absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center w-4 h-4 text-[8px] font-bold rounded-full",
                 config.colorClass,
                 "text-white"
             )}
@@ -102,7 +102,7 @@ export const BookingDateTimeSelection = ({
                                         const availability = getAvailabilityForDate(date);
                                         const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
                                         return (
-                                            <div className="relative flex items-center justify-center w-full h-full">
+                                            <div className="relative flex flex-col items-center justify-center w-full h-full pb-2">
                                                 <span>{date.getDate()}</span>
                                                 {!isPast && <AvailabilityDot status={availability?.status} />}
                                             </div>

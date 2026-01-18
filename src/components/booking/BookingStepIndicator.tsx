@@ -24,8 +24,8 @@ export const BookingStepIndicator = ({
   onStepClick,
 }: BookingStepIndicatorProps) => {
   return (
-    <div className="w-full py-2 sm:py-4">
-      <div className="flex items-center justify-between max-w-xs sm:max-w-md mx-auto px-4 sm:px-6">
+    <div className="w-full pt-2 pb-8 sm:pt-4 sm:pb-10">
+      <div className="flex items-center justify-between max-w-sm sm:max-w-lg mx-auto px-4 sm:px-6">
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
