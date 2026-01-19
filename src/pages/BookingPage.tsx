@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { useBooking } from "@/hooks/useBooking";
 import { useAvailability } from "@/hooks/useAvailability";
@@ -9,7 +9,8 @@ import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
-import { BookingAssistant } from "@/components/booking/BookingAssistant";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,12 +26,14 @@ interface Organization {
 
 const BookingPage = () => {
   const { orgSlug } = useParams<{ orgSlug: string }>();
-  const navigate = useNavigate();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
   const [orgError, setOrgError] = useState<string | null>(null);
   const [bookingUser, setBookingUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Wizard step state (1-4)
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Fetch organization by slug
   useEffect(() => {
@@ -38,10 +41,8 @@ const BookingPage = () => {
       setOrgLoading(true);
       setOrgError(null);
 
-      // If no slug provided, use default organization
       const slug = orgSlug || 'default';
 
-      // Use the RPC function to get public org info (without sensitive LINE credentials)
       const { data, error } = await supabase
         .rpc('get_organization_public', { org_slug: slug });
 
@@ -50,7 +51,6 @@ const BookingPage = () => {
         setOrgError('指定された組織が見つかりません');
         setOrganization(null);
       } else {
-        // RPC returns an array, get the first item
         const orgData = Array.isArray(data) ? data[0] : data;
         setOrganization(orgData as Organization);
       }
@@ -59,6 +59,7 @@ const BookingPage = () => {
 
     fetchOrganization();
   }, [orgSlug]);
+
   const {
     allServices,
     selectedServices,
@@ -95,10 +96,8 @@ const BookingPage = () => {
     handleRemovePhoto,
     submitBooking,
     getOptionsForService,
-    applyRecommendation,
   } = useBooking(organization?.id);
 
-  // Availability hook
   const {
     dayTimeSlots,
     loadingDay,
@@ -109,17 +108,11 @@ const BookingPage = () => {
     TIME_SLOTS,
   } = useAvailability(organization?.id);
 
-  // Fetch day availability when date changes
   useEffect(() => {
     if (selectedDate) {
       fetchDayAvailability(selectedDate);
     }
   }, [selectedDate, fetchDayAvailability]);
-
-  const handleApplyRecommendation = (serviceIds: string[], optionIds: string[]) => {
-    applyRecommendation(serviceIds, optionIds);
-    toast.success("AIの推薦を適用しました");
-  };
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [bookingData, setBookingData] = useState<{
@@ -134,35 +127,47 @@ const BookingPage = () => {
     customerAddressBuilding?: string;
   } | null>(null);
 
-  // Section refs for scroll navigation
-  const serviceRef = useRef<HTMLDivElement>(null);
-  const dateTimeRef = useRef<HTMLDivElement>(null);
-  const customerRef = useRef<HTMLDivElement>(null);
-
-  // Calculate current step based on form state
-  const currentStep = useMemo(() => {
-    if (!selectedServices.length) return 1;
-    if (!selectedDate || !selectedTime || !hasParking) return 2;
-    if (!customerName) return 3;
-    return 4;
-  }, [selectedServices.length, selectedDate, selectedTime, hasParking, customerName]);
+  // Validation for each step
+  const canProceedToStep2 = selectedServices.length > 0;
+  const canProceedToStep3 = selectedDate && selectedTime && hasParking !== null;
+  const canProceedToStep4 = customerName && customerPhone && customerAddress;
+  const canSubmit = canProceedToStep2 && canProceedToStep3 && canProceedToStep4;
 
   const handleStepClick = (step: number) => {
-    const refs = [serviceRef, dateTimeRef, customerRef];
-    const targetRef = refs[step - 1];
-    if (targetRef?.current) {
-      targetRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Allow going back to any previous step
+    if (step < currentStep) {
+      setCurrentStep(step);
+      return;
+    }
+    // Allow going forward only if validation passes
+    if (step === 2 && canProceedToStep2) setCurrentStep(2);
+    else if (step === 3 && canProceedToStep2 && canProceedToStep3) setCurrentStep(3);
+    else if (step === 4 && canSubmit) setCurrentStep(4);
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && canProceedToStep2) {
+      setCurrentStep(2);
+    } else if (currentStep === 2 && canProceedToStep3) {
+      setCurrentStep(3);
+    } else if (currentStep === 3 && canProceedToStep4) {
+      setCurrentStep(4);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
   const handleSubmit = async () => {
-    // 送信直前に再度空き状況を確認
     if (selectedDate && selectedTime) {
       const isStillAvailable = await checkRealTimeAvailability(selectedDate, selectedTime);
       if (!isStillAvailable) {
         toast.error("申し訳ありません。この時間帯は他の方が予約されました。別の時間帯を選択してください。");
-        // 空き状況を再取得
         await fetchDayAvailability(selectedDate);
+        setCurrentStep(2); // Go back to date/time selection
         return;
       }
     }
@@ -174,7 +179,6 @@ const BookingPage = () => {
     }
   };
 
-  // Google login handler for booking users
   const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
     const currentUrl = window.location.href;
@@ -190,7 +194,6 @@ const BookingPage = () => {
     }
   };
 
-  // Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setBookingUser(null);
@@ -198,7 +201,6 @@ const BookingPage = () => {
     setCustomerEmail("");
   };
 
-  // Monitor auth state for booking users
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -214,7 +216,6 @@ const BookingPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Show loading state
   if (orgLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -226,7 +227,6 @@ const BookingPage = () => {
     );
   }
 
-  // Show error if organization not found
   if (orgError || !organization) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -249,6 +249,22 @@ const BookingPage = () => {
     );
   }
 
+  // Get button state for current step
+  const getNextButtonState = () => {
+    switch (currentStep) {
+      case 1:
+        return { disabled: !canProceedToStep2, label: "日時選択へ" };
+      case 2:
+        return { disabled: !canProceedToStep3, label: "お客様情報へ" };
+      case 3:
+        return { disabled: !canProceedToStep4, label: "確認へ" };
+      default:
+        return { disabled: true, label: "次へ" };
+    }
+  };
+
+  const nextButtonState = getNextButtonState();
+
   return (
     <>
       <BookingConfirmationModal
@@ -257,7 +273,7 @@ const BookingPage = () => {
         bookingData={bookingData}
       />
 
-      <div className="min-h-screen bg-background pb-36 md:pb-32">
+      <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <header 
           className="bg-card border-b border-border sticky top-0 z-40"
@@ -266,7 +282,6 @@ const BookingPage = () => {
           <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {/* Header layout: logo_only, logo_and_name, name_only */}
                 {organization.header_layout === 'name_only' ? (
                   <span 
                     className="text-lg sm:text-xl font-bold"
@@ -303,38 +318,15 @@ const BookingPage = () => {
           </div>
         </header>
 
-        {/* Hero Section */}
-        <section 
-          className="py-8 sm:py-12"
-          style={{
-            background: organization.brand_color 
-              ? `linear-gradient(to bottom, ${organization.brand_color}10, transparent)` 
-              : 'linear-gradient(to bottom, hsl(var(--primary) / 0.05), transparent)'
-          }}
-        >
-          <div className="container max-w-6xl mx-auto px-4">
-            <h2 
-              className="text-2xl sm:text-4xl md:text-6xl font-bold mb-2 sm:mb-3 text-center"
-              style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
-            >
-              {organization.name !== 'Default Organization' ? organization.name : 'ハウクリPro'}で<br className="sm:hidden" />簡単予約
-            </h2>
-            <p className="text-sm sm:text-base text-center text-muted-foreground max-w-2xl mx-auto">
-              {organization.welcome_message || (
-                <>サービスを選んで、日時を選ぶだけ。<br className="hidden sm:block" />
-                見積もり不要、すぐに予約完了できます。</>
-              )}
-            </p>
-          </div>
-        </section>
-
         {/* Step Indicator */}
-        <div className="sticky top-[57px] sm:top-[65px] z-30 bg-background/95 backdrop-blur-sm border-b border-border mb-6 sm:mb-8">
+        <div className="sticky top-[57px] sm:top-[65px] z-30 bg-background/95 backdrop-blur-sm border-b border-border">
           <BookingStepIndicator currentStep={currentStep} onStepClick={handleStepClick} />
         </div>
 
-        <div className="container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-8 sm:space-y-12">
-          <div ref={serviceRef}>
+        {/* Main Content - Grows to fill space */}
+        <div className="flex-1 container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          {/* Step 1: Service Selection */}
+          {currentStep === 1 && (
             <BookingServiceSelection
               allServices={allServices}
               selectedServices={selectedServices}
@@ -345,9 +337,10 @@ const BookingPage = () => {
               onOptionQuantityChange={handleOptionQuantityChange}
               getOptionsForService={getOptionsForService}
             />
-          </div>
+          )}
 
-          <div ref={dateTimeRef}>
+          {/* Step 2: Date/Time Selection */}
+          {currentStep === 2 && (
             <BookingDateTimeSelection
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -361,9 +354,10 @@ const BookingPage = () => {
               onMonthChange={handleMonthChange}
               loadingDay={loadingDay}
             />
-          </div>
+          )}
 
-          <div ref={customerRef}>
+          {/* Step 3: Customer Information */}
+          {currentStep === 3 && (
             <BookingCustomerForm
               customerName={customerName}
               onNameChange={setCustomerName}
@@ -387,23 +381,125 @@ const BookingPage = () => {
               onLogout={handleLogout}
               isLoggingIn={isLoggingIn}
             />
-          </div>
+          )}
+
+          {/* Step 4: Confirmation/Summary */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-foreground">予約内容の確認</h2>
+              
+              {/* Service Summary */}
+              <div className="bg-card rounded-lg border border-border p-4 space-y-3">
+                <h3 className="font-medium text-foreground">選択サービス</h3>
+              <div className="space-y-2">
+                  {selectedServices.map((service) => (
+                    <div key={service.serviceId} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {service.service.title} × {service.quantity}
+                      </span>
+                      <span className="font-medium">
+                        ¥{(service.service.basePrice * service.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  {selectedOptions.map((option) => (
+                    <div key={option.optionId} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        └ {option.option.title} × {option.quantity}
+                      </span>
+                      <span className="font-medium">
+                        ¥{(option.option.price * option.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date/Time Summary */}
+              <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+                <h3 className="font-medium text-foreground">予約日時</h3>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDate?.toLocaleDateString('ja-JP', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'short'
+                  })} {selectedTime}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  駐車場: {hasParking ? 'あり' : 'なし'}
+                </p>
+              </div>
+
+              {/* Customer Summary */}
+              <div className="bg-card rounded-lg border border-border p-4 space-y-2">
+                <h3 className="font-medium text-foreground">お客様情報</h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>お名前: {customerName}</p>
+                  <p>電話番号: {customerPhone}</p>
+                  {customerEmail && <p>メール: {customerEmail}</p>}
+                  <p>住所: 〒{customerPostalCode} {customerAddress}</p>
+                  {customerAddressBuilding && <p>建物名等: {customerAddressBuilding}</p>}
+                  {notes && <p>備考: {notes}</p>}
+                </div>
+              </div>
+
+              {/* Price Summary */}
+              <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-medium text-foreground">合計金額</span>
+                  <div className="text-right">
+                    {totalDiscount > 0 && (
+                      <p className="text-sm text-green-600">-¥{totalDiscount.toLocaleString()} 割引</p>
+                    )}
+                    <p className="text-2xl font-bold text-primary">
+                      ¥{totalPrice.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <BookingSummary
-          totalPrice={totalPrice}
-          totalDiscount={totalDiscount}
-          onSubmit={handleSubmit}
-          disabled={!selectedServices.length || !selectedDate || !selectedTime || !hasParking || !customerName}
-          brandColor={organization.brand_color}
-        />
+        {/* Navigation Buttons - Fixed at bottom */}
+        <div className="sticky bottom-0 bg-background border-t border-border p-4 safe-area-pb">
+          <div className="container max-w-4xl mx-auto flex items-center justify-between gap-3">
+            {currentStep > 1 ? (
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                戻る
+              </Button>
+            ) : (
+              <div /> /* Spacer */
+            )}
 
-        {/* AI Booking Assistant - 一時的に非表示 */}
-        {/* <BookingAssistant
-          services={allServices}
-          options={allOptions}
-          onApplyRecommendation={handleApplyRecommendation}
-        /> */}
+            {currentStep < 4 ? (
+              <Button
+                onClick={handleNext}
+                disabled={nextButtonState.disabled}
+                className="flex items-center gap-1 flex-1 max-w-xs"
+                style={organization.brand_color ? { backgroundColor: organization.brand_color } : undefined}
+              >
+                {nextButtonState.label}
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="flex-1 max-w-xs text-lg py-6"
+                style={organization.brand_color ? { backgroundColor: organization.brand_color } : undefined}
+              >
+                予約を確定する
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );
