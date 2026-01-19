@@ -392,22 +392,22 @@ const BookingPage = () => {
 
           {/* Step 4: Confirmation/Summary */}
           {currentStep === 4 && (
-            <div className="space-y-8 sm:space-y-10">
-              <div className="flex items-center gap-3">
-                <Icon name="fact_check" size={28} className="text-primary" />
-                <h2 className="text-2xl sm:text-3xl font-bold">予約内容の確認</h2>
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex items-center gap-2">
+                <Icon name="fact_check" size={20} className="text-primary" />
+                <h2 className="text-lg sm:text-xl font-bold">予約内容の確認</h2>
               </div>
               
               {/* Service Summary */}
               <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <Icon name="auto_awesome" size={28} className="text-primary" />
-                  <h3 className="text-2xl sm:text-3xl font-bold">選択サービス</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="auto_awesome" size={18} className="text-primary" />
+                  <h3 className="text-base sm:text-lg font-bold">選択サービス</h3>
                 </div>
-                <Separator className="mb-5" />
-                <div className="space-y-3">
+                <Separator className="mb-3" />
+                <div className="space-y-1.5">
                   {selectedServices.map((service) => (
-                    <div key={service.serviceId} className="flex justify-between text-base sm:text-lg">
+                    <div key={service.serviceId} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         {service.service.title} × {service.quantity}
                       </span>
@@ -417,7 +417,7 @@ const BookingPage = () => {
                     </div>
                   ))}
                   {selectedOptions.map((option) => (
-                    <div key={option.optionId} className="flex justify-between text-base sm:text-lg">
+                    <div key={option.optionId} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         └ {option.option.title} × {option.quantity}
                       </span>
@@ -431,13 +431,13 @@ const BookingPage = () => {
 
               {/* Date/Time Summary */}
               <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <Icon name="calendar_today" size={28} className="text-primary" />
-                  <h3 className="text-2xl sm:text-3xl font-bold">予約日時</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="calendar_today" size={18} className="text-primary" />
+                  <h3 className="text-base sm:text-lg font-bold">予約日時</h3>
                 </div>
-                <Separator className="mb-5" />
-                <div className="space-y-2">
-                  <p className="text-base sm:text-lg text-foreground">
+                <Separator className="mb-3" />
+                <div className="space-y-1">
+                  <p className="text-sm text-foreground">
                     {selectedDate?.toLocaleDateString('ja-JP', { 
                       year: 'numeric', 
                       month: 'long', 
@@ -445,7 +445,7 @@ const BookingPage = () => {
                       weekday: 'short'
                     })} {selectedTime}
                   </p>
-                  <p className="text-base sm:text-lg text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     駐車場: {hasParking === 'yes' ? 'あり' : 'なし'}
                   </p>
                 </div>
@@ -453,12 +453,12 @@ const BookingPage = () => {
 
               {/* Customer Summary */}
               <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <Icon name="person" size={28} className="text-primary" />
-                  <h3 className="text-2xl sm:text-3xl font-bold">お客様情報</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="person" size={18} className="text-primary" />
+                  <h3 className="text-base sm:text-lg font-bold">お客様情報</h3>
                 </div>
-                <Separator className="mb-5" />
-                <div className="text-base sm:text-lg text-muted-foreground space-y-2">
+                <Separator className="mb-3" />
+                <div className="text-sm text-muted-foreground space-y-1">
                   <p><span className="text-foreground font-medium">お名前:</span> {customerLastName} {customerFirstName}</p>
                   <p><span className="text-foreground font-medium">電話番号:</span> {customerPhone}</p>
                   {customerEmail && <p><span className="text-foreground font-medium">メール:</span> {customerEmail}</p>}
@@ -469,14 +469,14 @@ const BookingPage = () => {
               </section>
 
               {/* Price Summary */}
-              <div className="bg-primary/10 rounded-xl border-2 border-primary/30 p-6 sm:p-8">
+              <div className="bg-primary/10 rounded-lg border-2 border-primary/30 p-4 sm:p-5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl sm:text-2xl font-bold text-foreground">合計金額（税込）</span>
+                  <span className="text-base sm:text-lg font-bold text-foreground">合計金額（税込）</span>
                   <div className="text-right">
                     {totalDiscount > 0 && (
-                      <p className="text-base sm:text-lg text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
+                      <p className="text-sm text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
                     )}
-                    <p className="text-3xl sm:text-4xl font-bold text-primary">
+                    <p className="text-2xl sm:text-3xl font-bold text-primary">
                       ¥{totalPrice.toLocaleString()}
                     </p>
                   </div>
@@ -487,15 +487,15 @@ const BookingPage = () => {
         </div>
 
         {/* Navigation Buttons - Fixed at bottom */}
-        <div className="sticky bottom-0 bg-background border-t border-border p-4 safe-area-pb">
-          <div className="container max-w-4xl mx-auto flex items-center gap-3">
+        <div className="sticky bottom-0 bg-background border-t border-border p-3 safe-area-pb">
+          <div className="container max-w-4xl mx-auto flex items-center gap-2">
             {currentStep > 1 && (
               <Button
                 variant="outline"
                 onClick={handleBack}
-                className="flex items-center gap-1 h-14 px-5 text-base touch-manipulation"
+                className="flex items-center gap-0.5 h-11 px-4 text-sm touch-manipulation"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
                 戻る
               </Button>
             )}
@@ -504,16 +504,16 @@ const BookingPage = () => {
               <Button
                 onClick={handleNext}
                 disabled={nextButtonState.disabled}
-                className="flex-1 h-14 text-lg font-semibold touch-manipulation"
+                className="flex-1 h-11 text-base font-semibold touch-manipulation"
               >
                 {nextButtonState.label}
-                <ChevronRight className="w-5 h-5 ml-1" />
+                <ChevronRight className="w-4 h-4 ml-0.5" />
               </Button>
             ) : (
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="flex-1 h-14 text-lg font-semibold touch-manipulation"
+                className="flex-1 h-11 text-base font-semibold touch-manipulation"
               >
                 予約を確定する
               </Button>

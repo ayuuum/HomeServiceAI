@@ -37,7 +37,7 @@ const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => 
     return (
         <span
             className={cn(
-                "flex items-center justify-center w-5 h-5 text-[9px] font-bold rounded-full",
+                "flex items-center justify-center w-4 h-4 text-[8px] font-bold rounded-full",
                 config.colorClass,
                 "text-white"
             )}
@@ -66,18 +66,18 @@ export const BookingDateTimeSelection = ({
     };
 
     return (
-        <div className="space-y-8 sm:space-y-10">
+        <div className="space-y-4 sm:space-y-6">
             {/* Date Selection */}
             <section>
-                <div className="flex items-center gap-3 mb-5">
-                    <Icon name="calendar_today" size={28} className="text-primary" />
-                    <h3 className="text-2xl sm:text-3xl font-bold">希望日を選択</h3>
-                    <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
+                <div className="flex items-center gap-2 mb-3">
+                    <Icon name="calendar_today" size={20} className="text-primary" />
+                    <h3 className="text-lg sm:text-xl font-bold">希望日を選択</h3>
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
                         必須
                     </Badge>
                 </div>
 
-                <Card className="p-4 sm:p-5 flex flex-col items-center overflow-x-auto">
+                <Card className="p-3 sm:p-4 flex flex-col items-center overflow-x-auto">
                     <Calendar
                         mode="single"
                         selected={selectedDate}
@@ -92,20 +92,20 @@ export const BookingDateTimeSelection = ({
                         locale={ja}
                         className="rounded-md"
                         classNames={{
-                            months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                            month: "space-y-4",
-                            caption: "flex justify-center pt-1 relative items-center text-lg font-bold",
-                            caption_label: "text-lg font-bold",
+                            months: "flex flex-col sm:flex-row space-y-3 sm:space-x-3 sm:space-y-0",
+                            month: "space-y-3",
+                            caption: "flex justify-center pt-1 relative items-center text-base font-bold",
+                            caption_label: "text-base font-bold",
                             nav: "space-x-1 flex items-center",
-                            nav_button: "h-11 w-11 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
+                            nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
                             nav_button_previous: "absolute left-1",
                             nav_button_next: "absolute right-1",
                             table: "w-full border-collapse",
                             head_row: "flex",
-                            head_cell: "text-muted-foreground rounded-md w-11 sm:w-12 font-medium text-sm",
-                            row: "flex w-full mt-1",
-                            cell: "h-16 w-11 sm:h-18 sm:w-12 text-center text-sm p-0 relative",
-                            day: "h-16 w-11 sm:h-18 sm:w-12 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
+                            head_cell: "text-muted-foreground rounded-md w-9 sm:w-10 font-medium text-xs",
+                            row: "flex w-full mt-0.5",
+                            cell: "h-11 w-9 sm:h-12 sm:w-10 text-center text-xs p-0 relative",
+                            day: "h-11 w-9 sm:h-12 sm:w-10 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
                             day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-lg",
                             day_today: "bg-accent text-accent-foreground rounded-lg",
                             day_outside: "text-muted-foreground/50",
@@ -122,9 +122,9 @@ export const BookingDateTimeSelection = ({
                                 const availability = getAvailabilityForDate(date);
                                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
                                 return (
-                                    <div className="flex flex-col items-center justify-center w-full h-full gap-0.5">
-                                        <span className="text-base font-medium leading-none">{date.getDate()}</span>
-                                        <div className="h-5 flex items-center justify-center">
+                                    <div className="flex flex-col items-center justify-center w-full h-full gap-0">
+                                        <span className="text-sm font-medium leading-none">{date.getDate()}</span>
+                                        <div className="h-4 flex items-center justify-center">
                                             {!isPast && <AvailabilityDot status={availability?.status} />}
                                         </div>
                                     </div>
@@ -133,17 +133,17 @@ export const BookingDateTimeSelection = ({
                         }}
                     />
                     {/* Legend */}
-                    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t border-border text-sm text-muted-foreground w-full">
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-white">○</span>
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-3 pt-3 border-t border-border text-xs text-muted-foreground w-full">
+                        <div className="flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[8px] font-bold text-white">○</span>
                             <span className="font-medium">空きあり</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white">△</span>
+                        <div className="flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-[8px] font-bold text-white">△</span>
                             <span className="font-medium">残りわずか</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white">×</span>
+                        <div className="flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white">×</span>
                             <span className="font-medium">満席</span>
                         </div>
                     </div>
@@ -153,23 +153,23 @@ export const BookingDateTimeSelection = ({
             {/* Time Selection */}
             {selectedDate && (
                 <section>
-                    <Separator className="mb-6" />
-                    <div className="flex items-center gap-3 mb-5">
-                        <Icon name="schedule" size={28} className="text-primary" />
-                        <h3 className="text-2xl sm:text-3xl font-bold">ご希望の開始時間</h3>
-                        <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
+                    <Separator className="mb-4" />
+                    <div className="flex items-center gap-2 mb-3">
+                        <Icon name="schedule" size={20} className="text-primary" />
+                        <h3 className="text-lg sm:text-xl font-bold">ご希望の開始時間</h3>
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
                             必須
                         </Badge>
                         {loadingDay && (
-                            <span className="text-base text-muted-foreground">読み込み中...</span>
+                            <span className="text-sm text-muted-foreground">読み込み中...</span>
                         )}
                     </div>
-                    <p className="text-base text-muted-foreground mb-5">
+                    <p className="text-sm text-muted-foreground mb-3">
                         ※ 作業開始予定の時間をお選びください
                     </p>
                     
-                    {/* 2-column grid for larger buttons */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* 3-column grid for compact buttons */}
+                    <div className="grid grid-cols-3 gap-2">
                         {timeSlots.map((time) => {
                             const slotInfo = getSlotInfo(time);
                             const isBooked = slotInfo?.isBooked ?? false;
@@ -183,14 +183,14 @@ export const BookingDateTimeSelection = ({
                                     disabled={isBooked}
                                     aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
                                     className={cn(
-                                        "w-full h-16 text-xl font-bold touch-manipulation relative transition-all",
-                                        isSelected && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90",
+                                        "w-full h-10 text-base font-bold touch-manipulation relative transition-all",
+                                        isSelected && "ring-2 ring-primary ring-offset-1 bg-primary hover:bg-primary/90",
                                         isBooked && "opacity-40 cursor-not-allowed bg-muted"
                                     )}
                                 >
                                     <span className={cn(isBooked && "line-through text-muted-foreground")}>{time}</span>
                                     {isBooked && (
-                                        <span className="absolute top-1 right-2 text-xl text-destructive font-bold" aria-hidden="true">
+                                        <span className="absolute top-0.5 right-1 text-sm text-destructive font-bold" aria-hidden="true">
                                             ×
                                         </span>
                                     )}
@@ -198,7 +198,7 @@ export const BookingDateTimeSelection = ({
                             );
                         })}
                     </div>
-                    <p className="text-base text-muted-foreground mt-4">
+                    <p className="text-sm text-muted-foreground mt-3">
                         ※ × マークの時間帯は既に予約が入っています
                     </p>
                 </section>
@@ -207,31 +207,31 @@ export const BookingDateTimeSelection = ({
             {/* Parking Selection */}
             {selectedDate && selectedTime && (
                 <section>
-                    <Separator className="mb-6" />
-                    <div className="flex items-center gap-3 mb-5">
-                        <Icon name="local_parking" size={28} className="text-primary" />
-                        <h3 className="text-2xl sm:text-3xl font-bold">駐車場の有無</h3>
-                        <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
+                    <Separator className="mb-4" />
+                    <div className="flex items-center gap-2 mb-3">
+                        <Icon name="local_parking" size={20} className="text-primary" />
+                        <h3 className="text-lg sm:text-xl font-bold">駐車場の有無</h3>
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
                             必須
                         </Badge>
                     </div>
 
-                    <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-4">
+                    <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-2">
                         <div className={cn(
-                            "flex items-center space-x-4 p-6 rounded-xl border-2 border-dashed touch-manipulation transition-all",
+                            "flex items-center space-x-3 p-3 rounded-lg border-2 border-dashed touch-manipulation transition-all",
                             hasParking === "yes" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
-                            <RadioGroupItem value="yes" id="parking-yes" className="h-7 w-7" />
-                            <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-lg font-semibold">
+                            <RadioGroupItem value="yes" id="parking-yes" className="h-5 w-5" />
+                            <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-sm font-semibold">
                                 駐車場あり
                             </Label>
                         </div>
                         <div className={cn(
-                            "flex items-center space-x-4 p-6 rounded-xl border-2 border-dashed touch-manipulation transition-all",
+                            "flex items-center space-x-3 p-3 rounded-lg border-2 border-dashed touch-manipulation transition-all",
                             hasParking === "no" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
-                            <RadioGroupItem value="no" id="parking-no" className="h-7 w-7" />
-                            <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-lg font-semibold">
+                            <RadioGroupItem value="no" id="parking-no" className="h-5 w-5" />
+                            <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-sm font-semibold">
                                 駐車場なし
                             </Label>
                         </div>

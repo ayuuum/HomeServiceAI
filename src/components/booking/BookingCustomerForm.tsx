@@ -59,13 +59,13 @@ export const BookingCustomerForm = ({
   isLoggingIn = false,
 }: BookingCustomerFormProps) => {
   return (
-    <div className="space-y-8 sm:space-y-12">
+    <div className="space-y-4 sm:space-y-6">
       {/* Customer Info Section */}
       <section>
-        <div className="flex items-center justify-between mb-6 sm:mb-8">
-          <div className="flex items-center gap-3">
-            <Icon name="person" size={28} className="text-primary" />
-            <h3 className="text-2xl sm:text-3xl font-bold">お客様情報</h3>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <Icon name="person" size={20} className="text-primary" />
+            <h3 className="text-lg sm:text-xl font-bold">お客様情報</h3>
           </div>
 
           {!isLoggedIn ? (
@@ -74,16 +74,16 @@ export const BookingCustomerForm = ({
               size="sm"
               onClick={onGoogleLogin}
               disabled={isLoggingIn}
-              className="gap-2 h-11 text-base px-4"
+              className="gap-1.5 h-9 text-sm px-3"
             >
               {isLoggingIn ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
                   ログイン中...
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -106,28 +106,28 @@ export const BookingCustomerForm = ({
               )}
             </Button>
           ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-base text-primary flex items-center gap-1 font-medium">
-                <Icon name="check_circle" size={20} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-primary flex items-center gap-0.5 font-medium">
+                <Icon name="check_circle" size={16} />
                 ログイン済み
               </span>
-              <Button variant="ghost" size="sm" onClick={onLogout} className="text-base h-10">
+              <Button variant="ghost" size="sm" onClick={onLogout} className="text-sm h-8">
                 ログアウト
               </Button>
             </div>
           )}
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-4 sm:space-y-5">
           {/* Name fields - Split into Last Name and First Name */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label className="text-lg sm:text-xl font-semibold">お名前</Label>
-              <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">必須</Badge>
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-base sm:text-lg font-semibold">お名前</Label>
+              <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">必須</Badge>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-base text-muted-foreground">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="lastName" className="text-sm text-muted-foreground">
                   姓
                 </Label>
                 <Input
@@ -136,11 +136,11 @@ export const BookingCustomerForm = ({
                   value={customerLastName}
                   onChange={(e) => onLastNameChange(e.target.value)}
                   readOnly={isLoggedIn}
-                  className={`h-16 text-xl ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
+                  className={`h-11 text-base ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-base text-muted-foreground">
+              <div className="space-y-1">
+                <Label htmlFor="firstName" className="text-sm text-muted-foreground">
                   名
                 </Label>
                 <Input
@@ -149,19 +149,19 @@ export const BookingCustomerForm = ({
                   value={customerFirstName}
                   onChange={(e) => onFirstNameChange(e.target.value)}
                   readOnly={isLoggedIn}
-                  className={`h-16 text-xl ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
+                  className={`h-11 text-base ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
                 />
               </div>
             </div>
           </div>
 
           {/* Phone field */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="phone" className="text-lg sm:text-xl font-semibold">
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="phone" className="text-base sm:text-lg font-semibold">
                 電話番号
               </Label>
-              <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">必須</Badge>
+              <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">必須</Badge>
             </div>
             <Input
               id="phone"
@@ -169,17 +169,17 @@ export const BookingCustomerForm = ({
               placeholder="090-1234-5678"
               value={customerPhone}
               onChange={(e) => onPhoneChange(e.target.value)}
-              className="h-16 text-xl"
+              className="h-11 text-base"
             />
           </div>
 
           {/* Email field */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="email" className="text-lg sm:text-xl font-semibold">
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="email" className="text-base sm:text-lg font-semibold">
                 メールアドレス
               </Label>
-              <Badge variant="outline" className="text-sm px-3 py-1">
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
                 任意
               </Badge>
             </div>
@@ -190,7 +190,7 @@ export const BookingCustomerForm = ({
               value={customerEmail}
               onChange={(e) => onEmailChange(e.target.value)}
               readOnly={isLoggedIn}
-              className={`h-16 text-xl ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
+              className={`h-11 text-base ${isLoggedIn ? "bg-muted cursor-not-allowed" : ""}`}
             />
           </div>
 
@@ -209,30 +209,30 @@ export const BookingCustomerForm = ({
 
       {/* Photos & Notes Section */}
       <section>
-        <Separator className="mb-6 sm:mb-8" />
-        <div className="space-y-6 sm:space-y-8">
+        <Separator className="mb-4 sm:mb-5" />
+        <div className="space-y-4 sm:space-y-5">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Label className="text-lg sm:text-xl font-semibold">現場写真のアップロード</Label>
-              <Badge variant="outline" className="text-sm px-3 py-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Label className="text-base sm:text-lg font-semibold">現場写真のアップロード</Label>
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
                 任意
               </Badge>
             </div>
-            <p className="text-base text-muted-foreground mb-5">
+            <p className="text-sm text-muted-foreground mb-3">
               事前に写真をお送りいただくと、当日の作業がスムーズになります（最大5枚）
             </p>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {photos.length < 5 && (
-                <Button variant="outline" className="w-full h-16 text-lg touch-manipulation" asChild>
+                <Button variant="outline" className="w-full h-10 text-sm touch-manipulation" asChild>
                   <label>
-                    <Icon name="photo_camera" size={24} className="mr-3" />
+                    <Icon name="photo_camera" size={18} className="mr-2" />
                     写真を追加
                     <input type="file" accept="image/*" multiple onChange={onFileSelect} className="hidden" />
                   </label>
                 </Button>
               )}
               {photos.length > 0 && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-2">
                   {photos.map((photo, index) => (
                     <div key={index} className="relative aspect-square">
                       <img
@@ -243,7 +243,7 @@ export const BookingCustomerForm = ({
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="absolute top-1 right-1 h-9 w-9 p-0 touch-manipulation text-lg"
+                        className="absolute top-0.5 right-0.5 h-6 w-6 p-0 touch-manipulation text-sm"
                         onClick={() => onRemovePhoto(index)}
                       >
                         ×
@@ -256,9 +256,9 @@ export const BookingCustomerForm = ({
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Label className="text-lg sm:text-xl font-semibold">備考・特記事項</Label>
-              <Badge variant="outline" className="text-sm px-3 py-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Label className="text-base sm:text-lg font-semibold">備考・特記事項</Label>
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
                 任意
               </Badge>
             </div>
@@ -266,7 +266,7 @@ export const BookingCustomerForm = ({
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
               placeholder="気になる点や特別な要望があればご記入ください"
-              className="min-h-36 text-xl"
+              className="min-h-24 text-base"
             />
           </div>
         </div>
