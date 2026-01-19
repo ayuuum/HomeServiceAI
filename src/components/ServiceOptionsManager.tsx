@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ServiceOption } from "@/types/booking";
 import { mapDbOptionToOption } from "@/lib/serviceMapper";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ServiceOptionsManagerProps {
   serviceId: string;
@@ -23,12 +24,29 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
     price: 0,
     description: "",
   });
+  const { organizationId } = useAuth();
+
+  const fetchOptions = async () => {
+    if (!organizationId) return;
+    
+    const { data } = await supabase
+      .from('service_options')
+      .select('*')
+      .eq('service_id', serviceId)
+      .eq('organization_id', organizationId);
+
+    if (data) {
+      setOptions(data.map(mapDbOptionToOption));
+    }
+  };
 
   useEffect(() => {
+    if (!organizationId) return;
+    
     fetchOptions();
 
     const channel = supabase
-      .channel(`options-${serviceId}`)
+      .channel(`options-${serviceId}-${organizationId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -40,22 +58,16 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [serviceId]);
-
-  const fetchOptions = async () => {
-    const { data } = await supabase
-      .from('service_options')
-      .select('*')
-      .eq('service_id', serviceId);
-
-    if (data) {
-      setOptions(data.map(mapDbOptionToOption));
-    }
-  };
+  }, [serviceId, organizationId]);
 
   const handleSubmit = async () => {
     if (!formData.title || formData.price <= 0) {
       toast.error("タイトルと価格を入力してください");
+      return;
+    }
+
+    if (!organizationId) {
+      toast.error("組織IDが見つかりません");
       return;
     }
 
@@ -67,7 +79,8 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
           price: formData.price,
           description: formData.description
         })
-        .eq('id', editingId);
+        .eq('id', editingId)
+        .eq('organization_id', organizationId);
 
       if (!error) {
         toast.success("オプションを更新しました");
@@ -78,6 +91,7 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
         .from('service_options')
         .insert({
           service_id: serviceId,
+          organization_id: organizationId,
           title: formData.title,
           price: formData.price,
           description: formData.description
@@ -101,10 +115,13 @@ export const ServiceOptionsManager = ({ serviceId }: ServiceOptionsManagerProps)
   };
 
   const handleDelete = async (optionId: string) => {
+    if (!organizationId) return;
+    
     const { error } = await supabase
       .from('service_options')
       .delete()
-      .eq('id', optionId);
+      .eq('id', optionId)
+      .eq('organization_id', organizationId);
 
     if (!error) {
       toast.success("オプションを削除しました");
