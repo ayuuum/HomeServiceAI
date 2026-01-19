@@ -467,14 +467,14 @@ const BookingPage = () => {
               </div>
 
               {/* Price Summary */}
-              <div className="bg-green-50 rounded-xl border-2 border-green-200 p-6 sm:p-8">
+              <div className="bg-primary/10 rounded-xl border-2 border-primary/30 p-6 sm:p-8">
                 <div className="flex justify-between items-center">
                   <span className="text-xl sm:text-2xl font-bold text-foreground">合計金額（税込）</span>
                   <div className="text-right">
                     {totalDiscount > 0 && (
-                      <p className="text-base sm:text-lg text-green-600 font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
+                      <p className="text-base sm:text-lg text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
                     )}
-                    <p className="text-3xl sm:text-4xl font-bold text-green-600">
+                    <p className="text-3xl sm:text-4xl font-bold text-primary">
                       ¥{totalPrice.toLocaleString()}
                     </p>
                   </div>
@@ -502,7 +502,7 @@ const BookingPage = () => {
               <Button
                 onClick={handleNext}
                 disabled={nextButtonState.disabled}
-                className="flex-1 h-14 text-lg font-semibold touch-manipulation bg-green-500 hover:bg-green-600 text-white"
+                className="flex-1 h-14 text-lg font-semibold touch-manipulation"
               >
                 {nextButtonState.label}
                 <ChevronRight className="w-5 h-5 ml-1" />
@@ -511,7 +511,7 @@ const BookingPage = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="flex-1 h-14 text-lg font-semibold touch-manipulation bg-green-500 hover:bg-green-600 text-white"
+                className="flex-1 h-14 text-lg font-semibold touch-manipulation"
               >
                 予約を確定する
               </Button>

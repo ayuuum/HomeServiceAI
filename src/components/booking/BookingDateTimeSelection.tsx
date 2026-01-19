@@ -70,8 +70,8 @@ export const BookingDateTimeSelection = ({
             {/* Date Selection */}
             <section>
                 <div className="flex items-center gap-3 mb-5">
-                    <Icon name="calendar_today" size={26} className="text-primary" />
-                    <h3 className="text-2xl font-bold">希望日を選択</h3>
+                    <Icon name="calendar_today" size={28} className="text-primary" />
+                    <h3 className="text-2xl sm:text-3xl font-bold">希望日を選択</h3>
                     <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
                         必須
                     </Badge>
@@ -155,8 +155,8 @@ export const BookingDateTimeSelection = ({
                 <section>
                     <Separator className="mb-6" />
                     <div className="flex items-center gap-3 mb-5">
-                        <Icon name="schedule" size={26} className="text-primary" />
-                        <h3 className="text-2xl font-bold">ご希望の開始時間</h3>
+                        <Icon name="schedule" size={28} className="text-primary" />
+                        <h3 className="text-2xl sm:text-3xl font-bold">ご希望の開始時間</h3>
                         <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
                             必須
                         </Badge>
@@ -184,7 +184,7 @@ export const BookingDateTimeSelection = ({
                                     aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
                                     className={cn(
                                         "w-full h-16 text-xl font-bold touch-manipulation relative transition-all",
-                                        isSelected && "ring-2 ring-primary ring-offset-2 bg-green-600 hover:bg-green-700",
+                                        isSelected && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90",
                                         isBooked && "opacity-40 cursor-not-allowed bg-muted"
                                     )}
                                 >
@@ -209,8 +209,8 @@ export const BookingDateTimeSelection = ({
                 <section>
                     <Separator className="mb-6" />
                     <div className="flex items-center gap-3 mb-5">
-                        <Icon name="local_parking" size={26} className="text-primary" />
-                        <h3 className="text-2xl font-bold">駐車場の有無</h3>
+                        <Icon name="local_parking" size={28} className="text-primary" />
+                        <h3 className="text-2xl sm:text-3xl font-bold">駐車場の有無</h3>
                         <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
                             必須
                         </Badge>
@@ -219,7 +219,7 @@ export const BookingDateTimeSelection = ({
                     <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-4">
                         <div className={cn(
                             "flex items-center space-x-4 p-6 rounded-xl border-2 border-dashed touch-manipulation transition-all",
-                            hasParking === "yes" ? "border-green-600 bg-green-50" : "border-border hover:border-muted-foreground/50"
+                            hasParking === "yes" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
                             <RadioGroupItem value="yes" id="parking-yes" className="h-7 w-7" />
                             <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-lg font-semibold">
@@ -228,7 +228,7 @@ export const BookingDateTimeSelection = ({
                         </div>
                         <div className={cn(
                             "flex items-center space-x-4 p-6 rounded-xl border-2 border-dashed touch-manipulation transition-all",
-                            hasParking === "no" ? "border-green-600 bg-green-50" : "border-border hover:border-muted-foreground/50"
+                            hasParking === "no" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
                             <RadioGroupItem value="no" id="parking-no" className="h-7 w-7" />
                             <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-lg font-semibold">

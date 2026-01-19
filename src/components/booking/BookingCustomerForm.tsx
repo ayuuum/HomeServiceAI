@@ -64,8 +64,8 @@ export const BookingCustomerForm = ({
             <section>
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                     <div className="flex items-center gap-3">
-                        <Icon name="person" size={26} className="text-primary" />
-                        <h3 className="text-xl sm:text-2xl font-bold">お客様情報</h3>
+                        <Icon name="person" size={28} className="text-primary" />
+                        <h3 className="text-2xl sm:text-3xl font-bold">お客様情報</h3>
                     </div>
                     
                     {!isLoggedIn ? (
@@ -95,7 +95,7 @@ export const BookingCustomerForm = ({
                         </Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <span className="text-base text-green-600 flex items-center gap-1 font-medium">
+                            <span className="text-base text-primary flex items-center gap-1 font-medium">
                                 <Icon name="check_circle" size={20} />
                                 ログイン済み
                             </span>

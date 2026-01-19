@@ -180,10 +180,10 @@ export const BookingConfirmationModal = ({
           </Card>
 
           {/* 合計金額カード */}
-          <Card className="bg-green-50 border-green-200 border-2 p-6">
+          <Card className="bg-primary/10 border-primary/30 border-2 p-6">
             <div className="flex justify-between items-center">
               <span className="text-lg sm:text-xl font-semibold">合計金額（税込）</span>
-              <span className="text-2xl sm:text-3xl font-bold text-green-600">
+              <span className="text-2xl sm:text-3xl font-bold text-primary">
                 ¥{bookingData.totalPrice.toLocaleString()}
               </span>
             </div>
