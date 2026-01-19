@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,6 +32,7 @@ import type { Customer } from "@/types/booking";
 
 export default function CustomerManagement() {
   const queryClient = useQueryClient();
+  const { organizationId } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -75,7 +77,12 @@ export default function CustomerManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (!organizationId) throw new Error("組織IDが見つかりません");
+      const { error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", id)
+        .eq("organization_id", organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -120,14 +127,20 @@ export default function CustomerManagement() {
   const [isFixing, setIsFixing] = useState(false);
 
   const fixMissingCustomers = async () => {
+    if (!organizationId) {
+      toast.error("組織IDが見つかりません");
+      return;
+    }
+
     try {
       setIsFixing(true);
       let fixedCount = 0;
 
-      // 1. 顧客名を最新の予約名で同期
+      // 1. 顧客名を最新の予約名で同期（組織IDでフィルタリング）
       const { data: customersWithBookings } = await supabase
         .from('customers')
-        .select('id, name, bookings(customer_name, created_at)');
+        .select('id, name, bookings(customer_name, created_at)')
+        .eq('organization_id', organizationId);
 
       if (customersWithBookings) {
         for (const customer of customersWithBookings) {
@@ -144,16 +157,18 @@ export default function CustomerManagement() {
             await supabase
               .from('customers')
               .update({ name: latestBooking.customer_name })
-              .eq('id', customer.id);
+              .eq('id', customer.id)
+              .eq('organization_id', organizationId);
             fixedCount++;
           }
         }
       }
 
-      // 2. customer_id が null の予約を修正
+      // 2. customer_id が null の予約を修正（組織IDでフィルタリング）
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
+        .eq('organization_id', organizationId)
         .is('customer_id', null);
 
       if (bookingsError) throw bookingsError;
@@ -178,6 +193,7 @@ export default function CustomerManagement() {
             const { data: existing } = await supabase
               .from('customers')
               .select('id')
+              .eq('organization_id', organizationId)
               .or(conditions.join(','))
               .maybeSingle();
 
@@ -190,6 +206,7 @@ export default function CustomerManagement() {
           const { data: existingByName } = await supabase
             .from('customers')
             .select('id')
+            .eq('organization_id', organizationId)
             .eq('name', booking.customer_name)
             .maybeSingle();
 
