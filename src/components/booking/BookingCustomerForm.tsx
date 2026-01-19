@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/ui/icon";
 import { AddressInput } from "@/components/AddressInput";
@@ -54,15 +55,13 @@ export const BookingCustomerForm = ({
     isLoggingIn = false,
 }: BookingCustomerFormProps) => {
     return (
-        <div className="space-y-8 sm:space-y-12">
-            {/* Section 6: Customer Info */}
+        <div className="space-y-6 sm:space-y-10">
+            {/* Customer Info Section */}
             <section>
-                <Separator className="mb-4 sm:mb-6" />
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center gap-2">
-                        <Icon name="person" size={18} className="text-primary sm:hidden" />
-                        <Icon name="person" size={20} className="text-primary hidden sm:block" />
-                        <h3 className="text-lg sm:text-xl font-semibold">お客様情報</h3>
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                        <Icon name="person" size={22} className="text-primary" />
+                        <h3 className="text-lg sm:text-xl font-bold">お客様情報</h3>
                     </div>
                     
                     {!isLoggedIn ? (
@@ -71,7 +70,7 @@ export const BookingCustomerForm = ({
                             size="sm"
                             onClick={onGoogleLogin}
                             disabled={isLoggingIn}
-                            className="gap-2"
+                            className="gap-2 h-10 text-sm"
                         >
                             {isLoggingIn ? (
                                 <>
@@ -86,50 +85,66 @@ export const BookingCustomerForm = ({
                                         <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                                         <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                                     </svg>
-                                    Googleでログイン
+                                    Googleログイン
                                 </>
                             )}
                         </Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm text-green-600 flex items-center gap-1">
-                                <Icon name="check_circle" size={16} />
+                            <span className="text-sm text-green-600 flex items-center gap-1 font-medium">
+                                <Icon name="check_circle" size={18} />
                                 ログイン済み
                             </span>
-                            <Button variant="ghost" size="sm" onClick={onLogout} className="text-xs">
+                            <Button variant="ghost" size="sm" onClick={onLogout} className="text-sm h-9">
                                 ログアウト
                             </Button>
                         </div>
                     )}
                 </div>
 
-<div className="space-y-3 sm:space-y-4">
-                    <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-                        <div className="space-y-1.5 sm:space-y-2">
-                            <Label htmlFor="name" className="text-sm sm:text-base">お名前 <span className="text-destructive">*</span></Label>
-                            <Input
-                                id="name"
-                                placeholder="例：山田 太郎"
-                                value={customerName}
-                                onChange={(e) => onNameChange(e.target.value)}
-                                readOnly={isLoggedIn}
-                                className={`h-11 sm:h-10 text-base sm:text-sm ${isLoggedIn ? 'bg-muted cursor-not-allowed' : ''}`}
-                            />
+                <div className="space-y-5">
+                    {/* Name field */}
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="name" className="text-base font-medium">お名前</Label>
+                            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+                                必須
+                            </Badge>
                         </div>
-                        <div className="space-y-1.5 sm:space-y-2">
-                            <Label htmlFor="phone" className="text-sm sm:text-base">電話番号 <span className="text-muted-foreground text-xs font-normal">（任意）</span></Label>
-                            <Input
-                                id="phone"
-                                type="tel"
-                                placeholder="例：090-1234-5678"
-                                value={customerPhone}
-                                onChange={(e) => onPhoneChange(e.target.value)}
-                                className="h-11 sm:h-10 text-base sm:text-sm"
-                            />
-                        </div>
+                        <Input
+                            id="name"
+                            placeholder="例：山田 太郎"
+                            value={customerName}
+                            onChange={(e) => onNameChange(e.target.value)}
+                            readOnly={isLoggedIn}
+                            className={`h-14 text-lg ${isLoggedIn ? 'bg-muted cursor-not-allowed' : ''}`}
+                        />
                     </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="email" className="text-sm sm:text-base">メールアドレス <span className="text-muted-foreground text-xs font-normal">（任意）</span></Label>
+
+                    {/* Phone field */}
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="phone" className="text-base font-medium">電話番号</Label>
+                            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+                                必須
+                            </Badge>
+                        </div>
+                        <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="例：090-1234-5678"
+                            value={customerPhone}
+                            onChange={(e) => onPhoneChange(e.target.value)}
+                            className="h-14 text-lg"
+                        />
+                    </div>
+
+                    {/* Email field */}
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="email" className="text-base font-medium">メールアドレス</Label>
+                            <Badge variant="outline" className="text-xs">任意</Badge>
+                        </div>
                         <Input
                             id="email"
                             type="email"
@@ -137,7 +152,7 @@ export const BookingCustomerForm = ({
                             value={customerEmail}
                             onChange={(e) => onEmailChange(e.target.value)}
                             readOnly={isLoggedIn}
-                            className={`h-11 sm:h-10 text-base sm:text-sm ${isLoggedIn ? 'bg-muted cursor-not-allowed' : ''}`}
+                            className={`h-14 text-lg ${isLoggedIn ? 'bg-muted cursor-not-allowed' : ''}`}
                         />
                     </div>
                     
@@ -154,21 +169,23 @@ export const BookingCustomerForm = ({
                 </div>
             </section>
 
-            {/* Section 7: Photos & Notes */}
+            {/* Photos & Notes Section */}
             <section>
-                <div className="space-y-4 sm:space-y-6">
+                <Separator className="mb-5" />
+                <div className="space-y-5">
                     <div>
-                        <Label className="text-sm sm:text-base font-semibold mb-1.5 sm:mb-2 block">
-                            現場写真のアップロード（任意）
-                        </Label>
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Label className="text-base font-medium">現場写真のアップロード</Label>
+                            <Badge variant="outline" className="text-xs">任意</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">
                             事前に写真をお送りいただくと、当日の作業がスムーズになります（最大5枚）
                         </p>
                         <div className="space-y-3">
                             {photos.length < 5 && (
-                                <Button variant="outline" className="w-full h-12 sm:h-10 touch-manipulation" asChild>
+                                <Button variant="outline" className="w-full h-14 text-base touch-manipulation" asChild>
                                     <label>
-                                        <Icon name="photo_camera" size={16} className="mr-2" />
+                                        <Icon name="photo_camera" size={20} className="mr-2" />
                                         写真を追加
                                         <input
                                             type="file"
@@ -181,7 +198,7 @@ export const BookingCustomerForm = ({
                                 </Button>
                             )}
                             {photos.length > 0 && (
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                <div className="grid grid-cols-3 gap-3">
                                     {photos.map((photo, index) => (
                                         <div key={index} className="relative aspect-square">
                                             <img
@@ -192,7 +209,7 @@ export const BookingCustomerForm = ({
                                             <Button
                                                 size="sm"
                                                 variant="destructive"
-                                                className="absolute top-1 right-1 h-7 w-7 sm:h-6 sm:w-6 p-0 touch-manipulation"
+                                                className="absolute top-1 right-1 h-8 w-8 p-0 touch-manipulation"
                                                 onClick={() => onRemovePhoto(index)}
                                             >
                                                 ×
@@ -205,14 +222,15 @@ export const BookingCustomerForm = ({
                     </div>
 
                     <div>
-                        <Label className="text-sm sm:text-base font-semibold mb-1.5 sm:mb-2 block">
-                            備考・特記事項（任意）
-                        </Label>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Label className="text-base font-medium">備考・特記事項</Label>
+                            <Badge variant="outline" className="text-xs">任意</Badge>
+                        </div>
                         <Textarea
                             value={notes}
                             onChange={(e) => onNotesChange(e.target.value)}
                             placeholder="気になる点や特別な要望があればご記入ください"
-                            className="min-h-24 text-base sm:text-sm"
+                            className="min-h-28 text-lg"
                         />
                     </div>
                 </div>

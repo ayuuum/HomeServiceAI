@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
@@ -36,7 +37,7 @@ const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => 
     return (
         <span
             className={cn(
-                "absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center w-4 h-4 text-[8px] font-bold rounded-full",
+                "absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center w-5 h-5 text-[9px] font-bold rounded-full",
                 config.colorClass,
                 "text-white"
             )}
@@ -65,148 +66,174 @@ export const BookingDateTimeSelection = ({
     };
 
     return (
-        <div className="space-y-8 sm:space-y-12">
-            {/* Section 4: Date & Time Selection */}
+        <div className="space-y-6 sm:space-y-10">
+            {/* Date Selection */}
             <section>
-                <Separator className="mb-4 sm:mb-6" />
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Icon name="calendar_today" size={18} className="text-primary sm:hidden" />
-                    <Icon name="calendar_today" size={20} className="text-primary hidden sm:block" />
-                    <h3 className="text-lg sm:text-xl font-semibold">日時を選択</h3>
+                <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                    <Icon name="calendar_today" size={22} className="text-primary" />
+                    <h3 className="text-lg sm:text-xl font-bold">希望日を選択</h3>
+                    <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+                        必須
+                    </Badge>
                 </div>
 
-                <div className="space-y-4 sm:space-y-6">
-                    <div>
-                        <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">希望日</Label>
-                        <Card className="p-2 sm:p-4 flex flex-col items-center overflow-x-auto">
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={onDateSelect}
-                                onMonthChange={onMonthChange}
-                                disabled={(date) => {
-                                    const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-                                    const availability = getAvailabilityForDate(date);
-                                    const isFull = availability?.status === "full";
-                                    return isPast || isFull;
-                                }}
-                                locale={ja}
-                                className="rounded-md scale-95 sm:scale-100 origin-center"
-                                modifiers={{
-                                    available: (date) => getAvailabilityForDate(date)?.status === "available",
-                                    partial: (date) => getAvailabilityForDate(date)?.status === "partial",
-                                    full: (date) => getAvailabilityForDate(date)?.status === "full",
-                                }}
-                                components={{
-                                    DayContent: ({ date }) => {
-                                        const availability = getAvailabilityForDate(date);
-                                        const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-                                        return (
-                                            <div className="relative flex flex-col items-center justify-center w-full h-full pb-2">
-                                                <span>{date.getDate()}</span>
-                                                {!isPast && <AvailabilityDot status={availability?.status} />}
-                                            </div>
-                                        );
-                                    },
-                                }}
-                            />
-                            {/* 凡例（色覚多様性対応：色+記号） */}
-                            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3 pt-3 border-t border-border text-xs sm:text-sm text-muted-foreground w-full">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[8px] font-bold text-white">○</span>
-                                    <span>空きあり</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-[8px] font-bold text-white">△</span>
-                                    <span>残りわずか</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white">×</span>
-                                    <span>満席</span>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-
-                    {selectedDate && (
-                        <div>
-                            <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">
-                                ご希望の開始時間
-                                {loadingDay && (
-                                    <span className="ml-2 text-xs text-muted-foreground font-normal">
-                                        読み込み中...
-                                    </span>
-                                )}
-                            </Label>
-                            <p className="text-xs text-muted-foreground mb-3">
-                                ※ 作業開始予定の時間をお選びください
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
-                                {timeSlots.map((time) => {
-                                    const slotInfo = getSlotInfo(time);
-                                    const isBooked = slotInfo?.isBooked ?? false;
-
-                                    return (
-                                        <Button
-                                            key={time}
-                                            variant={selectedTime === time ? "default" : "outline"}
-                                            onClick={() => !isBooked && onTimeSelect(time)}
-                                            disabled={isBooked}
-                                            aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
-                                            className={cn(
-                                                "w-full h-11 sm:h-10 text-sm sm:text-base touch-manipulation relative",
-                                                isBooked && "opacity-50 cursor-not-allowed"
-                                            )}
-                                        >
-                                            <span className={cn(isBooked && "line-through")}>{time}</span>
-                                            {isBooked && (
-                                                <span className="absolute top-0.5 right-1 text-sm text-destructive font-bold" aria-hidden="true">
-                                                    ×
-                                                </span>
-                                            )}
-                                        </Button>
-                                    );
-                                })}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                ※ × マークの時間帯は既に予約が入っています
-                            </p>
+                <Card className="p-3 sm:p-4 flex flex-col items-center overflow-x-auto">
+                    <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={onDateSelect}
+                        onMonthChange={onMonthChange}
+                        disabled={(date) => {
+                            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                            const availability = getAvailabilityForDate(date);
+                            const isFull = availability?.status === "full";
+                            return isPast || isFull;
+                        }}
+                        locale={ja}
+                        className="rounded-md"
+                        classNames={{
+                            months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                            month: "space-y-4",
+                            caption: "flex justify-center pt-1 relative items-center text-base font-semibold",
+                            caption_label: "text-base font-semibold",
+                            nav: "space-x-1 flex items-center",
+                            nav_button: "h-10 w-10 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
+                            nav_button_previous: "absolute left-1",
+                            nav_button_next: "absolute right-1",
+                            table: "w-full border-collapse space-y-1",
+                            head_row: "flex",
+                            head_cell: "text-muted-foreground rounded-md w-11 sm:w-12 font-normal text-sm",
+                            row: "flex w-full mt-2",
+                            cell: "h-11 w-11 sm:h-12 sm:w-12 text-center text-sm p-0 relative",
+                            day: "h-11 w-11 sm:h-12 sm:w-12 p-0 font-normal text-base aria-selected:opacity-100 touch-manipulation",
+                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                            day_today: "bg-accent text-accent-foreground rounded-full",
+                            day_outside: "text-muted-foreground/50",
+                            day_disabled: "text-muted-foreground/30",
+                            day_hidden: "invisible",
+                        }}
+                        modifiers={{
+                            available: (date) => getAvailabilityForDate(date)?.status === "available",
+                            partial: (date) => getAvailabilityForDate(date)?.status === "partial",
+                            full: (date) => getAvailabilityForDate(date)?.status === "full",
+                        }}
+                        components={{
+                            DayContent: ({ date }) => {
+                                const availability = getAvailabilityForDate(date);
+                                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                return (
+                                    <div className="relative flex flex-col items-center justify-center w-full h-full pb-3">
+                                        <span className="text-base">{date.getDate()}</span>
+                                        {!isPast && <AvailabilityDot status={availability?.status} />}
+                                    </div>
+                                );
+                            },
+                        }}
+                    />
+                    {/* Legend */}
+                    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t border-border text-sm text-muted-foreground w-full">
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-white">○</span>
+                            <span>空きあり</span>
                         </div>
-                    )}
-                </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white">△</span>
+                            <span>残りわずか</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white">×</span>
+                            <span>満席</span>
+                        </div>
+                    </div>
+                </Card>
             </section>
 
-            {/* Section 5: Diagnosis (Parking) */}
+            {/* Time Selection */}
+            {selectedDate && (
+                <section>
+                    <Separator className="mb-5" />
+                    <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                        <Icon name="schedule" size={22} className="text-primary" />
+                        <h3 className="text-lg sm:text-xl font-bold">ご希望の開始時間</h3>
+                        <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+                            必須
+                        </Badge>
+                        {loadingDay && (
+                            <span className="text-sm text-muted-foreground">読み込み中...</span>
+                        )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        ※ 作業開始予定の時間をお選びください
+                    </p>
+                    
+                    {/* 2-column grid for larger buttons */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {timeSlots.map((time) => {
+                            const slotInfo = getSlotInfo(time);
+                            const isBooked = slotInfo?.isBooked ?? false;
+                            const isSelected = selectedTime === time;
+
+                            return (
+                                <Button
+                                    key={time}
+                                    variant={isSelected ? "default" : "outline"}
+                                    onClick={() => !isBooked && onTimeSelect(time)}
+                                    disabled={isBooked}
+                                    aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
+                                    className={cn(
+                                        "w-full h-14 text-lg font-medium touch-manipulation relative transition-all",
+                                        isSelected && "ring-2 ring-primary ring-offset-2",
+                                        isBooked && "opacity-40 cursor-not-allowed bg-muted"
+                                    )}
+                                >
+                                    <span className={cn(isBooked && "line-through text-muted-foreground")}>{time}</span>
+                                    {isBooked && (
+                                        <span className="absolute top-1 right-2 text-lg text-destructive font-bold" aria-hidden="true">
+                                            ×
+                                        </span>
+                                    )}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                        ※ × マークの時間帯は既に予約が入っています
+                    </p>
+                </section>
+            )}
+
+            {/* Parking Selection */}
             {selectedDate && selectedTime && (
                 <section>
-                    <Separator className="mb-4 sm:mb-6" />
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                        <Icon name="location_on" size={18} className="text-primary sm:hidden" />
-                        <Icon name="location_on" size={20} className="text-primary hidden sm:block" />
-                        <h3 className="text-lg sm:text-xl font-semibold">現場情報</h3>
+                    <Separator className="mb-5" />
+                    <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                        <Icon name="local_parking" size={22} className="text-primary" />
+                        <h3 className="text-lg sm:text-xl font-bold">駐車場の有無</h3>
+                        <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+                            必須
+                        </Badge>
                     </div>
 
-                    <div className="space-y-4 sm:space-y-6">
-                        <div>
-                            <Label className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 block">
-                                駐車場の有無 <span className="text-destructive">*</span>
+                    <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-3">
+                        <div className={cn(
+                            "flex items-center space-x-4 p-5 rounded-xl border-2 border-dashed touch-manipulation transition-all",
+                            hasParking === "yes" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+                        )}>
+                            <RadioGroupItem value="yes" id="parking-yes" className="h-6 w-6" />
+                            <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-base font-medium">
+                                駐車場あり
                             </Label>
-                            <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-2">
-                                <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/30 active:bg-muted/50 touch-manipulation">
-                                    <RadioGroupItem value="yes" id="parking-yes" className="h-6 w-6" />
-                                    <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-sm sm:text-base">
-                                        駐車場あり
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-muted/30 active:bg-muted/50 touch-manipulation">
-                                    <RadioGroupItem value="no" id="parking-no" className="h-6 w-6" />
-                                    <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-sm sm:text-base">
-                                        駐車場なし
-                                    </Label>
-                                </div>
-                            </RadioGroup>
                         </div>
-                    </div>
+                        <div className={cn(
+                            "flex items-center space-x-4 p-5 rounded-xl border-2 border-dashed touch-manipulation transition-all",
+                            hasParking === "no" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+                        )}>
+                            <RadioGroupItem value="no" id="parking-no" className="h-6 w-6" />
+                            <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-base font-medium">
+                                駐車場なし
+                            </Label>
+                        </div>
+                    </RadioGroup>
                 </section>
             )}
         </div>

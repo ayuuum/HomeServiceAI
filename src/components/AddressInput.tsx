@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { toast } from "sonner";
 
@@ -87,14 +88,22 @@ export const AddressInput = ({
   }, [postalCode, onAddressChange]);
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="space-y-1.5 sm:space-y-2">
-        <Label htmlFor="postalCode" className="text-sm sm:text-base">
-          郵便番号 {required && <span className="text-destructive">*</span>}
-        </Label>
+    <div className="space-y-5">
+      {/* Postal code */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="postalCode" className="text-base font-medium">
+            郵便番号
+          </Label>
+          {required && (
+            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+              必須
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2">
-          <div className="relative flex-1 sm:flex-none sm:w-40">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <div className="relative flex-1">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
               〒
             </span>
             <Input
@@ -104,7 +113,7 @@ export const AddressInput = ({
               onChange={handlePostalCodeChange}
               disabled={disabled}
               maxLength={8}
-              className="pl-8 h-11 sm:h-10 text-base sm:text-sm"
+              className="pl-10 h-14 text-lg"
             />
           </div>
           <Button
@@ -112,55 +121,66 @@ export const AddressInput = ({
             variant="outline"
             onClick={() => searchAddress()}
             disabled={disabled || isSearching || postalCode.replace(/[^\d]/g, "").length !== 7}
-            className="h-11 sm:h-10 px-3 sm:px-4 touch-manipulation flex items-center justify-center gap-1.5"
+            className="h-14 px-4 touch-manipulation flex items-center justify-center gap-2"
           >
             {isSearching ? (
-              <Icon name="sync" size={16} className="animate-spin" />
+              <Icon name="sync" size={20} className="animate-spin" />
             ) : (
               <>
-                <Icon name="search" size={16} className="shrink-0" />
-                <span className="hidden sm:inline">住所検索</span>
-                <span className="sm:hidden">検索</span>
+                <Icon name="search" size={20} className="shrink-0" />
+                <span>検索</span>
               </>
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           郵便番号を入力すると自動で住所が入力されます
         </p>
       </div>
 
-      <div className="space-y-1.5 sm:space-y-2">
-        <Label htmlFor="address" className="text-sm sm:text-base">
-          住所 {required && <span className="text-destructive">*</span>}
-        </Label>
+      {/* Address */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="address" className="text-base font-medium">
+            住所
+          </Label>
+          {required && (
+            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+              必須
+            </Badge>
+          )}
+        </div>
         <Input
           id="address"
           placeholder="例：東京都千代田区千代田1-1-1"
           value={address}
           onChange={(e) => onAddressChange(e.target.value)}
           disabled={disabled}
-          className="h-11 sm:h-10 text-base sm:text-sm"
+          className="h-14 text-lg"
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           番地まで入力してください
         </p>
       </div>
 
+      {/* Building name */}
       {onAddressBuildingChange && (
-        <div className="space-y-1.5 sm:space-y-2">
-          <Label htmlFor="addressBuilding" className="text-sm sm:text-base">
-            建物名・部屋番号（任意）
-          </Label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="addressBuilding" className="text-base font-medium">
+              建物名・部屋番号
+            </Label>
+            <Badge variant="outline" className="text-xs">任意</Badge>
+          </div>
           <Input
             id="addressBuilding"
             placeholder="例：○○マンション 101号室"
             value={addressBuilding}
             onChange={(e) => onAddressBuildingChange(e.target.value)}
             disabled={disabled}
-            className="h-11 sm:h-10 text-base sm:text-sm"
+            className="h-14 text-lg"
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             マンション・アパートの場合はご記入ください
           </p>
         </div>
