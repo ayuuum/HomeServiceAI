@@ -10,7 +10,9 @@ import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, Calendar, UserCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -390,18 +392,20 @@ const BookingPage = () => {
 
           {/* Step 4: Confirmation/Summary */}
           {currentStep === 4 && (
-            <div className="space-y-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">予約内容の確認</h2>
+            <div className="space-y-8 sm:space-y-10">
+              <div className="flex items-center gap-3">
+                <Icon name="fact_check" size={28} className="text-primary" />
+                <h2 className="text-2xl sm:text-3xl font-bold">予約内容の確認</h2>
+              </div>
               
               {/* Service Summary */}
-              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-foreground">選択サービス</h3>
+              <section>
+                <div className="flex items-center gap-3 mb-5">
+                  <Icon name="auto_awesome" size={28} className="text-primary" />
+                  <h3 className="text-2xl sm:text-3xl font-bold">選択サービス</h3>
                 </div>
-                <div className="space-y-3 pl-2">
+                <Separator className="mb-5" />
+                <div className="space-y-3">
                   {selectedServices.map((service) => (
                     <div key={service.serviceId} className="flex justify-between text-base sm:text-lg">
                       <span className="text-muted-foreground">
@@ -423,17 +427,16 @@ const BookingPage = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
               {/* Date/Time Summary */}
-              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-foreground">予約日時</h3>
+              <section>
+                <div className="flex items-center gap-3 mb-5">
+                  <Icon name="calendar_today" size={28} className="text-primary" />
+                  <h3 className="text-2xl sm:text-3xl font-bold">予約日時</h3>
                 </div>
-                <div className="space-y-2 pl-2">
+                <Separator className="mb-5" />
+                <div className="space-y-2">
                   <p className="text-base sm:text-lg text-foreground">
                     {selectedDate?.toLocaleDateString('ja-JP', { 
                       year: 'numeric', 
@@ -443,20 +446,19 @@ const BookingPage = () => {
                     })} {selectedTime}
                   </p>
                   <p className="text-base sm:text-lg text-muted-foreground">
-                    駐車場: {hasParking ? 'あり' : 'なし'}
+                    駐車場: {hasParking === 'yes' ? 'あり' : 'なし'}
                   </p>
                 </div>
-              </div>
+              </section>
 
               {/* Customer Summary */}
-              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-foreground">お客様情報</h3>
+              <section>
+                <div className="flex items-center gap-3 mb-5">
+                  <Icon name="person" size={28} className="text-primary" />
+                  <h3 className="text-2xl sm:text-3xl font-bold">お客様情報</h3>
                 </div>
-                <div className="text-base sm:text-lg text-muted-foreground space-y-2 pl-2">
+                <Separator className="mb-5" />
+                <div className="text-base sm:text-lg text-muted-foreground space-y-2">
                   <p><span className="text-foreground font-medium">お名前:</span> {customerLastName} {customerFirstName}</p>
                   <p><span className="text-foreground font-medium">電話番号:</span> {customerPhone}</p>
                   {customerEmail && <p><span className="text-foreground font-medium">メール:</span> {customerEmail}</p>}
@@ -464,7 +466,7 @@ const BookingPage = () => {
                   {customerAddressBuilding && <p><span className="text-foreground font-medium">建物名等:</span> {customerAddressBuilding}</p>}
                   {notes && <p><span className="text-foreground font-medium">備考:</span> {notes}</p>}
                 </div>
-              </div>
+              </section>
 
               {/* Price Summary */}
               <div className="bg-primary/10 rounded-xl border-2 border-primary/30 p-6 sm:p-8">

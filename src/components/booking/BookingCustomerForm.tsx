@@ -123,7 +123,7 @@ export const BookingCustomerForm = ({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Label className="text-lg sm:text-xl font-semibold">お名前</Label>
-              <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">必須</Badge>
+              <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">必須</Badge>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -161,7 +161,7 @@ export const BookingCustomerForm = ({
               <Label htmlFor="phone" className="text-lg sm:text-xl font-semibold">
                 電話番号
               </Label>
-              <Badge className="bg-orange-500 text-white hover:bg-red-500 text-sm px-3 py-1">必須</Badge>
+              <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">必須</Badge>
             </div>
             <Input
               id="phone"
