@@ -96,7 +96,7 @@ export const AddressInput = ({
             郵便番号
           </Label>
           {required && (
-            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-2.5 py-0.5">
+            <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-2.5 py-0.5">
               必須
             </Badge>
           )}
@@ -145,7 +145,7 @@ export const AddressInput = ({
             住所
           </Label>
           {required && (
-            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-2.5 py-0.5">
+            <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-2.5 py-0.5">
               必須
             </Badge>
           )}

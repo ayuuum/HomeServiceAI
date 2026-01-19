@@ -211,7 +211,7 @@ export const BookingDateTimeSelection = ({
                     <div className="flex items-center gap-3 mb-5">
                         <Icon name="local_parking" size={28} className="text-primary" />
                         <h3 className="text-2xl sm:text-3xl font-bold">駐車場の有無</h3>
-                        <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
                             必須
                         </Badge>
                     </div>
