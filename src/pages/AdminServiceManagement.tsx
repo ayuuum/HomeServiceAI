@@ -45,19 +45,41 @@ const AdminServiceManagement = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const { organizationId } = useAuth();
+
+  const fetchServices = async () => {
+    if (!organizationId) return;
+    
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching services:', error);
+      toast.error('サービスの読み込みに失敗しました');
+    } else {
+      setServices((data || []).map(mapDbServiceToService));
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
+    if (!organizationId) return;
+    
     fetchServices();
 
-    // Set up realtime subscription
+    // Set up realtime subscription filtered by organization
     const channel = supabase
-      .channel('admin-services-changes')
+      .channel(`admin-services-changes-${organizationId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'services'
+          table: 'services',
+          filter: `organization_id=eq.${organizationId}`
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -76,22 +98,7 @@ const AdminServiceManagement = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  const fetchServices = async () => {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching services:', error);
-      toast.error('サービスの読み込みに失敗しました');
-    } else {
-      setServices((data || []).map(mapDbServiceToService));
-    }
-    setLoading(false);
-  };
+  }, [organizationId]);
 
   const handleAddService = () => {
     setSelectedService(null);
@@ -114,11 +121,12 @@ const AdminServiceManagement = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (serviceToDelete) {
+    if (serviceToDelete && organizationId) {
       const { error } = await supabase
         .from('services')
         .delete()
-        .eq('id', serviceToDelete);
+        .eq('id', serviceToDelete)
+        .eq('organization_id', organizationId);
 
       if (error) {
         console.error('Error deleting service:', error);
@@ -131,9 +139,12 @@ const AdminServiceManagement = () => {
     }
   };
 
-  const { organizationId } = useAuth();
-
   const handleSubmit = async (values: any) => {
+    if (!organizationId) {
+      toast.error("組織IDが見つかりません");
+      return;
+    }
+    
     const dbValues = mapServiceToDbService(values);
 
     if (selectedService) {
@@ -141,7 +152,8 @@ const AdminServiceManagement = () => {
       const { error } = await supabase
         .from('services')
         .update(dbValues)
-        .eq('id', selectedService.id);
+        .eq('id', selectedService.id)
+        .eq('organization_id', organizationId);
 
       if (error) {
         console.error('Error updating service:', error);
@@ -151,11 +163,6 @@ const AdminServiceManagement = () => {
       }
     } else {
       // Add new service
-      if (!organizationId) {
-        toast.error("組織IDが見つかりません");
-        return;
-      }
-
       const newService = {
         ...dbValues,
         organization_id: organizationId
