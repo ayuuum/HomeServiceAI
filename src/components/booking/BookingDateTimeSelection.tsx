@@ -72,7 +72,7 @@ export const BookingDateTimeSelection = ({
                 <div className="flex items-center gap-3 mb-5">
                     <Icon name="calendar_today" size={28} className="text-primary" />
                     <h3 className="text-2xl sm:text-3xl font-bold">希望日を選択</h3>
-                    <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
                         必須
                     </Badge>
                 </div>
@@ -157,7 +157,7 @@ export const BookingDateTimeSelection = ({
                     <div className="flex items-center gap-3 mb-5">
                         <Icon name="schedule" size={28} className="text-primary" />
                         <h3 className="text-2xl sm:text-3xl font-bold">ご希望の開始時間</h3>
-                        <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
                             必須
                         </Badge>
                         {loadingDay && (

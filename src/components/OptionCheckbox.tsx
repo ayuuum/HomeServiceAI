@@ -23,7 +23,7 @@ export const OptionCheckbox = ({
   return (
     <Card className={`border-2 border-dashed transition-all duration-200 ${
       checked 
-        ? "border-green-600 bg-green-50" 
+        ? "border-primary bg-primary/10" 
         : "border-border hover:border-muted-foreground/50"
     }`}>
       <CardContent className="p-5">
@@ -37,7 +37,7 @@ export const OptionCheckbox = ({
                 {option.description}
               </p>
             )}
-            <p className="text-xl font-bold text-green-600">
+            <p className="text-xl font-bold text-primary">
               +¥{(option.price * quantity).toLocaleString()}
             </p>
           </div>
@@ -48,7 +48,7 @@ export const OptionCheckbox = ({
           {!checked ? (
             <Button
               variant="outline"
-              className="w-full h-14 text-lg font-semibold border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors touch-manipulation"
+              className="w-full h-14 text-lg font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
               onClick={() => onChange(true)}
             >
               選択する
@@ -63,7 +63,7 @@ export const OptionCheckbox = ({
               >
                 {/* Selected indicator */}
                 <Button
-                  className="w-full h-14 text-lg font-semibold bg-green-600 text-white hover:bg-green-700 touch-manipulation"
+                  className="w-full h-14 text-lg font-semibold bg-primary text-white hover:bg-primary/90 touch-manipulation"
                   onClick={() => onChange(false)}
                 >
                   <Check className="w-6 h-6 mr-2" />
