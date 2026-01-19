@@ -37,7 +37,7 @@ const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => 
     return (
         <span
             className={cn(
-                "absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full",
+                "flex items-center justify-center w-5 h-5 text-[9px] font-bold rounded-full",
                 config.colorClass,
                 "text-white"
             )}
@@ -100,14 +100,14 @@ export const BookingDateTimeSelection = ({
                             nav_button: "h-11 w-11 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
                             nav_button_previous: "absolute left-1",
                             nav_button_next: "absolute right-1",
-                            table: "w-full border-collapse space-y-1",
+                            table: "w-full border-collapse",
                             head_row: "flex",
-                            head_cell: "text-muted-foreground rounded-md w-12 sm:w-14 font-medium text-base",
-                            row: "flex w-full mt-2",
-                            cell: "h-14 w-12 sm:h-16 sm:w-14 text-center text-sm p-0 relative",
-                            day: "h-14 w-12 sm:h-16 sm:w-14 p-0 font-medium text-lg aria-selected:opacity-100 touch-manipulation",
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
-                            day_today: "bg-accent text-accent-foreground rounded-full",
+                            head_cell: "text-muted-foreground rounded-md w-11 sm:w-12 font-medium text-sm",
+                            row: "flex w-full mt-1",
+                            cell: "h-16 w-11 sm:h-18 sm:w-12 text-center text-sm p-0 relative",
+                            day: "h-16 w-11 sm:h-18 sm:w-12 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
+                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-lg",
+                            day_today: "bg-accent text-accent-foreground rounded-lg",
                             day_outside: "text-muted-foreground/50",
                             day_disabled: "text-muted-foreground/30",
                             day_hidden: "invisible",
@@ -122,26 +122,28 @@ export const BookingDateTimeSelection = ({
                                 const availability = getAvailabilityForDate(date);
                                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
                                 return (
-                                    <div className="relative flex flex-col items-center justify-center w-full h-full pb-4">
-                                        <span className="text-lg font-medium">{date.getDate()}</span>
-                                        {!isPast && <AvailabilityDot status={availability?.status} />}
+                                    <div className="flex flex-col items-center justify-center w-full h-full gap-0.5">
+                                        <span className="text-base font-medium leading-none">{date.getDate()}</span>
+                                        <div className="h-5 flex items-center justify-center">
+                                            {!isPast && <AvailabilityDot status={availability?.status} />}
+                                        </div>
                                     </div>
                                 );
                             },
                         }}
                     />
                     {/* Legend */}
-                    <div className="flex flex-wrap items-center justify-center gap-5 mt-5 pt-5 border-t border-border text-base text-muted-foreground w-full">
-                        <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white">○</span>
+                    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t border-border text-sm text-muted-foreground w-full">
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[9px] font-bold text-white">○</span>
                             <span className="font-medium">空きあり</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold text-white">△</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-[9px] font-bold text-white">△</span>
                             <span className="font-medium">残りわずか</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-[10px] font-bold text-white">×</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white">×</span>
                             <span className="font-medium">満席</span>
                         </div>
                     </div>
