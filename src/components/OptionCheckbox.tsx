@@ -23,32 +23,32 @@ export const OptionCheckbox = ({
   return (
     <Card className={`border-2 border-dashed transition-all duration-200 ${
       checked 
-        ? "border-primary bg-primary/5" 
+        ? "border-green-600 bg-green-50" 
         : "border-border hover:border-muted-foreground/50"
     }`}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
-            <h4 className="text-base font-semibold text-foreground mb-1">
+            <h4 className="text-lg font-bold text-foreground mb-2">
               {option.title}
             </h4>
             {option.description && (
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-base text-muted-foreground mb-3">
                 {option.description}
               </p>
             )}
-            <p className="text-lg font-bold text-primary">
+            <p className="text-xl font-bold text-green-600">
               +¥{(option.price * quantity).toLocaleString()}
             </p>
           </div>
         </div>
 
         {/* Selection button or selected state */}
-        <div className="mt-3">
+        <div className="mt-4">
           {!checked ? (
             <Button
               variant="outline"
-              className="w-full h-11 text-base border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors touch-manipulation"
+              className="w-full h-14 text-lg font-semibold border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors touch-manipulation"
               onClick={() => onChange(true)}
             >
               選択する
@@ -59,20 +59,20 @@ export const OptionCheckbox = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-3"
+                className="space-y-4"
               >
                 {/* Selected indicator */}
                 <Button
-                  className="w-full h-11 text-base bg-primary text-primary-foreground hover:bg-primary/90 touch-manipulation"
+                  className="w-full h-14 text-lg font-semibold bg-green-600 text-white hover:bg-green-700 touch-manipulation"
                   onClick={() => onChange(false)}
                 >
-                  <Check className="w-5 h-5 mr-2" />
+                  <Check className="w-6 h-6 mr-2" />
                   選択中
                 </Button>
                 
                 {/* Quantity selector */}
-                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                  <span className="text-sm font-medium text-foreground">数量</span>
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-4">
+                  <span className="text-base font-medium text-foreground">数量</span>
                   <QuantitySelector
                     value={quantity}
                     onChange={onQuantityChange}
