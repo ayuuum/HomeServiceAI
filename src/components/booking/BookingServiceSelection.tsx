@@ -26,14 +26,14 @@ const container = {
     show: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.08
+            staggerChildren: 0.06
         }
     }
 };
 
 const item = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } }
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" as const } }
 };
 
 export const BookingServiceSelection = ({
@@ -47,23 +47,23 @@ export const BookingServiceSelection = ({
     getOptionsForService,
 }: BookingServiceSelectionProps) => {
     return (
-        <div className="space-y-8 sm:space-y-10">
+        <div className="space-y-4 sm:space-y-6">
             <section>
                 {/* Header with required badge and icon */}
-                <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                    <Icon name="auto_awesome" size={28} className="text-primary" />
-                    <h3 className="text-2xl sm:text-3xl font-bold">サービスを選ぶ</h3>
-                    <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <Icon name="auto_awesome" size={20} className="text-primary" />
+                    <h3 className="text-lg sm:text-xl font-bold">サービスを選ぶ</h3>
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
                         必須
                     </Badge>
                 </div>
 
-                <p className="text-base sm:text-lg text-muted-foreground mb-8">
+                <p className="text-sm sm:text-base text-muted-foreground mb-4">
                     ご希望のサービスを選択してください
                 </p>
 
                 <motion.div
-                    className="space-y-6"
+                    className="space-y-3"
                     variants={container}
                     initial="hidden"
                     animate="show"
@@ -75,16 +75,16 @@ export const BookingServiceSelection = ({
 
                         return (
                             <motion.div key={service.id} variants={item}>
-                                {/* Lステップ style card with dashed border */}
+                                {/* Compact card with dashed border */}
                                 <Card className={`border-2 border-dashed transition-all duration-200 ${
                                     isSelected 
                                         ? "border-primary bg-primary/5" 
                                         : "border-border hover:border-muted-foreground/50"
                                 }`}>
-                                    <CardContent className="p-5 sm:p-6">
-                                        <div className="flex gap-4 sm:gap-5">
-                                            {/* Larger image */}
-                                            <div className="flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-muted">
+                                    <CardContent className="p-3 sm:p-4">
+                                        <div className="flex gap-3">
+                                            {/* Compact image */}
+                                            <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted">
                                                 {service.imageUrl ? (
                                                     <img
                                                         src={service.imageUrl}
@@ -93,24 +93,24 @@ export const BookingServiceSelection = ({
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
-                                                        <Icon name="home_repair_service" size={36} className="text-muted-foreground/50" />
+                                                        <Icon name="home_repair_service" size={24} className="text-muted-foreground/50" />
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-xl sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
+                                                <h4 className="text-base sm:text-lg font-bold text-foreground mb-0.5 leading-tight">
                                                     {service.title}
                                                 </h4>
-                                                <p className="text-base sm:text-lg text-muted-foreground line-clamp-2 mb-3">
+                                                <p className="text-sm text-muted-foreground line-clamp-1 mb-1.5">
                                                     {service.description}
                                                 </p>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm sm:text-base font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
                                                         {service.duration}分
                                                     </span>
-                                                    <span className="text-2xl sm:text-3xl font-bold text-primary">
+                                                    <span className="text-lg sm:text-xl font-bold text-primary">
                                                         ¥{service.basePrice.toLocaleString()}
                                                     </span>
                                                 </div>
@@ -118,26 +118,26 @@ export const BookingServiceSelection = ({
                                         </div>
 
                                         {/* Selection button or quantity selector */}
-                                        <div className="mt-5">
+                                        <div className="mt-3">
                                             {!isSelected ? (
                                                 <Button
                                                     variant="outline"
-                                                    className="w-full h-16 text-lg sm:text-xl font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
+                                                    className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
                                                     onClick={() => onServiceQuantityChange(service.id, 1)}
                                                 >
                                                     選択する
                                                 </Button>
                                             ) : (
-                                                <div className="space-y-4">
+                                                <div className="space-y-2">
                                                     {/* Selected indicator */}
-                                                    <div className="flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-md">
-                                                        <Check className="w-6 h-6" />
-                                                        <span className="text-lg font-semibold">選択中</span>
+                                                    <div className="flex items-center justify-center gap-1.5 py-2 bg-primary text-white rounded-md">
+                                                        <Check className="w-4 h-4" />
+                                                        <span className="text-sm font-semibold">選択中</span>
                                                     </div>
                                                     
                                                     {/* Quantity selector */}
-                                                    <div className="flex items-center justify-between bg-muted/50 rounded-lg p-4">
-                                                        <span className="text-base font-medium text-foreground">数量</span>
+                                                    <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2.5">
+                                                        <span className="text-sm font-medium text-foreground">数量</span>
                                                         <QuantitySelector
                                                             value={quantity}
                                                             onChange={(newQty) => onServiceQuantityChange(service.id, newQty)}
@@ -163,24 +163,24 @@ export const BookingServiceSelection = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                     >
-                        <Separator className="mb-6" />
-                        <div className="flex items-center gap-3 mb-5">
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                <Check className="w-5 h-5 text-white" />
+                        <Separator className="mb-4" />
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" />
                             </div>
-                            <h3 className="text-xl font-bold">選択中のサービス</h3>
+                            <h3 className="text-base font-bold">選択中のサービス</h3>
                         </div>
                         <Card className="bg-primary/10 border-primary/30 border-2">
-                            <CardContent className="p-5 space-y-3">
+                            <CardContent className="p-3 space-y-2">
                                 {selectedServices.map(({ serviceId, quantity, service }) => {
                                     const subtotal = service.basePrice * quantity;
                                     return (
-                                        <div key={serviceId} className="flex justify-between items-center text-lg">
+                                        <div key={serviceId} className="flex justify-between items-center text-sm">
                                             <div className="min-w-0 flex-1">
                                                 <span className="font-semibold">{service.title}</span>
-                                                <span className="text-muted-foreground text-base ml-2">× {quantity}台</span>
+                                                <span className="text-muted-foreground ml-1">× {quantity}台</span>
                                             </div>
-                                            <span className="font-bold text-primary flex-shrink-0 ml-3 text-xl">
+                                            <span className="font-bold text-primary flex-shrink-0 ml-2">
                                                 ¥{subtotal.toLocaleString()}
                                             </span>
                                         </div>
@@ -200,13 +200,13 @@ export const BookingServiceSelection = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                     >
-                        <Separator className="mb-6" />
-                        <div className="flex items-center gap-3 mb-5">
-                            <Icon name="auto_awesome" size={26} className="text-primary" />
-                            <h3 className="text-xl font-bold">オプションを追加</h3>
-                            <Badge variant="outline" className="text-sm px-3 py-1">任意</Badge>
+                        <Separator className="mb-4" />
+                        <div className="flex items-center gap-2 mb-3">
+                            <Icon name="auto_awesome" size={18} className="text-primary" />
+                            <h3 className="text-base font-bold">オプションを追加</h3>
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">任意</Badge>
                         </div>
-                        <p className="text-base text-muted-foreground mb-6">
+                        <p className="text-sm text-muted-foreground mb-4">
                             選択したサービスに追加できるオプションです
                         </p>
 
@@ -215,11 +215,11 @@ export const BookingServiceSelection = ({
                             if (serviceOptions.length === 0) return null;
 
                             return (
-                                <div key={serviceId} className="mb-6">
-                                    <h4 className="font-bold mb-4 text-lg text-muted-foreground">
+                                <div key={serviceId} className="mb-4">
+                                    <h4 className="font-bold mb-2 text-sm text-muted-foreground">
                                         {service.title} のオプション
                                     </h4>
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         {serviceOptions.map((option) => {
                                             const selected = selectedOptions.find(o => o.optionId === option.id);
                                             return (
