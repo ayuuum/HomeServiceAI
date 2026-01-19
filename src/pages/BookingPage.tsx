@@ -74,8 +74,10 @@ const BookingPage = () => {
     photos,
     notes,
     setNotes,
-    customerName,
-    setCustomerName,
+    customerLastName,
+    setCustomerLastName,
+    customerFirstName,
+    setCustomerFirstName,
     customerEmail,
     setCustomerEmail,
     customerPhone,
@@ -130,7 +132,7 @@ const BookingPage = () => {
   // Validation for each step
   const canProceedToStep2 = selectedServices.length > 0;
   const canProceedToStep3 = selectedDate && selectedTime && hasParking !== null;
-  const canProceedToStep4 = customerName && customerPhone && customerAddress;
+  const canProceedToStep4 = customerLastName && customerPhone && customerAddress;
   const canSubmit = canProceedToStep2 && canProceedToStep3 && canProceedToStep4;
 
   const handleStepClick = (step: number) => {
@@ -197,7 +199,8 @@ const BookingPage = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setBookingUser(null);
-    setCustomerName("");
+    setCustomerLastName("");
+    setCustomerFirstName("");
     setCustomerEmail("");
   };
 
@@ -359,8 +362,10 @@ const BookingPage = () => {
           {/* Step 3: Customer Information */}
           {currentStep === 3 && (
             <BookingCustomerForm
-              customerName={customerName}
-              onNameChange={setCustomerName}
+              customerLastName={customerLastName}
+              onLastNameChange={setCustomerLastName}
+              customerFirstName={customerFirstName}
+              onFirstNameChange={setCustomerFirstName}
               customerEmail={customerEmail}
               onEmailChange={setCustomerEmail}
               customerPhone={customerPhone}
@@ -435,7 +440,7 @@ const BookingPage = () => {
               <div className="bg-card rounded-lg border border-border p-4 space-y-2">
                 <h3 className="font-medium text-foreground">お客様情報</h3>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>お名前: {customerName}</p>
+                  <p>お名前: {customerLastName} {customerFirstName}</p>
                   <p>電話番号: {customerPhone}</p>
                   {customerEmail && <p>メール: {customerEmail}</p>}
                   <p>住所: 〒{customerPostalCode} {customerAddress}</p>
