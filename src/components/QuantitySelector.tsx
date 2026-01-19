@@ -31,7 +31,7 @@ export const QuantitySelector = ({
       <Button
         variant="outline"
         size="icon"
-        className="h-12 w-12 touch-manipulation rounded-full border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+        className="h-12 w-12 touch-manipulation rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white"
         onClick={handleDecrease}
         disabled={value <= min}
       >
@@ -41,7 +41,7 @@ export const QuantitySelector = ({
       <Button
         variant="outline"
         size="icon"
-        className="h-12 w-12 touch-manipulation rounded-full border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+        className="h-12 w-12 touch-manipulation rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-white"
         onClick={handleIncrease}
         disabled={value >= max}
       >

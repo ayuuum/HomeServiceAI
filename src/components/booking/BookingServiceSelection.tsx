@@ -53,7 +53,7 @@ export const BookingServiceSelection = ({
                 <div className="flex items-center gap-3 mb-5 sm:mb-6">
                     <Icon name="auto_awesome" size={28} className="text-primary" />
                     <h3 className="text-2xl sm:text-3xl font-bold">サービスを選ぶ</h3>
-                    <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-sm px-3 py-1">
                         必須
                     </Badge>
                 </div>
@@ -122,7 +122,7 @@ export const BookingServiceSelection = ({
                                             {!isSelected ? (
                                                 <Button
                                                     variant="outline"
-                                                    className="w-full h-16 text-lg sm:text-xl font-semibold border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors touch-manipulation"
+                                                    className="w-full h-16 text-lg sm:text-xl font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
                                                     onClick={() => onServiceQuantityChange(service.id, 1)}
                                                 >
                                                     選択する
@@ -130,7 +130,7 @@ export const BookingServiceSelection = ({
                                             ) : (
                                                 <div className="space-y-4">
                                                     {/* Selected indicator */}
-                                                    <div className="flex items-center justify-center gap-2 py-3 bg-green-600 text-white rounded-md">
+                                                    <div className="flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-md">
                                                         <Check className="w-6 h-6" />
                                                         <span className="text-lg font-semibold">選択中</span>
                                                     </div>
@@ -165,12 +165,12 @@ export const BookingServiceSelection = ({
                     >
                         <Separator className="mb-6" />
                         <div className="flex items-center gap-3 mb-5">
-                            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                                 <Check className="w-5 h-5 text-white" />
                             </div>
                             <h3 className="text-xl font-bold">選択中のサービス</h3>
                         </div>
-                        <Card className="bg-green-50 border-green-200 border-2">
+                        <Card className="bg-primary/10 border-primary/30 border-2">
                             <CardContent className="p-5 space-y-3">
                                 {selectedServices.map(({ serviceId, quantity, service }) => {
                                     const subtotal = service.basePrice * quantity;
@@ -180,7 +180,7 @@ export const BookingServiceSelection = ({
                                                 <span className="font-semibold">{service.title}</span>
                                                 <span className="text-muted-foreground text-base ml-2">× {quantity}台</span>
                                             </div>
-                                            <span className="font-bold text-green-600 flex-shrink-0 ml-3 text-xl">
+                                            <span className="font-bold text-primary flex-shrink-0 ml-3 text-xl">
                                                 ¥{subtotal.toLocaleString()}
                                             </span>
                                         </div>
