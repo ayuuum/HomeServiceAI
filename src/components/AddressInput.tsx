@@ -88,22 +88,22 @@ export const AddressInput = ({
   }, [postalCode, onAddressChange]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 sm:space-y-8">
       {/* Postal code */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Label htmlFor="postalCode" className="text-base font-medium">
+          <Label htmlFor="postalCode" className="text-lg sm:text-xl font-semibold">
             郵便番号
           </Label>
           {required && (
-            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-2.5 py-0.5">
               必須
             </Badge>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <div className="relative flex-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-xl">
               〒
             </span>
             <Input
@@ -113,7 +113,7 @@ export const AddressInput = ({
               onChange={handlePostalCodeChange}
               disabled={disabled}
               maxLength={8}
-              className="pl-10 h-14 text-lg"
+              className="pl-12 h-16 text-xl"
             />
           </div>
           <Button
@@ -121,31 +121,31 @@ export const AddressInput = ({
             variant="outline"
             onClick={() => searchAddress()}
             disabled={disabled || isSearching || postalCode.replace(/[^\d]/g, "").length !== 7}
-            className="h-14 px-4 touch-manipulation flex items-center justify-center gap-2"
+            className="h-16 px-5 touch-manipulation flex items-center justify-center gap-2 text-base"
           >
             {isSearching ? (
-              <Icon name="sync" size={20} className="animate-spin" />
+              <Icon name="sync" size={22} className="animate-spin" />
             ) : (
               <>
-                <Icon name="search" size={20} className="shrink-0" />
+                <Icon name="search" size={22} className="shrink-0" />
                 <span>検索</span>
               </>
             )}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           郵便番号を入力すると自動で住所が入力されます
         </p>
       </div>
 
       {/* Address */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Label htmlFor="address" className="text-base font-medium">
+          <Label htmlFor="address" className="text-lg sm:text-xl font-semibold">
             住所
           </Label>
           {required && (
-            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-xs px-2 py-0.5">
+            <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-2.5 py-0.5">
               必須
             </Badge>
           )}
@@ -156,21 +156,21 @@ export const AddressInput = ({
           value={address}
           onChange={(e) => onAddressChange(e.target.value)}
           disabled={disabled}
-          className="h-14 text-lg"
+          className="h-16 text-xl"
         />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           番地まで入力してください
         </p>
       </div>
 
       {/* Building name */}
       {onAddressBuildingChange && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Label htmlFor="addressBuilding" className="text-base font-medium">
+            <Label htmlFor="addressBuilding" className="text-lg sm:text-xl font-semibold">
               建物名・部屋番号
             </Label>
-            <Badge variant="outline" className="text-xs">任意</Badge>
+            <Badge variant="outline" className="text-sm">任意</Badge>
           </div>
           <Input
             id="addressBuilding"
@@ -178,9 +178,9 @@ export const AddressInput = ({
             value={addressBuilding}
             onChange={(e) => onAddressBuildingChange(e.target.value)}
             disabled={disabled}
-            className="h-14 text-lg"
+            className="h-16 text-xl"
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             マンション・アパートの場合はご記入ください
           </p>
         </div>
