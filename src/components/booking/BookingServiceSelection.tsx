@@ -49,20 +49,21 @@ export const BookingServiceSelection = ({
     return (
         <div className="space-y-8 sm:space-y-10">
             <section>
-                {/* Header with required badge */}
+                {/* Header with required badge and icon */}
                 <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                    <h3 className="text-2xl font-bold">サービスを選ぶ</h3>
+                    <Icon name="auto_awesome" size={28} className="text-primary" />
+                    <h3 className="text-2xl sm:text-3xl font-bold">サービスを選ぶ</h3>
                     <Badge className="bg-orange-500 text-white hover:bg-orange-500 text-sm px-3 py-1">
                         必須
                     </Badge>
                 </div>
 
-                <p className="text-base text-muted-foreground mb-6">
+                <p className="text-base sm:text-lg text-muted-foreground mb-8">
                     ご希望のサービスを選択してください
                 </p>
 
                 <motion.div
-                    className="space-y-5"
+                    className="space-y-6"
                     variants={container}
                     initial="hidden"
                     animate="show"
@@ -81,9 +82,9 @@ export const BookingServiceSelection = ({
                                         : "border-border hover:border-muted-foreground/50"
                                 }`}>
                                     <CardContent className="p-5 sm:p-6">
-                                        <div className="flex gap-4">
-                                            {/* Small image */}
-                                            <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-muted">
+                                        <div className="flex gap-4 sm:gap-5">
+                                            {/* Larger image */}
+                                            <div className="flex-shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-muted">
                                                 {service.imageUrl ? (
                                                     <img
                                                         src={service.imageUrl}
@@ -92,24 +93,24 @@ export const BookingServiceSelection = ({
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
-                                                        <Icon name="home_repair_service" size={32} className="text-muted-foreground/50" />
+                                                        <Icon name="home_repair_service" size={36} className="text-muted-foreground/50" />
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-lg sm:text-xl font-bold text-foreground mb-1.5 leading-tight">
+                                                <h4 className="text-xl sm:text-2xl font-bold text-foreground mb-1.5 leading-tight">
                                                     {service.title}
                                                 </h4>
-                                                <p className="text-base text-muted-foreground line-clamp-2 mb-3">
+                                                <p className="text-base sm:text-lg text-muted-foreground line-clamp-2 mb-3">
                                                     {service.description}
                                                 </p>
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded">
+                                                    <span className="text-sm sm:text-base font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded">
                                                         {service.duration}分
                                                     </span>
-                                                    <span className="text-xl sm:text-2xl font-bold text-primary">
+                                                    <span className="text-2xl sm:text-3xl font-bold text-primary">
                                                         ¥{service.basePrice.toLocaleString()}
                                                     </span>
                                                 </div>
@@ -121,7 +122,7 @@ export const BookingServiceSelection = ({
                                             {!isSelected ? (
                                                 <Button
                                                     variant="outline"
-                                                    className="w-full h-14 text-lg font-semibold border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors touch-manipulation"
+                                                    className="w-full h-16 text-lg sm:text-xl font-semibold border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors touch-manipulation"
                                                     onClick={() => onServiceQuantityChange(service.id, 1)}
                                                 >
                                                     選択する
