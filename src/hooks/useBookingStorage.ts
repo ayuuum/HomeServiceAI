@@ -7,7 +7,8 @@ export interface StoredBookingData {
   selectedDate: string | null;
   selectedTime: string | null;
   hasParking: string;
-  customerName: string;
+  customerLastName: string;
+  customerFirstName: string;
   customerEmail: string;
   customerPhone: string;
   customerPostalCode: string;
@@ -53,7 +54,8 @@ export const useBookingStorage = (organizationId: string) => {
         selectedDate: data.selectedDate ?? existing?.selectedDate ?? null,
         selectedTime: data.selectedTime ?? existing?.selectedTime ?? null,
         hasParking: data.hasParking ?? existing?.hasParking ?? "",
-        customerName: data.customerName ?? existing?.customerName ?? "",
+        customerLastName: data.customerLastName ?? existing?.customerLastName ?? "",
+        customerFirstName: data.customerFirstName ?? existing?.customerFirstName ?? "",
         customerEmail: data.customerEmail ?? existing?.customerEmail ?? "",
         customerPhone: data.customerPhone ?? existing?.customerPhone ?? "",
         customerPostalCode: data.customerPostalCode ?? existing?.customerPostalCode ?? "",

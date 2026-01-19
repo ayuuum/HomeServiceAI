@@ -30,7 +30,8 @@ export const useBooking = (organizationId?: string) => {
     const [hasParking, setHasParking] = useState<string>("");
     const [photos, setPhotos] = useState<File[]>([]);
     const [notes, setNotes] = useState("");
-    const [customerName, setCustomerName] = useState("");
+    const [customerLastName, setCustomerLastName] = useState("");
+    const [customerFirstName, setCustomerFirstName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerPostalCode, setCustomerPostalCode] = useState("");
@@ -126,7 +127,8 @@ export const useBooking = (organizationId?: string) => {
         if (storedData.selectedDate) setSelectedDate(new Date(storedData.selectedDate));
         if (storedData.selectedTime) setSelectedTime(storedData.selectedTime);
         if (storedData.hasParking) setHasParking(storedData.hasParking);
-        if (storedData.customerName) setCustomerName(storedData.customerName);
+        if (storedData.customerLastName) setCustomerLastName(storedData.customerLastName);
+        if (storedData.customerFirstName) setCustomerFirstName(storedData.customerFirstName);
         if (storedData.customerEmail) setCustomerEmail(storedData.customerEmail);
         if (storedData.customerPhone) setCustomerPhone(storedData.customerPhone);
         if (storedData.customerPostalCode) setCustomerPostalCode(storedData.customerPostalCode);
@@ -177,7 +179,8 @@ export const useBooking = (organizationId?: string) => {
                 selectedDate: selectedDate?.toISOString() || null,
                 selectedTime: selectedTime || null,
                 hasParking,
-                customerName,
+                customerLastName,
+                customerFirstName,
                 customerEmail,
                 customerPhone,
                 customerPostalCode,
@@ -195,7 +198,8 @@ export const useBooking = (organizationId?: string) => {
         selectedDate, 
         selectedTime,
         hasParking, 
-        customerName, 
+        customerLastName, 
+        customerFirstName, 
         customerEmail, 
         customerPhone,
         customerPostalCode,
@@ -207,13 +211,23 @@ export const useBooking = (organizationId?: string) => {
 
     // Monitor auth state and auto-fill user info
     useEffect(() => {
+        const parseFullName = (fullName: string) => {
+            const parts = fullName.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return { lastName: parts[0], firstName: parts.slice(1).join(' ') };
+            }
+            return { lastName: fullName, firstName: '' };
+        };
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 if (session?.user) {
                     const { user_metadata } = session.user;
                     if (user_metadata) {
                         if (user_metadata.full_name || user_metadata.name) {
-                            setCustomerName(user_metadata.full_name || user_metadata.name);
+                            const { lastName, firstName } = parseFullName(user_metadata.full_name || user_metadata.name);
+                            setCustomerLastName(lastName);
+                            setCustomerFirstName(firstName);
                         }
                     }
                     // Also set email from session
@@ -230,7 +244,9 @@ export const useBooking = (organizationId?: string) => {
                 const { user_metadata } = session.user;
                 if (user_metadata) {
                     if (user_metadata.full_name || user_metadata.name) {
-                        setCustomerName(user_metadata.full_name || user_metadata.name);
+                        const { lastName, firstName } = parseFullName(user_metadata.full_name || user_metadata.name);
+                        setCustomerLastName(lastName);
+                        setCustomerFirstName(firstName);
                     }
                 }
                 if (user_metadata?.email || session.user.email) {
@@ -392,7 +408,8 @@ export const useBooking = (organizationId?: string) => {
             return null;
         }
 
-        if (!customerName.trim()) {
+        const fullName = `${customerLastName} ${customerFirstName}`.trim();
+        if (!fullName) {
             toast.error("お名前を入力してください");
             return null;
         }
@@ -466,7 +483,7 @@ export const useBooking = (organizationId?: string) => {
                             await supabase
                                 .from('customers')
                                 .update({
-                                    name: customerName.trim(),
+                                    name: `${customerLastName} ${customerFirstName}`.trim(),
                                     email: customerEmail.trim() || null,
                                     phone: customerPhone.trim() || null,
                                     postal_code: customerPostalCode.trim() || null,
@@ -484,7 +501,7 @@ export const useBooking = (organizationId?: string) => {
                     const { data: newCustomerId, error: customerError } = await supabase
                         .rpc('create_customer_secure', {
                             p_organization_id: organizationId,
-                            p_name: customerName,
+                            p_name: `${customerLastName} ${customerFirstName}`.trim(),
                             p_email: customerEmail || null,
                             p_phone: customerPhone || null,
                             p_postal_code: customerPostalCode || null,
@@ -507,7 +524,7 @@ export const useBooking = (organizationId?: string) => {
                     .insert({
                         id: newBookingId,
                         customer_id: customerId,
-                        customer_name: customerName.trim(),
+                        customer_name: `${customerLastName} ${customerFirstName}`.trim(),
                         customer_email: customerEmail.trim() || null,
                         customer_phone: customerPhone.trim() || null,
                         customer_address: customerAddress.trim() || null,
@@ -565,7 +582,8 @@ export const useBooking = (organizationId?: string) => {
                 setHasParking("");
                 setPhotos([]);
                 setNotes("");
-                setCustomerName("");
+                setCustomerLastName("");
+                setCustomerFirstName("");
                 setCustomerEmail("");
                 setCustomerPhone("");
                 setCustomerPostalCode("");
@@ -577,7 +595,7 @@ export const useBooking = (organizationId?: string) => {
                     time: selectedTime,
                     serviceName: selectedServices.map(s => s.service.title).join(", "),
                     totalPrice: totalPrice,
-                    customerName,
+                    customerName: `${customerLastName} ${customerFirstName}`.trim(),
                     customerPhone,
                     customerPostalCode,
                     customerAddress,
@@ -639,8 +657,10 @@ export const useBooking = (organizationId?: string) => {
         photos,
         notes,
         setNotes,
-        customerName,
-        setCustomerName,
+        customerLastName,
+        setCustomerLastName,
+        customerFirstName,
+        setCustomerFirstName,
         customerEmail,
         setCustomerEmail,
         customerPhone,
