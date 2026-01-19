@@ -47,8 +47,8 @@ export const BookingStepIndicator = ({
                   <div
                     className={cn(
                       "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold transition-all duration-300",
-                      isCompleted && "bg-green-500 text-white",
-                      isCurrent && "bg-[#1e3a5f] text-white ring-4 ring-[#1e3a5f]/30",
+                      isCompleted && "bg-primary text-primary-foreground",
+                      isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/30",
                       !isCompleted && !isCurrent && "bg-white border-2 border-gray-300 text-gray-400"
                     )}
                   >
@@ -64,9 +64,9 @@ export const BookingStepIndicator = ({
                 {index < steps.length - 1 && (
                   <div className="flex-1 mx-2 sm:mx-3">
                     <div
-                      className={cn(
+                    className={cn(
                         "h-1 sm:h-1.5 rounded-full transition-colors duration-300",
-                        currentStep > step.id ? "bg-green-500" : "bg-gray-200"
+                        currentStep > step.id ? "bg-primary" : "bg-gray-200"
                       )}
                     />
                   </div>
@@ -88,8 +88,8 @@ export const BookingStepIndicator = ({
                   <span
                     className={cn(
                       "text-sm sm:text-base font-semibold whitespace-nowrap transition-colors",
-                      isCurrent && "text-[#1e3a5f]",
-                      isCompleted && "text-green-600",
+                      isCurrent && "text-primary",
+                      isCompleted && "text-primary",
                       !isCompleted && !isCurrent && "text-gray-400"
                     )}
                   >
