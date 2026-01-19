@@ -24,8 +24,8 @@ export const BookingStepIndicator = ({
   onStepClick,
 }: BookingStepIndicatorProps) => {
   return (
-    <div className="w-full pt-2 pb-8 sm:pt-4 sm:pb-10">
-      <div className="flex items-center justify-between max-w-sm sm:max-w-lg mx-auto px-4 sm:px-6">
+    <div className="w-full py-4 sm:py-5">
+      <div className="flex items-center justify-between max-w-md sm:max-w-lg mx-auto px-4 sm:px-6">
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
@@ -44,23 +44,23 @@ export const BookingStepIndicator = ({
               >
                 <div
                   className={cn(
-                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-medium transition-all duration-300",
-                    isCompleted && "bg-primary text-primary-foreground",
-                    isCurrent && "bg-primary text-primary-foreground ring-2 sm:ring-4 ring-primary/20",
+                    "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-bold transition-all duration-300",
+                    isCompleted && "bg-green-500 text-white",
+                    isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20",
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
                   )}
                 >
                   {isCompleted ? (
-                    <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={3} />
                   ) : (
                     step.id
                   )}
                 </div>
                 <span
                   className={cn(
-                    "absolute -bottom-5 sm:-bottom-6 text-xs sm:text-sm whitespace-nowrap transition-colors",
-                    isCurrent && "text-primary font-medium",
-                    isCompleted && "text-primary",
+                    "absolute -bottom-6 sm:-bottom-7 text-sm sm:text-base whitespace-nowrap transition-colors font-medium",
+                    isCurrent && "text-primary",
+                    isCompleted && "text-green-600",
                     !isCompleted && !isCurrent && "text-muted-foreground"
                   )}
                 >
@@ -70,11 +70,11 @@ export const BookingStepIndicator = ({
 
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 mx-1 sm:mx-2">
+                <div className="flex-1 mx-1.5 sm:mx-2">
                   <div
                     className={cn(
-                      "h-0.5 transition-colors duration-300",
-                      currentStep > step.id ? "bg-primary" : "bg-muted"
+                      "h-1 sm:h-1.5 rounded-full transition-colors duration-300",
+                      currentStep > step.id ? "bg-green-500" : "bg-muted"
                     )}
                   />
                 </div>

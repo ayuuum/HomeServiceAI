@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
@@ -28,29 +27,28 @@ export const QuantitySelector = ({
   };
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
+    <div className="flex items-center gap-2">
       <Button
         variant="outline"
         size="icon"
-        className="h-11 w-11 sm:h-9 sm:w-9 touch-manipulation"
+        className="h-12 w-12 sm:h-10 sm:w-10 touch-manipulation rounded-full border-2"
         onClick={handleDecrease}
         disabled={value <= min}
       >
-        <Icon name="remove" size={18} className="sm:hidden" />
-        <Icon name="remove" size={16} className="hidden sm:block" />
+        <Icon name="remove" size={20} className="sm:hidden" />
+        <Icon name="remove" size={18} className="hidden sm:block" />
       </Button>
-      <span className="w-6 text-center font-medium text-base">{value}</span>
+      <span className="w-10 text-center font-bold text-lg tabular-nums">{value}</span>
       <Button
         variant="outline"
         size="icon"
-        className="h-11 w-11 sm:h-9 sm:w-9 touch-manipulation"
+        className="h-12 w-12 sm:h-10 sm:w-10 touch-manipulation rounded-full border-2"
         onClick={handleIncrease}
         disabled={value >= max}
       >
-        <Icon name="add" size={18} className="sm:hidden" />
-        <Icon name="add" size={16} className="hidden sm:block" />
+        <Icon name="add" size={20} className="sm:hidden" />
+        <Icon name="add" size={18} className="hidden sm:block" />
       </Button>
     </div>
   );
 };
-

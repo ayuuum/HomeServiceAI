@@ -1,7 +1,9 @@
 import { ServiceOption } from "@/types/booking";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { QuantitySelector } from "@/components/QuantitySelector";
+import { Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface OptionCheckboxProps {
   option: ServiceOption;
@@ -18,57 +20,69 @@ export const OptionCheckbox = ({
   onChange,
   onQuantityChange
 }: OptionCheckboxProps) => {
-  const handleContainerClick = (e: React.MouseEvent) => {
-    // Prevent toggle if clicking on QuantitySelector buttons
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) return;
-    onChange(!checked);
-  };
-
   return (
-    <div 
-      className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-pointer touch-manipulation"
-      onClick={handleContainerClick}
-    >
-      <div className="flex items-start space-x-3">
-        <Checkbox
-          id={option.id}
-          checked={checked}
-          onCheckedChange={onChange}
-          className="mt-0.5"
-          onClick={(e) => e.stopPropagation()}
-        />
-        <div className="flex-1">
-          <Label
-            htmlFor={option.id}
-            className="text-base font-medium cursor-pointer"
-          >
-            {option.title}
-          </Label>
-          {option.description && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {option.description}
+    <Card className={`border-2 border-dashed transition-all duration-200 ${
+      checked 
+        ? "border-primary bg-primary/5" 
+        : "border-border hover:border-muted-foreground/50"
+    }`}>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <h4 className="text-base font-semibold text-foreground mb-1">
+              {option.title}
+            </h4>
+            {option.description && (
+              <p className="text-sm text-muted-foreground mb-2">
+                {option.description}
+              </p>
+            )}
+            <p className="text-lg font-bold text-primary">
+              +¥{(option.price * quantity).toLocaleString()}
             </p>
-          )}
-        </div>
-        <div className="text-right">
-          <p className="font-semibold text-primary">
-            +¥{(option.price * quantity).toLocaleString()}
-          </p>
-        </div>
-      </div>
-
-      {checked && (
-        <div className="mt-4 ml-9 sm:ml-8">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">数量:</span>
-            <QuantitySelector
-              value={quantity}
-              onChange={onQuantityChange}
-            />
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Selection button or selected state */}
+        <div className="mt-3">
+          {!checked ? (
+            <Button
+              variant="outline"
+              className="w-full h-11 text-base border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors touch-manipulation"
+              onClick={() => onChange(true)}
+            >
+              選択する
+            </Button>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-3"
+              >
+                {/* Selected indicator */}
+                <Button
+                  className="w-full h-11 text-base bg-primary text-primary-foreground hover:bg-primary/90 touch-manipulation"
+                  onClick={() => onChange(false)}
+                >
+                  <Check className="w-5 h-5 mr-2" />
+                  選択中
+                </Button>
+                
+                {/* Quantity selector */}
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                  <span className="text-sm font-medium text-foreground">数量</span>
+                  <QuantitySelector
+                    value={quantity}
+                    onChange={onQuantityChange}
+                  />
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

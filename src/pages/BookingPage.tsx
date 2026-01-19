@@ -464,36 +464,32 @@ const BookingPage = () => {
 
         {/* Navigation Buttons - Fixed at bottom */}
         <div className="sticky bottom-0 bg-background border-t border-border p-4 safe-area-pb">
-          <div className="container max-w-4xl mx-auto flex items-center justify-between gap-3">
-            {currentStep > 1 ? (
+          <div className="container max-w-4xl mx-auto flex items-center gap-3">
+            {currentStep > 1 && (
               <Button
                 variant="outline"
                 onClick={handleBack}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 h-14 px-5 text-base touch-manipulation"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
                 戻る
               </Button>
-            ) : (
-              <div /> /* Spacer */
             )}
 
             {currentStep < 4 ? (
               <Button
                 onClick={handleNext}
                 disabled={nextButtonState.disabled}
-                className="flex items-center gap-1 flex-1 max-w-xs"
-                style={organization.brand_color ? { backgroundColor: organization.brand_color } : undefined}
+                className="flex-1 h-14 text-lg font-semibold touch-manipulation bg-green-500 hover:bg-green-600 text-white"
               >
                 {nextButtonState.label}
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5 ml-1" />
               </Button>
             ) : (
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="flex-1 max-w-xs text-lg py-6"
-                style={organization.brand_color ? { backgroundColor: organization.brand_color } : undefined}
+                className="flex-1 h-14 text-lg font-semibold touch-manipulation bg-green-500 hover:bg-green-600 text-white"
               >
                 予約を確定する
               </Button>
