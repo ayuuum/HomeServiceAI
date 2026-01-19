@@ -10,7 +10,7 @@ import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Calendar, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -390,29 +390,34 @@ const BookingPage = () => {
 
           {/* Step 4: Confirmation/Summary */}
           {currentStep === 4 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-foreground">予約内容の確認</h2>
+            <div className="space-y-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">予約内容の確認</h2>
               
               {/* Service Summary */}
-              <div className="bg-card rounded-lg border border-border p-4 space-y-3">
-                <h3 className="font-medium text-foreground">選択サービス</h3>
-              <div className="space-y-2">
+              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground">選択サービス</h3>
+                </div>
+                <div className="space-y-3 pl-2">
                   {selectedServices.map((service) => (
-                    <div key={service.serviceId} className="flex justify-between text-sm">
+                    <div key={service.serviceId} className="flex justify-between text-base sm:text-lg">
                       <span className="text-muted-foreground">
                         {service.service.title} × {service.quantity}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-semibold">
                         ¥{(service.service.basePrice * service.quantity).toLocaleString()}
                       </span>
                     </div>
                   ))}
                   {selectedOptions.map((option) => (
-                    <div key={option.optionId} className="flex justify-between text-sm">
+                    <div key={option.optionId} className="flex justify-between text-base sm:text-lg">
                       <span className="text-muted-foreground">
                         └ {option.option.title} × {option.quantity}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-semibold">
                         ¥{(option.option.price * option.quantity).toLocaleString()}
                       </span>
                     </div>
@@ -421,43 +426,55 @@ const BookingPage = () => {
               </div>
 
               {/* Date/Time Summary */}
-              <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-                <h3 className="font-medium text-foreground">予約日時</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedDate?.toLocaleDateString('ja-JP', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    weekday: 'short'
-                  })} {selectedTime}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  駐車場: {hasParking ? 'あり' : 'なし'}
-                </p>
+              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground">予約日時</h3>
+                </div>
+                <div className="space-y-2 pl-2">
+                  <p className="text-base sm:text-lg text-foreground">
+                    {selectedDate?.toLocaleDateString('ja-JP', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      weekday: 'short'
+                    })} {selectedTime}
+                  </p>
+                  <p className="text-base sm:text-lg text-muted-foreground">
+                    駐車場: {hasParking ? 'あり' : 'なし'}
+                  </p>
+                </div>
               </div>
 
               {/* Customer Summary */}
-              <div className="bg-card rounded-lg border border-border p-4 space-y-2">
-                <h3 className="font-medium text-foreground">お客様情報</h3>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>お名前: {customerLastName} {customerFirstName}</p>
-                  <p>電話番号: {customerPhone}</p>
-                  {customerEmail && <p>メール: {customerEmail}</p>}
-                  <p>住所: 〒{customerPostalCode} {customerAddress}</p>
-                  {customerAddressBuilding && <p>建物名等: {customerAddressBuilding}</p>}
-                  {notes && <p>備考: {notes}</p>}
+              <div className="bg-card rounded-xl border border-border p-6 sm:p-8 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground">お客様情報</h3>
+                </div>
+                <div className="text-base sm:text-lg text-muted-foreground space-y-2 pl-2">
+                  <p><span className="text-foreground font-medium">お名前:</span> {customerLastName} {customerFirstName}</p>
+                  <p><span className="text-foreground font-medium">電話番号:</span> {customerPhone}</p>
+                  {customerEmail && <p><span className="text-foreground font-medium">メール:</span> {customerEmail}</p>}
+                  <p><span className="text-foreground font-medium">住所:</span> 〒{customerPostalCode} {customerAddress}</p>
+                  {customerAddressBuilding && <p><span className="text-foreground font-medium">建物名等:</span> {customerAddressBuilding}</p>}
+                  {notes && <p><span className="text-foreground font-medium">備考:</span> {notes}</p>}
                 </div>
               </div>
 
               {/* Price Summary */}
-              <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+              <div className="bg-green-50 rounded-xl border-2 border-green-200 p-6 sm:p-8">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium text-foreground">合計金額</span>
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">合計金額（税込）</span>
                   <div className="text-right">
                     {totalDiscount > 0 && (
-                      <p className="text-sm text-green-600">-¥{totalDiscount.toLocaleString()} 割引</p>
+                      <p className="text-base sm:text-lg text-green-600 font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
                     )}
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-3xl sm:text-4xl font-bold text-green-600">
                       ¥{totalPrice.toLocaleString()}
                     </p>
                   </div>
