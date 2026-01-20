@@ -11,24 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { Service } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,12 +40,7 @@ interface ServiceFormModalProps {
   onSubmit: (values: ServiceFormValues & { quantityDiscounts: QuantityDiscount[] }) => void;
 }
 
-export const ServiceFormModal = ({
-  open,
-  onOpenChange,
-  service,
-  onSubmit,
-}: ServiceFormModalProps) => {
+export const ServiceFormModal = ({ open, onOpenChange, service, onSubmit }: ServiceFormModalProps) => {
   const { organizationId } = useAuth();
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
@@ -126,33 +107,29 @@ export const ServiceFormModal = ({
   };
 
   const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop()?.toLowerCase();
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const allowedExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
+
     if (!fileExt || !allowedExtensions.includes(fileExt)) {
-      throw new Error('サポートされていないファイル形式です。JPG、PNG、GIF、WebPのみ対応しています。');
+      throw new Error("サポートされていないファイル形式です。JPG、PNG、GIF、WebPのみ対応しています。");
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      throw new Error('ファイルサイズは5MB以下にしてください。');
+      throw new Error("ファイルサイズは5MB以下にしてください。");
     }
 
     if (!organizationId) {
-      throw new Error('組織情報が見つかりません。再度ログインしてください。');
+      throw new Error("組織情報が見つかりません。再度ログインしてください。");
     }
 
     // Use organization-scoped path for storage policy compliance
     const fileName = `${organizationId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-    const { error } = await supabase.storage
-      .from('service-images')
-      .upload(fileName, file);
+    const { error } = await supabase.storage.from("service-images").upload(fileName, file);
 
     if (error) throw error;
 
-    const { data } = supabase.storage
-      .from('service-images')
-      .getPublicUrl(fileName);
+    const { data } = supabase.storage.from("service-images").getPublicUrl(fileName);
 
     return data.publicUrl;
   };
@@ -170,14 +147,14 @@ export const ServiceFormModal = ({
       // アップロード成功後、URLを本番のものに置き換え
       URL.revokeObjectURL(localPreviewUrl);
       setPreviewUrl(url);
-      form.setValue('imageUrl', url);
-      toast.success('画像をアップロードしました');
+      form.setValue("imageUrl", url);
+      toast.success("画像をアップロードしました");
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       // アップロード失敗時はプレビューをクリア
       URL.revokeObjectURL(localPreviewUrl);
       setPreviewUrl("");
-      toast.error(error instanceof Error ? error.message : '画像のアップロードに失敗しました');
+      toast.error(error instanceof Error ? error.message : "画像のアップロードに失敗しました");
     } finally {
       setIsUploading(false);
     }
@@ -211,9 +188,9 @@ export const ServiceFormModal = ({
 
   const removeImage = () => {
     setPreviewUrl("");
-    form.setValue('imageUrl', '');
+    form.setValue("imageUrl", "");
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -230,12 +207,8 @@ export const ServiceFormModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {service ? "サービスを編集" : "新規サービスを追加"}
-          </DialogTitle>
-          <DialogDescription>
-            サービスの詳細情報を入力してください
-          </DialogDescription>
+          <DialogTitle>{service ? "サービスを編集" : "新規サービスを追加"}</DialogTitle>
+          <DialogDescription>サービスの詳細情報を入力してください</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -261,11 +234,7 @@ export const ServiceFormModal = ({
                 <FormItem>
                   <FormLabel>説明</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="プロの技術でエアコンを徹底洗浄..."
-                      className="min-h-[100px]"
-                      {...field}
-                    />
+                    <Textarea placeholder="プロの技術でエアコンを徹底洗浄..." className="min-h-[100px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -332,10 +301,8 @@ export const ServiceFormModal = ({
                 <Icon name="sell" size={16} className="text-amber-600" />
                 複数台割引設定
               </FormLabel>
-              <FormDescription>
-                複数台の注文時に適用される割引を設定できます
-              </FormDescription>
-              
+              <FormDescription>複数台の注文時に適用される割引を設定できます</FormDescription>
+
               <div className="space-y-2 mt-2">
                 {discountTiers.map((tier, index) => (
                   <div key={index} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
@@ -344,7 +311,7 @@ export const ServiceFormModal = ({
                         type="number"
                         min={2}
                         value={tier.min_quantity}
-                        onChange={(e) => updateDiscountTier(index, 'min_quantity', parseInt(e.target.value) || 2)}
+                        onChange={(e) => updateDiscountTier(index, "min_quantity", parseInt(e.target.value) || 2)}
                         className="w-16 text-center"
                       />
                       <span className="text-sm text-muted-foreground whitespace-nowrap">台以上で</span>
@@ -355,7 +322,9 @@ export const ServiceFormModal = ({
                         min={1}
                         max={99}
                         value={Math.round(tier.discount_rate * 100)}
-                        onChange={(e) => updateDiscountTier(index, 'discount_rate', (parseInt(e.target.value) || 0) / 100)}
+                        onChange={(e) =>
+                          updateDiscountTier(index, "discount_rate", (parseInt(e.target.value) || 0) / 100)
+                        }
                         className="w-16 text-center"
                       />
                       <span className="text-sm text-muted-foreground">%OFF</span>
@@ -371,16 +340,10 @@ export const ServiceFormModal = ({
                     </Button>
                   </div>
                 ))}
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addDiscountTier}
-                  className="w-full"
-                >
+
+                <Button type="button" variant="outline" size="sm" onClick={addDiscountTier} className="w-full">
                   <Icon name="add" size={16} className="mr-1" />
-                  割引ティアを追加
+                  複数台割引を追加
                 </Button>
               </div>
             </FormItem>
@@ -398,7 +361,7 @@ export const ServiceFormModal = ({
                           <img
                             src={previewUrl}
                             alt="プレビュー"
-                            className={`w-full h-full object-cover ${isUploading ? 'opacity-50' : ''}`}
+                            className={`w-full h-full object-cover ${isUploading ? "opacity-50" : ""}`}
                           />
                           {isUploading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -428,11 +391,12 @@ export const ServiceFormModal = ({
                             flex flex-col items-center justify-center w-full h-40
                             border-2 border-dashed rounded-lg cursor-pointer
                             transition-colors duration-200
-                            ${isDragging 
-                              ? 'border-primary bg-primary/10' 
-                              : 'border-muted-foreground/30 hover:border-primary hover:bg-muted/50'
+                            ${
+                              isDragging
+                                ? "border-primary bg-primary/10"
+                                : "border-muted-foreground/30 hover:border-primary hover:bg-muted/50"
                             }
-                            ${isUploading ? 'pointer-events-none opacity-50' : ''}
+                            ${isUploading ? "pointer-events-none opacity-50" : ""}
                           `}
                         >
                           {isUploading ? (
@@ -446,9 +410,7 @@ export const ServiceFormModal = ({
                               <span className="mt-2 text-sm text-muted-foreground">
                                 クリックまたはドラッグ&ドロップで画像をアップロード
                               </span>
-                              <span className="mt-1 text-xs text-muted-foreground">
-                                JPG, PNG, GIF, WebP (最大5MB)
-                              </span>
+                              <span className="mt-1 text-xs text-muted-foreground">JPG, PNG, GIF, WebP (最大5MB)</span>
                             </>
                           )}
                         </div>
@@ -462,20 +424,14 @@ export const ServiceFormModal = ({
                       />
                     </div>
                   </FormControl>
-                  <FormDescription>
-                    サービスのイメージ画像をアップロードしてください（任意）
-                  </FormDescription>
+                  <FormDescription>サービスのイメージ画像をアップロードしてください（任意）</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 キャンセル
               </Button>
               <Button type="submit" className="btn-primary" disabled={isUploading}>
