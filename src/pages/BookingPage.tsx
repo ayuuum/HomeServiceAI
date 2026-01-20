@@ -486,38 +486,59 @@ const BookingPage = () => {
           )}
         </div>
 
-        {/* Navigation Buttons - Fixed at bottom */}
-        <div className="sticky bottom-0 bg-background border-t border-border p-3 safe-area-pb">
-          <div className="container max-w-4xl mx-auto flex items-center gap-2">
-            {currentStep > 1 && (
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                className="flex items-center gap-0.5 h-11 px-4 text-sm touch-manipulation"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                戻る
-              </Button>
-            )}
+        {/* Floating Summary + Navigation - Fixed at bottom */}
+        <div className="sticky bottom-0 bg-background border-t border-border safe-area-pb z-50">
+          {/* Floating summary for Step 1 */}
+          {currentStep === 1 && selectedServices.length > 0 && (
+            <div className="px-3 py-2 border-b border-border bg-primary/5">
+              <div className="container max-w-4xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">選択中</span>
+                  <span className="font-bold text-sm">{selectedServices.length}件</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {totalDiscount > 0 && (
+                    <span className="text-xs text-primary font-medium">-¥{totalDiscount.toLocaleString()}</span>
+                  )}
+                  <span className="text-lg font-bold text-primary">¥{totalPrice.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Navigation buttons */}
+          <div className="p-3">
+            <div className="container max-w-4xl mx-auto flex items-center gap-2">
+              {currentStep > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="flex items-center gap-0.5 h-10 px-3 text-sm touch-manipulation"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  戻る
+                </Button>
+              )}
 
-            {currentStep < 4 ? (
-              <Button
-                onClick={handleNext}
-                disabled={nextButtonState.disabled}
-                className="flex-1 h-11 text-base font-semibold touch-manipulation"
-              >
-                {nextButtonState.label}
-                <ChevronRight className="w-4 h-4 ml-0.5" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="flex-1 h-11 text-base font-semibold touch-manipulation"
-              >
-                予約を確定する
-              </Button>
-            )}
+              {currentStep < 4 ? (
+                <Button
+                  onClick={handleNext}
+                  disabled={nextButtonState.disabled}
+                  className="flex-1 h-10 text-sm font-semibold touch-manipulation"
+                >
+                  {nextButtonState.label}
+                  <ChevronRight className="w-4 h-4 ml-0.5" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className="flex-1 h-10 text-sm font-semibold touch-manipulation"
+                >
+                  予約を確定する
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

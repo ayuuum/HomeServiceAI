@@ -1,9 +1,6 @@
 import { ServiceOption } from "@/types/booking";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Check } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface OptionCheckboxProps {
   option: ServiceOption;
@@ -21,68 +18,41 @@ export const OptionCheckbox = ({
   onQuantityChange
 }: OptionCheckboxProps) => {
   return (
-    <Card className={`border-2 border-dashed transition-all duration-200 ${
-      checked 
-        ? "border-primary bg-primary/10" 
-        : "border-border hover:border-muted-foreground/50"
-    }`}>
-      <CardContent className="p-3">
-        <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-foreground mb-1">
-              {option.title}
-            </h4>
-            {option.description && (
-              <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
-                {option.description}
-              </p>
-            )}
-            <p className="text-base font-bold text-primary">
-              +¥{(option.price * quantity).toLocaleString()}
-            </p>
+    <div
+      className={`flex items-center justify-between p-2.5 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
+        checked 
+          ? "border-primary bg-primary/5 border-2" 
+          : "border-border hover:border-muted-foreground/50 bg-card"
+      }`}
+      onClick={() => onChange(!checked)}
+    >
+      {/* Left: Check + Title */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {checked && (
+          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+            <Check className="w-3 h-3 text-white" />
           </div>
-        </div>
-
-        {/* Selection button or selected state */}
-        <div className="mt-2">
-          {!checked ? (
-            <Button
-              variant="outline"
-              className="w-full h-9 text-sm font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
-              onClick={() => onChange(true)}
-            >
-              選択する
-            </Button>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-2"
-              >
-                {/* Selected indicator */}
-                <Button
-                  className="w-full h-9 text-sm font-semibold bg-primary text-white hover:bg-primary/90 touch-manipulation"
-                  onClick={() => onChange(false)}
-                >
-                  <Check className="w-4 h-4 mr-1.5" />
-                  選択中
-                </Button>
-                
-                {/* Quantity selector */}
-                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
-                  <span className="text-sm font-medium text-foreground">数量</span>
-                  <QuantitySelector
-                    value={quantity}
-                    onChange={onQuantityChange}
-                  />
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        <span className={`text-sm font-semibold truncate ${checked ? 'text-primary' : 'text-foreground'}`}>
+          {option.title}
+        </span>
+      </div>
+      
+      {/* Right: Price + Quantity */}
+      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <span className="text-sm font-bold text-primary">
+          +¥{(option.price * quantity).toLocaleString()}
+        </span>
+        {checked && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <QuantitySelector
+              value={quantity}
+              onChange={onQuantityChange}
+              min={1}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 };

@@ -1,8 +1,6 @@
 import { Service, ServiceOption } from "@/types/booking";
 import { SelectedService, SelectedOption } from "@/hooks/useBooking";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { OptionCheckbox } from "@/components/OptionCheckbox";
 import { Separator } from "@/components/ui/separator";
@@ -26,14 +24,14 @@ const container = {
     show: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.06
+            staggerChildren: 0.04
         }
     }
 };
 
 const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" as const } }
+    hidden: { opacity: 0, y: 8 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.15, ease: "easeOut" as const } }
 };
 
 export const BookingServiceSelection = ({
@@ -47,23 +45,23 @@ export const BookingServiceSelection = ({
     getOptionsForService,
 }: BookingServiceSelectionProps) => {
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3">
             <section>
                 {/* Header with required badge and icon */}
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Icon name="auto_awesome" size={20} className="text-primary" />
-                    <h3 className="text-lg sm:text-xl font-bold">サービスを選ぶ</h3>
-                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
+                <div className="flex items-center gap-2 mb-2">
+                    <Icon name="auto_awesome" size={18} className="text-primary" />
+                    <h3 className="text-base font-bold">サービスを選ぶ</h3>
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
                         必須
                     </Badge>
                 </div>
 
-                <p className="text-sm sm:text-base text-muted-foreground mb-4">
+                <p className="text-xs text-muted-foreground mb-3">
                     ご希望のサービスを選択してください
                 </p>
 
                 <motion.div
-                    className="space-y-3"
+                    className="space-y-1.5"
                     variants={container}
                     initial="hidden"
                     animate="show"
@@ -77,7 +75,7 @@ export const BookingServiceSelection = ({
                             <motion.div key={service.id} variants={item}>
                                 {/* Simple 1-line list item - L-step style */}
                                 <div
-                                    className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
+                                    className={`flex items-center justify-between p-2.5 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
                                         isSelected 
                                             ? "border-primary bg-primary/5 border-2" 
                                             : "border-border hover:border-muted-foreground/50 bg-card"
@@ -95,7 +93,7 @@ export const BookingServiceSelection = ({
                                                 <Check className="w-3 h-3 text-white" />
                                             </div>
                                         )}
-                                        <span className={`text-sm sm:text-base font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                        <span className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                                             {service.title}
                                         </span>
                                         <span className="text-xs text-muted-foreground flex-shrink-0">
@@ -105,7 +103,7 @@ export const BookingServiceSelection = ({
                                     
                                     {/* Right: Price + Quantity */}
                                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                        <span className="text-sm sm:text-base font-bold text-primary">
+                                        <span className="text-sm font-bold text-primary">
                                             ¥{service.basePrice.toLocaleString()}
                                         </span>
                                         {isSelected && (
@@ -125,43 +123,6 @@ export const BookingServiceSelection = ({
                 </motion.div>
             </section>
 
-            {/* Selected services summary */}
-            <AnimatePresence>
-                {selectedServices.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                    >
-                        <Separator className="mb-4" />
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                                <Check className="w-4 h-4 text-white" />
-                            </div>
-                            <h3 className="text-base font-bold">選択中のサービス</h3>
-                        </div>
-                        <Card className="bg-primary/10 border-primary/30 border-2">
-                            <CardContent className="p-3 space-y-2">
-                                {selectedServices.map(({ serviceId, quantity, service }) => {
-                                    const subtotal = service.basePrice * quantity;
-                                    return (
-                                        <div key={serviceId} className="flex justify-between items-center text-sm">
-                                            <div className="min-w-0 flex-1">
-                                                <span className="font-semibold">{service.title}</span>
-                                                <span className="text-muted-foreground ml-1">× {quantity}台</span>
-                                            </div>
-                                            <span className="font-bold text-primary flex-shrink-0 ml-2">
-                                                ¥{subtotal.toLocaleString()}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
-                    </motion.section>
-                )}
-            </AnimatePresence>
-
             {/* Options section */}
             <AnimatePresence>
                 {selectedServices.length > 0 && allOptions.length > 0 && (
@@ -170,13 +131,13 @@ export const BookingServiceSelection = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                     >
-                        <Separator className="mb-4" />
-                        <div className="flex items-center gap-2 mb-3">
-                            <Icon name="auto_awesome" size={18} className="text-primary" />
+                        <Separator className="mb-3" />
+                        <div className="flex items-center gap-2 mb-2">
+                            <Icon name="auto_awesome" size={16} className="text-primary" />
                             <h3 className="text-base font-bold">オプションを追加</h3>
-                            <Badge variant="outline" className="text-xs px-2 py-0.5">任意</Badge>
+                            <Badge variant="outline" className="text-xs px-1.5 py-0">任意</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-4">
+                        <p className="text-xs text-muted-foreground mb-3">
                             選択したサービスに追加できるオプションです
                         </p>
 
@@ -185,11 +146,11 @@ export const BookingServiceSelection = ({
                             if (serviceOptions.length === 0) return null;
 
                             return (
-                                <div key={serviceId} className="mb-4">
-                                    <h4 className="font-bold mb-2 text-sm text-muted-foreground">
+                                <div key={serviceId} className="mb-3">
+                                    <h4 className="font-bold mb-1.5 text-xs text-muted-foreground">
                                         {service.title} のオプション
                                     </h4>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         {serviceOptions.map((option) => {
                                             const selected = selectedOptions.find(o => o.optionId === option.id);
                                             return (
