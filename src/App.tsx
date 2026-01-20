@@ -15,6 +15,7 @@ import ReportsPage from "./pages/ReportsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CustomerManagement from "./pages/CustomerManagement";
 import CalendarPage from "./pages/CalendarPage";
+import CancelBookingPage from "./pages/CancelBookingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,8 @@ const App = () => (
             <Route path="/booking/:orgSlug" element={<BookingPage />} />
             {/* Default booking page (redirects to default org or shows org selector) */}
             <Route path="/" element={<BookingPage />} />
+            {/* Public cancel booking page */}
+            <Route path="/cancel/:token" element={<CancelBookingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
