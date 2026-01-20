@@ -27,6 +27,7 @@ interface BookingDateTimeSelectionProps {
     loadingWeek?: boolean;
     fetchDayAvailability?: (date: Date) => void;
     fetchWeekAvailability?: (weekStart: Date) => void;
+    organizationId?: string;
 }
 
 // 曜日の日本語表記
@@ -48,6 +49,7 @@ export const BookingDateTimeSelection = ({
     loadingWeek,
     fetchDayAvailability,
     fetchWeekAvailability,
+    organizationId,
 }: BookingDateTimeSelectionProps) => {
     // 週の開始日（月曜始まり）
     const [weekStart, setWeekStart] = useState(() => {
@@ -83,11 +85,13 @@ export const BookingDateTimeSelection = ({
         onTimeSelect(time);
     };
 
-    // 週が変わったときに空き状況を取得
+    // 週が変わったとき、または組織IDが取得されたときに空き状況を取得
     useEffect(() => {
-        onMonthChange?.(weekStart);
-        fetchWeekAvailability?.(weekStart);
-    }, [weekStart, onMonthChange, fetchWeekAvailability]);
+        if (organizationId) {
+            onMonthChange?.(weekStart);
+            fetchWeekAvailability?.(weekStart);
+        }
+    }, [weekStart, organizationId, onMonthChange, fetchWeekAvailability]);
 
     // 時間スロットの状態を取得
     const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean; isBooked: boolean } => {
