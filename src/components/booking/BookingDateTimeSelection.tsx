@@ -1,14 +1,15 @@
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/ui/icon";
+import { format, addDays, startOfWeek, isSameDay, isBefore, startOfDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DayAvailability, TimeSlotAvailability } from "@/hooks/useAvailability";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface BookingDateTimeSelectionProps {
     selectedDate: Date | undefined;
@@ -22,31 +23,11 @@ interface BookingDateTimeSelectionProps {
     getAvailabilityForDate: (date: Date) => DayAvailability | undefined;
     onMonthChange?: (date: Date) => void;
     loadingDay?: boolean;
+    fetchDayAvailability?: (date: Date) => void;
 }
 
-// 空き状況ドット+記号コンポーネント（色覚多様性対応）
-const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => {
-    if (!status) return null;
-
-    const config = {
-        available: { colorClass: "bg-green-500", symbol: "○" },
-        partial: { colorClass: "bg-orange-500", symbol: "△" },
-        full: { colorClass: "bg-red-500", symbol: "×" },
-    }[status];
-
-    return (
-        <span
-            className={cn(
-                "flex items-center justify-center w-3.5 h-3.5 text-[7px] font-bold rounded-full",
-                config.colorClass,
-                "text-white"
-            )}
-            aria-label={status === "available" ? "空きあり" : status === "partial" ? "残りわずか" : "満席"}
-        >
-            {config.symbol}
-        </span>
-    );
-};
+// 曜日の日本語表記
+const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
 export const BookingDateTimeSelection = ({
     selectedDate,
@@ -60,146 +41,222 @@ export const BookingDateTimeSelection = ({
     getAvailabilityForDate,
     onMonthChange,
     loadingDay,
+    fetchDayAvailability,
 }: BookingDateTimeSelectionProps) => {
-    const getSlotInfo = (time: string): TimeSlotAvailability | undefined => {
-        return dayTimeSlots.find((s) => s.time === time);
+    // 週の開始日（月曜始まり）
+    const [weekStart, setWeekStart] = useState(() => {
+        const today = new Date();
+        return startOfWeek(today, { weekStartsOn: 1 });
+    });
+
+    // 週内の日付（7日分）
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    // 週ナビゲーション
+    const goToPreviousWeek = () => {
+        const newStart = addDays(weekStart, -7);
+        setWeekStart(newStart);
+        onMonthChange?.(newStart);
     };
+
+    const goToNextWeek = () => {
+        const newStart = addDays(weekStart, 7);
+        setWeekStart(newStart);
+        onMonthChange?.(newStart);
+    };
+
+    // 日付と時間を同時に選択
+    const handleSlotSelect = (day: Date, time: string) => {
+        const isPast = isBefore(day, startOfDay(new Date()));
+        const availability = getAvailabilityForDate(day);
+        
+        if (isPast || availability?.status === "full") return;
+
+        // 日付が変わった場合、その日の空き状況を取得
+        if (!selectedDate || !isSameDay(selectedDate, day)) {
+            onDateSelect(day);
+            fetchDayAvailability?.(day);
+        }
+        
+        onTimeSelect(time);
+    };
+
+    // 週が変わったときに月の空き状況を更新
+    useEffect(() => {
+        onMonthChange?.(weekStart);
+    }, [weekStart, onMonthChange]);
+
+    // 時間スロットの状態を取得
+    const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean } => {
+        const isPast = isBefore(day, startOfDay(new Date()));
+        const dayAvailability = getAvailabilityForDate(day);
+        const isDayFull = dayAvailability?.status === "full";
+        
+        if (isPast || isDayFull) {
+            return { available: false, isSelected: false };
+        }
+
+        // 選択中の日付の場合、dayTimeSlotsから状態を確認
+        if (selectedDate && isSameDay(selectedDate, day)) {
+            const slotInfo = dayTimeSlots.find(s => s.time === time);
+            const isBooked = slotInfo?.isBooked ?? false;
+            const isSelected = selectedTime === time;
+            return { available: !isBooked, isSelected };
+        }
+
+        // 選択されていない日は空きありとして表示（詳細は選択時に取得）
+        return { available: true, isSelected: false };
+    };
+
+    // 日の空き状況に基づく背景色
+    const getDayHeaderClass = (day: Date): string => {
+        const isPast = isBefore(day, startOfDay(new Date()));
+        if (isPast) return "text-muted-foreground/40";
+        
+        const availability = getAvailabilityForDate(day);
+        if (availability?.status === "full") return "text-muted-foreground/40";
+        if (availability?.status === "partial") return "text-orange-600";
+        return "text-foreground";
+    };
+
+    // 週の範囲表示
+    const weekRangeText = `${format(weekStart, "M/d(E)", { locale: ja })} 〜 ${format(addDays(weekStart, 6), "M/d(E)", { locale: ja })}`;
+
+    // 過去の週には戻れないようにする
+    const canGoBack = !isBefore(addDays(weekStart, -1), startOfDay(new Date()));
 
     return (
         <div className="space-y-3">
-            {/* Date Selection */}
+            {/* 週間グリッドカレンダー */}
             <section>
                 <div className="flex items-center gap-2 mb-2">
                     <Icon name="calendar_today" size={18} className="text-primary" />
-                    <h3 className="text-base font-bold">希望日を選択</h3>
+                    <h3 className="text-base font-bold">日時を選択</h3>
                     <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
                         必須
                     </Badge>
                 </div>
 
-                <Card className="p-2 sm:p-3 flex flex-col items-center overflow-x-auto">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={onDateSelect}
-                        onMonthChange={onMonthChange}
-                        disabled={(date) => {
-                            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-                            const availability = getAvailabilityForDate(date);
-                            const isFull = availability?.status === "full";
-                            return isPast || isFull;
-                        }}
-                        locale={ja}
-                        className="rounded-md"
-                        classNames={{
-                            months: "flex flex-col sm:flex-row space-y-2 sm:space-x-2 sm:space-y-0",
-                            month: "space-y-2",
-                            caption: "flex justify-center pt-0.5 relative items-center text-sm font-bold",
-                            caption_label: "text-sm font-bold",
-                            nav: "space-x-1 flex items-center",
-                            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
-                            nav_button_previous: "absolute left-0",
-                            nav_button_next: "absolute right-0",
-                            table: "w-full border-collapse",
-                            head_row: "flex",
-                            head_cell: "text-muted-foreground rounded-md w-9 font-medium text-xs",
-                            row: "flex w-full mt-0",
-                            cell: "h-9 w-9 text-center text-xs p-0 relative",
-                            day: "h-9 w-9 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-lg",
-                            day_today: "bg-accent text-accent-foreground rounded-lg",
-                            day_outside: "text-muted-foreground/50",
-                            day_disabled: "text-muted-foreground/30",
-                            day_hidden: "invisible",
-                        }}
-                        modifiers={{
-                            available: (date) => getAvailabilityForDate(date)?.status === "available",
-                            partial: (date) => getAvailabilityForDate(date)?.status === "partial",
-                            full: (date) => getAvailabilityForDate(date)?.status === "full",
-                        }}
-                        components={{
-                            DayContent: ({ date }) => {
-                                const availability = getAvailabilityForDate(date);
-                                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                {/* 週ナビゲーション */}
+                <div className="flex items-center justify-between mb-2 px-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={goToPreviousWeek}
+                        disabled={!canGoBack}
+                        className="h-7 w-7 p-0"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-bold">{weekRangeText}</span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={goToNextWeek}
+                        className="h-7 w-7 p-0"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                {/* グリッド */}
+                <div className="overflow-x-auto border rounded-lg">
+                    <div className="min-w-[320px]">
+                        {/* ヘッダー行：時間列 + 7日分 */}
+                        <div className="grid grid-cols-8 border-b bg-muted/50">
+                            <div className="p-1 text-center text-xs font-medium border-r" />
+                            {weekDays.map((day, idx) => {
+                                const isPast = isBefore(day, startOfDay(new Date()));
+                                const isToday = isSameDay(day, new Date());
                                 return (
-                                    <div className="flex flex-col items-center justify-center w-full h-full gap-0">
-                                        <span className="text-xs font-medium leading-none">{date.getDate()}</span>
-                                        <div className="h-3.5 flex items-center justify-center">
-                                            {!isPast && <AvailabilityDot status={availability?.status} />}
+                                    <div
+                                        key={idx}
+                                        className={cn(
+                                            "p-1 text-center border-r last:border-r-0",
+                                            getDayHeaderClass(day)
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "text-[10px] font-bold",
+                                            idx === 5 && "text-blue-600",
+                                            idx === 6 && "text-red-600",
+                                            isPast && "text-muted-foreground/40"
+                                        )}>
+                                            {DAY_NAMES[day.getDay()]}
+                                        </div>
+                                        <div className={cn(
+                                            "text-sm font-bold",
+                                            isToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center mx-auto",
+                                            isPast && !isToday && "text-muted-foreground/40"
+                                        )}>
+                                            {day.getDate()}
                                         </div>
                                     </div>
                                 );
-                            },
-                        }}
-                    />
-                    {/* Legend */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 mt-2 pt-2 border-t border-border text-xs text-muted-foreground w-full">
-                        <div className="flex items-center gap-1">
-                            <span className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center text-[7px] font-bold text-white">○</span>
-                            <span className="font-medium">空き</span>
+                            })}
                         </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 flex items-center justify-center text-[7px] font-bold text-white">△</span>
-                            <span className="font-medium">残少</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center text-[7px] font-bold text-white">×</span>
-                            <span className="font-medium">満</span>
-                        </div>
+
+                        {/* 時間行 */}
+                        {timeSlots.map((time, timeIdx) => (
+                            <div key={time} className={cn("grid grid-cols-8", timeIdx !== timeSlots.length - 1 && "border-b")}>
+                                <div className="p-1 text-center text-xs font-medium border-r bg-muted/30 flex items-center justify-center">
+                                    {time}
+                                </div>
+                                {weekDays.map((day, dayIdx) => {
+                                    const { available, isSelected } = getSlotStatus(day, time);
+                                    const isPast = isBefore(day, startOfDay(new Date()));
+                                    const dayAvailability = getAvailabilityForDate(day);
+                                    const isDayFull = dayAvailability?.status === "full";
+                                    
+                                    return (
+                                        <button
+                                            key={dayIdx}
+                                            onClick={() => handleSlotSelect(day, time)}
+                                            disabled={isPast || isDayFull || !available}
+                                            className={cn(
+                                                "h-8 border-r last:border-r-0 transition-all touch-manipulation",
+                                                // 選択中
+                                                isSelected && "bg-primary text-primary-foreground",
+                                                // 空きあり（選択なし）
+                                                !isSelected && available && !isPast && !isDayFull && "hover:bg-primary/10",
+                                                // 予約済み・過去
+                                                (!available || isPast || isDayFull) && "bg-muted/50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            {isSelected && (
+                                                <Icon name="check" size={14} className="mx-auto" />
+                                            )}
+                                            {(!available || isDayFull) && !isPast && !isSelected && (
+                                                <span className="text-[10px] text-muted-foreground">×</span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ))}
                     </div>
-                </Card>
+                </div>
+
+                {/* 凡例 */}
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 border rounded bg-background" />
+                        <span>空き</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 border rounded bg-primary" />
+                        <span>選択中</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 border rounded bg-muted/50 flex items-center justify-center text-[10px]">×</div>
+                        <span>予約済</span>
+                    </div>
+                </div>
+
+                {loadingDay && (
+                    <p className="text-xs text-center text-muted-foreground mt-1">読み込み中...</p>
+                )}
             </section>
-
-            {/* Time Selection */}
-            {selectedDate && (
-                <section>
-                    <Separator className="mb-3" />
-                    <div className="flex items-center gap-2 mb-2">
-                        <Icon name="schedule" size={18} className="text-primary" />
-                        <h3 className="text-base font-bold">開始時間</h3>
-                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
-                            必須
-                        </Badge>
-                        {loadingDay && (
-                            <span className="text-xs text-muted-foreground">読み込み中...</span>
-                        )}
-                    </div>
-                    
-                    {/* 3-column grid for compact buttons */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                        {timeSlots.map((time) => {
-                            const slotInfo = getSlotInfo(time);
-                            const isBooked = slotInfo?.isBooked ?? false;
-                            const isSelected = selectedTime === time;
-
-                            return (
-                                <Button
-                                    key={time}
-                                    variant={isSelected ? "default" : "outline"}
-                                    onClick={() => !isBooked && onTimeSelect(time)}
-                                    disabled={isBooked}
-                                    aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
-                                    className={cn(
-                                        "w-full h-9 text-sm font-bold touch-manipulation relative transition-all",
-                                        isSelected && "ring-2 ring-primary ring-offset-1 bg-primary hover:bg-primary/90",
-                                        isBooked && "opacity-40 cursor-not-allowed bg-muted"
-                                    )}
-                                >
-                                    <span className={cn(isBooked && "line-through text-muted-foreground")}>{time}</span>
-                                    {isBooked && (
-                                        <span className="absolute top-0 right-0.5 text-xs text-destructive font-bold" aria-hidden="true">
-                                            ×
-                                        </span>
-                                    )}
-                                </Button>
-                            );
-                        })}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        × は予約済みです
-                    </p>
-                </section>
-            )}
 
             {/* Parking Selection */}
             {selectedDate && selectedTime && (
