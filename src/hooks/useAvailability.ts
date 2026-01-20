@@ -119,53 +119,51 @@ export const useAvailability = (organizationId?: string) => {
     setLoadingDay(false);
   }, [organizationId]);
 
-  // 週単位で全時間スロットの空き状況を取得
+  // 週単位で全時間スロットの空き状況を取得（Edge Function経由で安全に取得）
   const fetchWeekAvailability = useCallback(async (weekStart: Date) => {
     if (!organizationId) return;
 
     setLoadingWeek(true);
     const weekEnd = addDays(weekStart, 6);
+    const startDateStr = format(weekStart, "yyyy-MM-dd");
+    const endDateStr = format(weekEnd, "yyyy-MM-dd");
 
-    const { data: bookings, error } = await supabase
-      .from("bookings")
-      .select("selected_date, selected_time")
-      .eq("organization_id", organizationId)
-      .neq("status", "cancelled")
-      .gte("selected_date", format(weekStart, "yyyy-MM-dd"))
-      .lte("selected_date", format(weekEnd, "yyyy-MM-dd"));
+    try {
+      const { data, error } = await supabase.functions.invoke("get-availability", {
+        body: {
+          organizationId,
+          startDate: startDateStr,
+          endDate: endDateStr,
+        },
+      });
 
-    if (error) {
-      console.error("Error fetching week availability:", error);
-      setLoadingWeek(false);
-      return;
-    }
-
-    // 日付×時間帯ごとの予約数を集計
-    const bookingsByDateTime: Record<string, Record<string, number>> = {};
-    (bookings || []).forEach((booking) => {
-      const dateStr = booking.selected_date;
-      if (!bookingsByDateTime[dateStr]) {
-        bookingsByDateTime[dateStr] = {};
+      if (error) {
+        console.error("Error fetching week availability:", error);
+        setLoadingWeek(false);
+        return;
       }
-      bookingsByDateTime[dateStr][booking.selected_time] = 
-        (bookingsByDateTime[dateStr][booking.selected_time] || 0) + 1;
-    });
 
-    // 週内の全日付に対してスロット情報を作成
-    const weekSlots: WeekTimeSlotAvailability = {};
-    for (let i = 0; i < 7; i++) {
-      const day = addDays(weekStart, i);
-      const dateStr = format(day, "yyyy-MM-dd");
-      const dayBookings = bookingsByDateTime[dateStr] || {};
-      
-      weekSlots[dateStr] = TIME_SLOTS.map((time) => ({
-        time,
-        isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
-      }));
+      const bookingsByDateTime: Record<string, Record<string, number>> = data?.availability || {};
+
+      // 週内の全日付に対してスロット情報を作成
+      const weekSlots: WeekTimeSlotAvailability = {};
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(weekStart, i);
+        const dateStr = format(day, "yyyy-MM-dd");
+        const dayBookings = bookingsByDateTime[dateStr] || {};
+        
+        weekSlots[dateStr] = TIME_SLOTS.map((time) => ({
+          time,
+          isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
+        }));
+      }
+
+      setWeekTimeSlots(weekSlots);
+    } catch (err) {
+      console.error("Error fetching week availability:", err);
+    } finally {
+      setLoadingWeek(false);
     }
-
-    setWeekTimeSlots(weekSlots);
-    setLoadingWeek(false);
   }, [organizationId]);
 
   // リアルタイム空き確認（送信前チェック用）
