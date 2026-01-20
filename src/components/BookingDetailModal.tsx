@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
 import { extractCityDistrict } from "@/lib/addressUtils";
+import BookingEditModal from "./BookingEditModal";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -34,16 +36,41 @@ export const BookingDetailModal = ({
   onReject,
   onSuccess,
 }: BookingDetailModalProps) => {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+
   if (!booking) return null;
 
-  const handleApprove = () => {
+  const sendNotification = async (bookingId: string, type: 'confirmed' | 'cancelled') => {
+    try {
+      await supabase.functions.invoke('send-booking-notification', {
+        body: { bookingId, notificationType: type }
+      });
+    } catch (error) {
+      console.error('Notification error:', error);
+      // Don't block the main flow if notification fails
+    }
+  };
+
+  const handleApprove = async () => {
+    setIsApproving(true);
     onApprove(booking.id);
+    await sendNotification(booking.id, 'confirmed');
+    setIsApproving(false);
     onOpenChange(false);
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
+    setIsRejecting(true);
     onReject(booking.id);
+    await sendNotification(booking.id, 'cancelled');
+    setIsRejecting(false);
     onOpenChange(false);
+  };
+
+  const handleEditSuccess = () => {
+    onSuccess?.();
   };
 
   return (
@@ -258,16 +285,26 @@ export const BookingDetailModal = ({
                 <Button
                   className="flex-1 btn-primary h-12"
                   onClick={handleApprove}
+                  disabled={isApproving}
                 >
-                  <Icon name="check_circle" size={20} className="mr-2" />
+                  {isApproving ? (
+                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="check_circle" size={20} className="mr-2" />
+                  )}
                   予約を承認する
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1 h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={handleReject}
+                  disabled={isRejecting}
                 >
-                  <Icon name="cancel" size={20} className="mr-2" />
+                  {isRejecting ? (
+                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="cancel" size={20} className="mr-2" />
+                  )}
                   予約を却下する
                 </Button>
               </div>
@@ -275,8 +312,9 @@ export const BookingDetailModal = ({
                 <Button
                   variant="outline"
                   className="flex-1 h-11"
-                  onClick={() => toast.info("編集機能は近日実装予定です")}
+                  onClick={() => setEditModalOpen(true)}
                 >
+                  <Icon name="edit" size={16} className="mr-2" />
                   編集
                 </Button>
                 <Button
@@ -291,6 +329,7 @@ export const BookingDetailModal = ({
 
                       if (error) throw error;
 
+                      await sendNotification(booking.id, 'cancelled');
                       toast.success("予約をキャンセルしました");
                       onSuccess?.();
                       onOpenChange(false);
@@ -299,6 +338,7 @@ export const BookingDetailModal = ({
                     }
                   }}
                 >
+                  <Icon name="cancel" size={16} className="mr-2" />
                   キャンセル
                 </Button>
               </div>
@@ -306,9 +346,45 @@ export const BookingDetailModal = ({
           )}
 
           {booking.status === "confirmed" && (
-            <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
-              <Icon name="check_circle" size={32} className="text-success mx-auto mb-2" />
-              <p className="text-sm font-medium text-success">この予約は承認済みです</p>
+            <div className="space-y-3 pt-4">
+              <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
+                <Icon name="check_circle" size={32} className="text-success mx-auto mb-2" />
+                <p className="text-sm font-medium text-success">この予約は承認済みです</p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={() => setEditModalOpen(true)}
+                >
+                  <Icon name="edit" size={16} className="mr-2" />
+                  編集
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('bookings')
+                        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                        .eq('id', booking.id);
+
+                      if (error) throw error;
+
+                      await sendNotification(booking.id, 'cancelled');
+                      toast.success("予約をキャンセルしました");
+                      onSuccess?.();
+                      onOpenChange(false);
+                    } catch (error) {
+                      toast.error("予約のキャンセルに失敗しました");
+                    }
+                  }}
+                >
+                  <Icon name="cancel" size={16} className="mr-2" />
+                  キャンセル
+                </Button>
+              </div>
             </div>
           )}
 
@@ -319,6 +395,24 @@ export const BookingDetailModal = ({
             </div>
           )}
         </div>
+
+        {/* Edit Modal */}
+        <BookingEditModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          booking={{
+            id: booking.id,
+            selected_date: booking.selectedDate,
+            selected_time: booking.selectedTime,
+            customer_name: booking.customerName,
+            customer_phone: booking.customerPhone || '',
+            customer_email: booking.customerEmail || '',
+            customer_postal_code: booking.customerPostalCode || '',
+            customer_address: booking.customerAddress || '',
+            customer_address_building: booking.customerAddressBuilding || '',
+          }}
+          onSuccess={handleEditSuccess}
+        />
       </DialogContent>
     </Dialog>
   );

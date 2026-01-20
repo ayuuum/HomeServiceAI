@@ -103,6 +103,9 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancel_token: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string | null
           customer_address: string | null
           customer_address_building: string | null
@@ -122,6 +125,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cancel_token?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -141,6 +147,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cancel_token?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -460,6 +469,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_booking_by_token: { Args: { p_token: string }; Returns: boolean }
       create_customer_secure: {
         Args: {
           p_address?: string
@@ -472,6 +482,21 @@ export type Database = {
           p_postal_code?: string
         }
         Returns: string
+      }
+      get_booking_by_cancel_token: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          organization_id: string
+          selected_date: string
+          selected_time: string
+          status: string
+          total_price: number
+        }[]
       }
       get_organization_public: {
         Args: { org_slug: string }
