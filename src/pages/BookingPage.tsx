@@ -365,6 +365,7 @@ const BookingPage = () => {
               loadingWeek={loadingWeek}
               fetchDayAvailability={fetchDayAvailability}
               fetchWeekAvailability={fetchWeekAvailability}
+              organizationId={organization?.id}
             />
           )}
 
