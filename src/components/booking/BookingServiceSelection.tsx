@@ -75,80 +75,50 @@ export const BookingServiceSelection = ({
 
                         return (
                             <motion.div key={service.id} variants={item}>
-                                {/* Compact card with dashed border */}
-                                <Card className={`border-2 border-dashed transition-all duration-200 ${
-                                    isSelected 
-                                        ? "border-primary bg-primary/5" 
-                                        : "border-border hover:border-muted-foreground/50"
-                                }`}>
-                                    <CardContent className="p-3 sm:p-4">
-                                        <div className="flex gap-3">
-                                            {/* Compact image */}
-                                            <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted">
-                                                {service.imageUrl ? (
-                                                    <img
-                                                        src={service.imageUrl}
-                                                        alt={service.title}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <Icon name="home_repair_service" size={24} className="text-muted-foreground/50" />
-                                                    </div>
-                                                )}
+                                {/* Simple 1-line list item - L-step style */}
+                                <div
+                                    className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
+                                        isSelected 
+                                            ? "border-primary bg-primary/5 border-2" 
+                                            : "border-border hover:border-muted-foreground/50 bg-card"
+                                    }`}
+                                    onClick={() => {
+                                        if (!isSelected) {
+                                            onServiceQuantityChange(service.id, 1);
+                                        }
+                                    }}
+                                >
+                                    {/* Left: Title + Price in one line */}
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        {isSelected && (
+                                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                                <Check className="w-3 h-3 text-white" />
                                             </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-base sm:text-lg font-bold text-foreground mb-0.5 leading-tight">
-                                                    {service.title}
-                                                </h4>
-                                                <p className="text-sm text-muted-foreground line-clamp-1 mb-1.5">
-                                                    {service.description}
-                                                </p>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                                                        {service.duration}分
-                                                    </span>
-                                                    <span className="text-lg sm:text-xl font-bold text-primary">
-                                                        ¥{service.basePrice.toLocaleString()}
-                                                    </span>
-                                                </div>
+                                        )}
+                                        <span className={`text-sm sm:text-base font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                            {service.title}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                                            {service.duration}分
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Right: Price + Quantity */}
+                                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                        <span className="text-sm sm:text-base font-bold text-primary">
+                                            ¥{service.basePrice.toLocaleString()}
+                                        </span>
+                                        {isSelected && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <QuantitySelector
+                                                    value={quantity}
+                                                    onChange={(newQty) => onServiceQuantityChange(service.id, newQty)}
+                                                    min={0}
+                                                />
                                             </div>
-                                        </div>
-
-                                        {/* Selection button or quantity selector */}
-                                        <div className="mt-3">
-                                            {!isSelected ? (
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors touch-manipulation"
-                                                    onClick={() => onServiceQuantityChange(service.id, 1)}
-                                                >
-                                                    選択する
-                                                </Button>
-                                            ) : (
-                                                <div className="space-y-2">
-                                                    {/* Selected indicator */}
-                                                    <div className="flex items-center justify-center gap-1.5 py-2 bg-primary text-white rounded-md">
-                                                        <Check className="w-4 h-4" />
-                                                        <span className="text-sm font-semibold">選択中</span>
-                                                    </div>
-                                                    
-                                                    {/* Quantity selector */}
-                                                    <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2.5">
-                                                        <span className="text-sm font-medium text-foreground">数量</span>
-                                                        <QuantitySelector
-                                                            value={quantity}
-                                                            onChange={(newQty) => onServiceQuantityChange(service.id, newQty)}
-                                                            min={0}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        )}
+                                    </div>
+                                </div>
                             </motion.div>
                         );
                     })}
