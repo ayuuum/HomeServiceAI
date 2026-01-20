@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@/components/ui/icon";
 import { Check } from "lucide-react";
+import { calculateDiscount, getNextDiscountTier } from "@/lib/discountCalculator";
 
 interface BookingServiceSelectionProps {
     allServices: Service[];
@@ -70,12 +71,21 @@ export const BookingServiceSelection = ({
                         const selectedService = selectedServices.find(s => s.serviceId === service.id);
                         const quantity = selectedService?.quantity || 0;
                         const isSelected = quantity > 0;
+                        
+                        // Calculate current discount and next tier
+                        const currentDiscount = isSelected && service.quantityDiscounts?.length
+                            ? calculateDiscount(service.basePrice, quantity, service.quantityDiscounts)
+                            : { discount: 0, discountRate: 0 };
+                        
+                        const nextTier = isSelected && service.quantityDiscounts?.length
+                            ? getNextDiscountTier(service.basePrice, quantity, service.quantityDiscounts)
+                            : null;
 
                         return (
                             <motion.div key={service.id} variants={item}>
                                 {/* Simple 1-line list item - L-step style */}
                                 <div
-                                    className={`flex items-center justify-between p-2.5 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
+                                    className={`flex flex-col p-2.5 rounded-lg border transition-all duration-200 cursor-pointer touch-manipulation ${
                                         isSelected 
                                             ? "border-primary bg-primary/5 border-2" 
                                             : "border-border hover:border-muted-foreground/50 bg-card"
@@ -86,53 +96,111 @@ export const BookingServiceSelection = ({
                                         }
                                     }}
                                 >
-                                    {/* Left: Circular image + Title + Duration */}
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        {/* Circular thumbnail - L-step style */}
-                                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
-                                            {service.imageUrl ? (
-                                                <img 
-                                                    src={service.imageUrl} 
-                                                    alt={service.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <Icon name="cleaning_services" size={20} className="text-muted-foreground" />
+                                    {/* Main row */}
+                                    <div className="flex items-center justify-between">
+                                        {/* Left: Circular image + Title + Duration */}
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            {/* Circular thumbnail - L-step style */}
+                                            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
+                                                {service.imageUrl ? (
+                                                    <img 
+                                                        src={service.imageUrl} 
+                                                        alt={service.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Icon name="cleaning_services" size={20} className="text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Check mark when selected */}
+                                            {isSelected && (
+                                                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                                    <Check className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                            
+                                            <span className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                                {service.title}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                                                {service.duration}分
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Right: Price + Quantity */}
+                                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                            <span className="text-sm font-bold text-primary">
+                                                ¥{service.basePrice.toLocaleString()}
+                                            </span>
+                                            {isSelected && (
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <QuantitySelector
+                                                        value={quantity}
+                                                        onChange={(newQty) => onServiceQuantityChange(service.id, newQty)}
+                                                        min={0}
+                                                    />
                                                 </div>
                                             )}
                                         </div>
-                                        
-                                        {/* Check mark when selected */}
-                                        {isSelected && (
-                                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                                                <Check className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
-                                        
-                                        <span className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                                            {service.title}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground flex-shrink-0">
-                                            {service.duration}分
-                                        </span>
                                     </div>
-                                    
-                                    {/* Right: Price + Quantity */}
-                                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                        <span className="text-sm font-bold text-primary">
-                                            ¥{service.basePrice.toLocaleString()}
-                                        </span>
-                                        {isSelected && (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <QuantitySelector
-                                                    value={quantity}
-                                                    onChange={(newQty) => onServiceQuantityChange(service.id, newQty)}
-                                                    min={0}
-                                                />
-                                            </div>
+
+                                    {/* Discount tiers display - show when service is selected and has discounts */}
+                                    <AnimatePresence>
+                                        {isSelected && service.quantityDiscounts && service.quantityDiscounts.length > 0 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="mt-2 space-y-1.5"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {/* Available discount tiers */}
+                                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-2.5 py-1.5">
+                                                    <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-200">
+                                                        <Icon name="sell" size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                                        <span className="text-xs font-medium">
+                                                            {service.quantityDiscounts
+                                                                .sort((a, b) => a.min_quantity - b.min_quantity)
+                                                                .map((d, i, arr) => (
+                                                                    <span key={i}>
+                                                                        {d.min_quantity}台で{Math.round(d.discount_rate * 100)}%OFF
+                                                                        {i < arr.length - 1 && ' • '}
+                                                                    </span>
+                                                                ))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Current discount applied */}
+                                                {currentDiscount.discountRate > 0 && (
+                                                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                                        <Icon name="check_circle" size={14} className="flex-shrink-0" />
+                                                        <span className="text-xs font-medium">
+                                                            {Math.round(currentDiscount.discountRate * 100)}%OFF適用中！
+                                                        </span>
+                                                        <span className="text-xs font-bold">
+                                                            ¥{currentDiscount.discount.toLocaleString()}お得
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Nudge message for next tier */}
+                                                {nextTier && (
+                                                    <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
+                                                        <Icon name="trending_up" size={14} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                                        <span className="text-xs">
+                                                            あと<span className="font-bold">{nextTier.remaining}台</span>で
+                                                            <span className="font-bold">{Math.round(nextTier.rate * 100)}%OFF</span>！
+                                                            （¥{nextTier.savings.toLocaleString()}お得）
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </motion.div>
                                         )}
-                                    </div>
+                                    </AnimatePresence>
                                 </div>
                             </motion.div>
                         );

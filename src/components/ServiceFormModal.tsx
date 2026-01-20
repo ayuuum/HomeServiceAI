@@ -34,6 +34,7 @@ import { Service } from "@/types/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { QuantityDiscount } from "@/lib/discountCalculator";
 
 const serviceFormSchema = z.object({
   title: z.string().min(1, "サービス名を入力してください").max(100),
@@ -50,7 +51,7 @@ interface ServiceFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service?: Service | null;
-  onSubmit: (values: ServiceFormValues) => void;
+  onSubmit: (values: ServiceFormValues & { quantityDiscounts: QuantityDiscount[] }) => void;
 }
 
 export const ServiceFormModal = ({
@@ -63,6 +64,7 @@ export const ServiceFormModal = ({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [discountTiers, setDiscountTiers] = useState<QuantityDiscount[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ServiceFormValues>({
@@ -88,6 +90,7 @@ export const ServiceFormModal = ({
         category: service.category,
       });
       setPreviewUrl(service.imageUrl);
+      setDiscountTiers(service.quantityDiscounts || []);
     } else {
       form.reset({
         title: "",
@@ -98,8 +101,29 @@ export const ServiceFormModal = ({
         category: "cleaning",
       });
       setPreviewUrl("");
+      setDiscountTiers([]);
     }
   }, [service, form, open]);
+
+  // Discount tier management functions
+  const addDiscountTier = () => {
+    const lastTier = discountTiers[discountTiers.length - 1];
+    const newMinQuantity = lastTier ? lastTier.min_quantity + 1 : 2;
+    const newDiscountRate = lastTier ? Math.min(lastTier.discount_rate + 0.05, 0.5) : 0.1;
+    setDiscountTiers([...discountTiers, { min_quantity: newMinQuantity, discount_rate: newDiscountRate }]);
+  };
+
+  const removeDiscountTier = (index: number) => {
+    setDiscountTiers(discountTiers.filter((_, i) => i !== index));
+  };
+
+  const updateDiscountTier = (index: number, field: keyof QuantityDiscount, value: number) => {
+    const updated = [...discountTiers];
+    updated[index] = { ...updated[index], [field]: value };
+    // Sort by min_quantity after update
+    updated.sort((a, b) => a.min_quantity - b.min_quantity);
+    setDiscountTiers(updated);
+  };
 
   const uploadImage = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop()?.toLowerCase();
@@ -195,9 +219,10 @@ export const ServiceFormModal = ({
 
   const handleSubmit = (values: ServiceFormValues) => {
     // 画像は任意なのでチェックを削除
-    onSubmit(values);
+    onSubmit({ ...values, quantityDiscounts: discountTiers });
     form.reset();
     setPreviewUrl("");
+    setDiscountTiers([]);
     onOpenChange(false);
   };
 
@@ -300,6 +325,65 @@ export const ServiceFormModal = ({
                 </FormItem>
               )}
             />
+
+            {/* Quantity Discount Tiers */}
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <Icon name="sell" size={16} className="text-amber-600" />
+                複数台割引設定
+              </FormLabel>
+              <FormDescription>
+                複数台の注文時に適用される割引を設定できます
+              </FormDescription>
+              
+              <div className="space-y-2 mt-2">
+                {discountTiers.map((tier, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        min={2}
+                        value={tier.min_quantity}
+                        onChange={(e) => updateDiscountTier(index, 'min_quantity', parseInt(e.target.value) || 2)}
+                        className="w-16 text-center"
+                      />
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">台以上で</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={Math.round(tier.discount_rate * 100)}
+                        onChange={(e) => updateDiscountTier(index, 'discount_rate', (parseInt(e.target.value) || 0) / 100)}
+                        className="w-16 text-center"
+                      />
+                      <span className="text-sm text-muted-foreground">%OFF</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeDiscountTier(index)}
+                      className="ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Icon name="delete" size={16} />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addDiscountTier}
+                  className="w-full"
+                >
+                  <Icon name="add" size={16} className="mr-1" />
+                  割引ティアを追加
+                </Button>
+              </div>
+            </FormItem>
 
             <FormField
               control={form.control}
