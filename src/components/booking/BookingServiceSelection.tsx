@@ -86,13 +86,30 @@ export const BookingServiceSelection = ({
                                         }
                                     }}
                                 >
-                                    {/* Left: Title + Price in one line */}
+                                    {/* Left: Circular image + Title + Duration */}
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        {/* Circular thumbnail - L-step style */}
+                                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
+                                            {service.imageUrl ? (
+                                                <img 
+                                                    src={service.imageUrl} 
+                                                    alt={service.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Icon name="cleaning_services" size={20} className="text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Check mark when selected */}
                                         {isSelected && (
                                             <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                                                 <Check className="w-3 h-3 text-white" />
                                             </div>
                                         )}
+                                        
                                         <span className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                                             {service.title}
                                         </span>
