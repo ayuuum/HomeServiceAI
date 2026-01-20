@@ -358,6 +358,7 @@ const BookingPage = () => {
               getAvailabilityForDate={getAvailabilityForDate}
               onMonthChange={handleMonthChange}
               loadingDay={loadingDay}
+              fetchDayAvailability={fetchDayAvailability}
             />
           )}
 
