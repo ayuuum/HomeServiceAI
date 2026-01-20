@@ -37,7 +37,7 @@ const AvailabilityDot = ({ status }: { status?: DayAvailability["status"] }) => 
     return (
         <span
             className={cn(
-                "flex items-center justify-center w-4 h-4 text-[8px] font-bold rounded-full",
+                "flex items-center justify-center w-3.5 h-3.5 text-[7px] font-bold rounded-full",
                 config.colorClass,
                 "text-white"
             )}
@@ -66,18 +66,18 @@ export const BookingDateTimeSelection = ({
     };
 
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3">
             {/* Date Selection */}
             <section>
-                <div className="flex items-center gap-2 mb-3">
-                    <Icon name="calendar_today" size={20} className="text-primary" />
-                    <h3 className="text-lg sm:text-xl font-bold">希望日を選択</h3>
-                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
+                <div className="flex items-center gap-2 mb-2">
+                    <Icon name="calendar_today" size={18} className="text-primary" />
+                    <h3 className="text-base font-bold">希望日を選択</h3>
+                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
                         必須
                     </Badge>
                 </div>
 
-                <Card className="p-3 sm:p-4 flex flex-col items-center overflow-x-auto">
+                <Card className="p-2 sm:p-3 flex flex-col items-center overflow-x-auto">
                     <Calendar
                         mode="single"
                         selected={selectedDate}
@@ -92,20 +92,20 @@ export const BookingDateTimeSelection = ({
                         locale={ja}
                         className="rounded-md"
                         classNames={{
-                            months: "flex flex-col sm:flex-row space-y-3 sm:space-x-3 sm:space-y-0",
-                            month: "space-y-3",
-                            caption: "flex justify-center pt-1 relative items-center text-base font-bold",
-                            caption_label: "text-base font-bold",
+                            months: "flex flex-col sm:flex-row space-y-2 sm:space-x-2 sm:space-y-0",
+                            month: "space-y-2",
+                            caption: "flex justify-center pt-0.5 relative items-center text-sm font-bold",
+                            caption_label: "text-sm font-bold",
                             nav: "space-x-1 flex items-center",
-                            nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
-                            nav_button_previous: "absolute left-1",
-                            nav_button_next: "absolute right-1",
+                            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 touch-manipulation",
+                            nav_button_previous: "absolute left-0",
+                            nav_button_next: "absolute right-0",
                             table: "w-full border-collapse",
                             head_row: "flex",
-                            head_cell: "text-muted-foreground rounded-md w-9 sm:w-10 font-medium text-xs",
-                            row: "flex w-full mt-0.5",
-                            cell: "h-11 w-9 sm:h-12 sm:w-10 text-center text-xs p-0 relative",
-                            day: "h-11 w-9 sm:h-12 sm:w-10 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
+                            head_cell: "text-muted-foreground rounded-md w-9 font-medium text-xs",
+                            row: "flex w-full mt-0",
+                            cell: "h-9 w-9 text-center text-xs p-0 relative",
+                            day: "h-9 w-9 p-0 font-medium aria-selected:opacity-100 touch-manipulation",
                             day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-lg",
                             day_today: "bg-accent text-accent-foreground rounded-lg",
                             day_outside: "text-muted-foreground/50",
@@ -123,8 +123,8 @@ export const BookingDateTimeSelection = ({
                                 const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
                                 return (
                                     <div className="flex flex-col items-center justify-center w-full h-full gap-0">
-                                        <span className="text-sm font-medium leading-none">{date.getDate()}</span>
-                                        <div className="h-4 flex items-center justify-center">
+                                        <span className="text-xs font-medium leading-none">{date.getDate()}</span>
+                                        <div className="h-3.5 flex items-center justify-center">
                                             {!isPast && <AvailabilityDot status={availability?.status} />}
                                         </div>
                                     </div>
@@ -133,18 +133,18 @@ export const BookingDateTimeSelection = ({
                         }}
                     />
                     {/* Legend */}
-                    <div className="flex flex-wrap items-center justify-center gap-3 mt-3 pt-3 border-t border-border text-xs text-muted-foreground w-full">
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-2 pt-2 border-t border-border text-xs text-muted-foreground w-full">
                         <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[8px] font-bold text-white">○</span>
-                            <span className="font-medium">空きあり</span>
+                            <span className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center text-[7px] font-bold text-white">○</span>
+                            <span className="font-medium">空き</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-[8px] font-bold text-white">△</span>
-                            <span className="font-medium">残りわずか</span>
+                            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 flex items-center justify-center text-[7px] font-bold text-white">△</span>
+                            <span className="font-medium">残少</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white">×</span>
-                            <span className="font-medium">満席</span>
+                            <span className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center text-[7px] font-bold text-white">×</span>
+                            <span className="font-medium">満</span>
                         </div>
                     </div>
                 </Card>
@@ -153,23 +153,20 @@ export const BookingDateTimeSelection = ({
             {/* Time Selection */}
             {selectedDate && (
                 <section>
-                    <Separator className="mb-4" />
-                    <div className="flex items-center gap-2 mb-3">
-                        <Icon name="schedule" size={20} className="text-primary" />
-                        <h3 className="text-lg sm:text-xl font-bold">ご希望の開始時間</h3>
-                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
+                    <Separator className="mb-3" />
+                    <div className="flex items-center gap-2 mb-2">
+                        <Icon name="schedule" size={18} className="text-primary" />
+                        <h3 className="text-base font-bold">開始時間</h3>
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
                             必須
                         </Badge>
                         {loadingDay && (
-                            <span className="text-sm text-muted-foreground">読み込み中...</span>
+                            <span className="text-xs text-muted-foreground">読み込み中...</span>
                         )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                        ※ 作業開始予定の時間をお選びください
-                    </p>
                     
                     {/* 3-column grid for compact buttons */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                         {timeSlots.map((time) => {
                             const slotInfo = getSlotInfo(time);
                             const isBooked = slotInfo?.isBooked ?? false;
@@ -183,14 +180,14 @@ export const BookingDateTimeSelection = ({
                                     disabled={isBooked}
                                     aria-label={isBooked ? `${time} - 予約済み` : `${time} - 選択可能`}
                                     className={cn(
-                                        "w-full h-10 text-base font-bold touch-manipulation relative transition-all",
+                                        "w-full h-9 text-sm font-bold touch-manipulation relative transition-all",
                                         isSelected && "ring-2 ring-primary ring-offset-1 bg-primary hover:bg-primary/90",
                                         isBooked && "opacity-40 cursor-not-allowed bg-muted"
                                     )}
                                 >
                                     <span className={cn(isBooked && "line-through text-muted-foreground")}>{time}</span>
                                     {isBooked && (
-                                        <span className="absolute top-0.5 right-1 text-sm text-destructive font-bold" aria-hidden="true">
+                                        <span className="absolute top-0 right-0.5 text-xs text-destructive font-bold" aria-hidden="true">
                                             ×
                                         </span>
                                     )}
@@ -198,8 +195,8 @@ export const BookingDateTimeSelection = ({
                             );
                         })}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3">
-                        ※ × マークの時間帯は既に予約が入っています
+                    <p className="text-xs text-muted-foreground mt-2">
+                        × は予約済みです
                     </p>
                 </section>
             )}
@@ -207,30 +204,30 @@ export const BookingDateTimeSelection = ({
             {/* Parking Selection */}
             {selectedDate && selectedTime && (
                 <section>
-                    <Separator className="mb-4" />
-                    <div className="flex items-center gap-2 mb-3">
-                        <Icon name="local_parking" size={20} className="text-primary" />
-                        <h3 className="text-lg sm:text-xl font-bold">駐車場の有無</h3>
-                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
+                    <Separator className="mb-3" />
+                    <div className="flex items-center gap-2 mb-2">
+                        <Icon name="local_parking" size={18} className="text-primary" />
+                        <h3 className="text-base font-bold">駐車場</h3>
+                        <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
                             必須
                         </Badge>
                     </div>
 
-                    <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-2">
+                    <RadioGroup value={hasParking} onValueChange={onParkingChange} className="space-y-1.5">
                         <div className={cn(
-                            "flex items-center space-x-3 p-3 rounded-lg border-2 border-dashed touch-manipulation transition-all",
+                            "flex items-center space-x-3 p-2.5 rounded-lg border-2 border-dashed touch-manipulation transition-all",
                             hasParking === "yes" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
-                            <RadioGroupItem value="yes" id="parking-yes" className="h-5 w-5" />
+                            <RadioGroupItem value="yes" id="parking-yes" className="h-4 w-4" />
                             <Label htmlFor="parking-yes" className="cursor-pointer flex-1 text-sm font-semibold">
                                 駐車場あり
                             </Label>
                         </div>
                         <div className={cn(
-                            "flex items-center space-x-3 p-3 rounded-lg border-2 border-dashed touch-manipulation transition-all",
+                            "flex items-center space-x-3 p-2.5 rounded-lg border-2 border-dashed touch-manipulation transition-all",
                             hasParking === "no" ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
                         )}>
-                            <RadioGroupItem value="no" id="parking-no" className="h-5 w-5" />
+                            <RadioGroupItem value="no" id="parking-no" className="h-4 w-4" />
                             <Label htmlFor="parking-no" className="cursor-pointer flex-1 text-sm font-semibold">
                                 駐車場なし
                             </Label>
