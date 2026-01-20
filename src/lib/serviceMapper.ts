@@ -21,6 +21,7 @@ export const mapServiceToDbService = (service: any) => {
     duration: service.duration,
     image_url: service.imageUrl,
     category: service.category,
+    quantity_discounts: service.quantityDiscounts || [],
   };
 };
 
