@@ -104,8 +104,11 @@ const BookingPage = () => {
 
   const {
     dayTimeSlots,
+    weekTimeSlots,
     loadingDay,
+    loadingWeek,
     fetchDayAvailability,
+    fetchWeekAvailability,
     checkRealTimeAvailability,
     getAvailabilityForDate,
     handleMonthChange,
@@ -355,10 +358,13 @@ const BookingPage = () => {
               onParkingChange={setHasParking}
               timeSlots={TIME_SLOTS}
               dayTimeSlots={dayTimeSlots}
+              weekTimeSlots={weekTimeSlots}
               getAvailabilityForDate={getAvailabilityForDate}
               onMonthChange={handleMonthChange}
               loadingDay={loadingDay}
+              loadingWeek={loadingWeek}
               fetchDayAvailability={fetchDayAvailability}
+              fetchWeekAvailability={fetchWeekAvailability}
             />
           )}
 

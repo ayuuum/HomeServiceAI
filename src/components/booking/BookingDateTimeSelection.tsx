@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { format, addDays, startOfWeek, isSameDay, isBefore, startOfDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { DayAvailability, TimeSlotAvailability } from "@/hooks/useAvailability";
+import { DayAvailability, TimeSlotAvailability, WeekTimeSlotAvailability } from "@/hooks/useAvailability";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -20,10 +20,13 @@ interface BookingDateTimeSelectionProps {
     onParkingChange: (value: string) => void;
     timeSlots: string[];
     dayTimeSlots: TimeSlotAvailability[];
+    weekTimeSlots: WeekTimeSlotAvailability;
     getAvailabilityForDate: (date: Date) => DayAvailability | undefined;
     onMonthChange?: (date: Date) => void;
     loadingDay?: boolean;
+    loadingWeek?: boolean;
     fetchDayAvailability?: (date: Date) => void;
+    fetchWeekAvailability?: (weekStart: Date) => void;
 }
 
 // 曜日の日本語表記
@@ -38,10 +41,13 @@ export const BookingDateTimeSelection = ({
     onParkingChange,
     timeSlots,
     dayTimeSlots,
+    weekTimeSlots,
     getAvailabilityForDate,
     onMonthChange,
     loadingDay,
+    loadingWeek,
     fetchDayAvailability,
+    fetchWeekAvailability,
 }: BookingDateTimeSelectionProps) => {
     // 週の開始日（月曜始まり）
     const [weekStart, setWeekStart] = useState(() => {
@@ -68,55 +74,38 @@ export const BookingDateTimeSelection = ({
     // 日付と時間を同時に選択
     const handleSlotSelect = (day: Date, time: string) => {
         const isPast = isBefore(day, startOfDay(new Date()));
-        const availability = getAvailabilityForDate(day);
+        const dateStr = format(day, "yyyy-MM-dd");
+        const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
         
-        if (isPast || availability?.status === "full") return;
+        if (isPast || slotInfo?.isBooked) return;
 
-        // 日付が変わった場合、その日の空き状況を取得
-        if (!selectedDate || !isSameDay(selectedDate, day)) {
-            onDateSelect(day);
-            fetchDayAvailability?.(day);
-        }
-        
+        onDateSelect(day);
         onTimeSelect(time);
     };
 
-    // 週が変わったときに月の空き状況を更新
+    // 週が変わったときに空き状況を取得
     useEffect(() => {
         onMonthChange?.(weekStart);
-    }, [weekStart, onMonthChange]);
+        fetchWeekAvailability?.(weekStart);
+    }, [weekStart, onMonthChange, fetchWeekAvailability]);
 
     // 時間スロットの状態を取得
-    const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean } => {
+    const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean; isBooked: boolean } => {
         const isPast = isBefore(day, startOfDay(new Date()));
-        const dayAvailability = getAvailabilityForDate(day);
-        const isDayFull = dayAvailability?.status === "full";
+        const dateStr = format(day, "yyyy-MM-dd");
         
-        if (isPast || isDayFull) {
-            return { available: false, isSelected: false };
+        if (isPast) {
+            return { available: false, isSelected: false, isBooked: false };
         }
 
-        // 選択中の日付の場合、dayTimeSlotsから状態を確認
-        if (selectedDate && isSameDay(selectedDate, day)) {
-            const slotInfo = dayTimeSlots.find(s => s.time === time);
-            const isBooked = slotInfo?.isBooked ?? false;
-            const isSelected = selectedTime === time;
-            return { available: !isBooked, isSelected };
-        }
-
-        // 選択されていない日は空きありとして表示（詳細は選択時に取得）
-        return { available: true, isSelected: false };
-    };
-
-    // 日の空き状況に基づく背景色
-    const getDayHeaderClass = (day: Date): string => {
-        const isPast = isBefore(day, startOfDay(new Date()));
-        if (isPast) return "text-muted-foreground/40";
+        // weekTimeSlotsから予約状況を取得
+        const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
+        const isBooked = slotInfo?.isBooked ?? false;
         
-        const availability = getAvailabilityForDate(day);
-        if (availability?.status === "full") return "text-muted-foreground/40";
-        if (availability?.status === "partial") return "text-orange-600";
-        return "text-foreground";
+        // 選択中かどうか
+        const isSelected = selectedDate && isSameDay(selectedDate, day) && selectedTime === time;
+        
+        return { available: !isBooked, isSelected: !!isSelected, isBooked };
     };
 
     // 週の範囲表示
@@ -168,18 +157,21 @@ export const BookingDateTimeSelection = ({
                             {weekDays.map((day, idx) => {
                                 const isPast = isBefore(day, startOfDay(new Date()));
                                 const isToday = isSameDay(day, new Date());
+                                const isSaturday = day.getDay() === 6;
+                                const isSunday = day.getDay() === 0;
                                 return (
                                     <div
                                         key={idx}
                                         className={cn(
                                             "p-1 text-center border-r last:border-r-0",
-                                            getDayHeaderClass(day)
+                                            isSaturday && "bg-blue-50",
+                                            isSunday && "bg-pink-50"
                                         )}
                                     >
                                         <div className={cn(
                                             "text-[10px] font-bold",
-                                            idx === 5 && "text-blue-600",
-                                            idx === 6 && "text-red-600",
+                                            isSaturday && "text-blue-600",
+                                            isSunday && "text-red-600",
                                             isPast && "text-muted-foreground/40"
                                         )}>
                                             {DAY_NAMES[day.getDay()]}
@@ -203,31 +195,35 @@ export const BookingDateTimeSelection = ({
                                     {time}
                                 </div>
                                 {weekDays.map((day, dayIdx) => {
-                                    const { available, isSelected } = getSlotStatus(day, time);
+                                    const { available, isSelected, isBooked } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
-                                    const dayAvailability = getAvailabilityForDate(day);
-                                    const isDayFull = dayAvailability?.status === "full";
+                                    const isSaturday = day.getDay() === 6;
+                                    const isSunday = day.getDay() === 0;
                                     
                                     return (
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isDayFull || !available}
+                                            disabled={isPast || isBooked}
                                             className={cn(
-                                                "h-8 border-r last:border-r-0 transition-all touch-manipulation",
+                                                "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
+                                                // 土日の背景色
+                                                isSaturday && !isSelected && "bg-blue-50/50",
+                                                isSunday && !isSelected && "bg-pink-50/50",
                                                 // 選択中
                                                 isSelected && "bg-primary text-primary-foreground",
-                                                // 空きあり（選択なし）
-                                                !isSelected && available && !isPast && !isDayFull && "hover:bg-primary/10",
-                                                // 予約済み・過去
-                                                (!available || isPast || isDayFull) && "bg-muted/50 cursor-not-allowed"
+                                                // 過去
+                                                isPast && "bg-muted/30 cursor-not-allowed"
                                             )}
                                         >
                                             {isSelected && (
-                                                <Icon name="check" size={14} className="mx-auto" />
+                                                <Icon name="check" size={14} />
                                             )}
-                                            {(!available || isDayFull) && !isPast && !isSelected && (
+                                            {isBooked && !isPast && !isSelected && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
+                                            )}
+                                            {available && !isPast && !isSelected && (
+                                                <span className="text-green-600 font-bold">○</span>
                                             )}
                                         </button>
                                     );
@@ -240,7 +236,7 @@ export const BookingDateTimeSelection = ({
                 {/* 凡例 */}
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 border rounded bg-background" />
+                        <span className="text-green-600 font-bold">○</span>
                         <span>空き</span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -248,12 +244,12 @@ export const BookingDateTimeSelection = ({
                         <span>選択中</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 border rounded bg-muted/50 flex items-center justify-center text-[10px]">×</div>
+                        <span className="text-muted-foreground">×</span>
                         <span>予約済</span>
                     </div>
                 </div>
 
-                {loadingDay && (
+                {(loadingDay || loadingWeek) && (
                     <p className="text-xs text-center text-muted-foreground mt-1">読み込み中...</p>
                 )}
             </section>
