@@ -27,6 +27,7 @@ interface BookingDateTimeSelectionProps {
     loadingWeek?: boolean;
     fetchDayAvailability?: (date: Date) => void;
     fetchWeekAvailability?: (weekStart: Date) => void;
+    prefetchAdjacentWeeks?: (weekStart: Date) => void;
     organizationId?: string;
 }
 
@@ -49,6 +50,7 @@ export const BookingDateTimeSelection = ({
     loadingWeek,
     fetchDayAvailability,
     fetchWeekAvailability,
+    prefetchAdjacentWeeks,
     organizationId,
 }: BookingDateTimeSelectionProps) => {
     // 週の開始日（月曜始まり）
@@ -92,6 +94,13 @@ export const BookingDateTimeSelection = ({
             fetchWeekAvailability?.(weekStart);
         }
     }, [weekStart, organizationId, onMonthChange, fetchWeekAvailability]);
+
+    // データ取得後に隣接週を先読み
+    useEffect(() => {
+        if (organizationId && Object.keys(weekTimeSlots).length > 0) {
+            prefetchAdjacentWeeks?.(weekStart);
+        }
+    }, [weekTimeSlots, weekStart, organizationId, prefetchAdjacentWeeks]);
 
     // 時間スロットの状態を取得
     const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean; isBooked: boolean } => {
@@ -199,6 +208,8 @@ export const BookingDateTimeSelection = ({
                                     {time}
                                 </div>
                                 {weekDays.map((day, dayIdx) => {
+                                    const dateStr = format(day, "yyyy-MM-dd");
+                                    const hasData = weekTimeSlots[dateStr] !== undefined;
                                     const { available, isSelected, isBooked } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
                                     const isSaturday = day.getDay() === 6;
@@ -208,7 +219,7 @@ export const BookingDateTimeSelection = ({
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isBooked}
+                                            disabled={isPast || isBooked || (loadingWeek && !hasData)}
                                             className={cn(
                                                 "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
                                                 // 土日の背景色
@@ -220,13 +231,17 @@ export const BookingDateTimeSelection = ({
                                                 isPast && "bg-muted/30 cursor-not-allowed"
                                             )}
                                         >
+                                            {/* ローディング中はスケルトン表示 */}
+                                            {loadingWeek && !hasData && !isPast && (
+                                                <div className="w-3 h-3 rounded-full bg-muted-foreground/20 animate-pulse" />
+                                            )}
                                             {isSelected && (
                                                 <Icon name="check" size={14} />
                                             )}
-                                            {isBooked && !isPast && !isSelected && (
+                                            {hasData && isBooked && !isPast && !isSelected && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
                                             )}
-                                            {available && !isPast && !isSelected && (
+                                            {hasData && available && !isPast && !isSelected && (
                                                 <span className="text-green-600 font-bold">○</span>
                                             )}
                                         </button>

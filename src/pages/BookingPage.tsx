@@ -109,6 +109,7 @@ const BookingPage = () => {
     loadingWeek,
     fetchDayAvailability,
     fetchWeekAvailability,
+    prefetchAdjacentWeeks,
     checkRealTimeAvailability,
     getAvailabilityForDate,
     handleMonthChange,
@@ -365,6 +366,7 @@ const BookingPage = () => {
               loadingWeek={loadingWeek}
               fetchDayAvailability={fetchDayAvailability}
               fetchWeekAvailability={fetchWeekAvailability}
+              prefetchAdjacentWeeks={prefetchAdjacentWeeks}
               organizationId={organization?.id}
             />
           )}

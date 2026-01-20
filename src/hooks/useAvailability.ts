@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays, startOfWeek, isBefore } from "date-fns";
 
 export interface DayAvailability {
   date: string;
@@ -32,6 +32,11 @@ export const useAvailability = (organizationId?: string) => {
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
+  
+  // キャッシュ: 週データを保存して再利用
+  const [weekAvailabilityCache, setWeekAvailabilityCache] = useState<
+    Record<string, WeekTimeSlotAvailability>
+  >({});
 
   // 月ごとの空き状況を取得
   const fetchMonthAvailability = useCallback(async (date: Date) => {
@@ -120,10 +125,21 @@ export const useAvailability = (organizationId?: string) => {
   }, [organizationId]);
 
   // 週単位で全時間スロットの空き状況を取得（Edge Function経由で安全に取得）
-  const fetchWeekAvailability = useCallback(async (weekStart: Date) => {
+  const fetchWeekAvailability = useCallback(async (weekStart: Date, showLoading = true) => {
     if (!organizationId) return;
 
-    setLoadingWeek(true);
+    const cacheKey = format(weekStart, "yyyy-MM-dd");
+    
+    // キャッシュにあればそれを使用（即座に表示）
+    if (weekAvailabilityCache[cacheKey]) {
+      setWeekTimeSlots(weekAvailabilityCache[cacheKey]);
+      return;
+    }
+
+    if (showLoading) {
+      setLoadingWeek(true);
+    }
+    
     const weekEnd = addDays(weekStart, 6);
     const startDateStr = format(weekStart, "yyyy-MM-dd");
     const endDateStr = format(weekEnd, "yyyy-MM-dd");
@@ -158,13 +174,47 @@ export const useAvailability = (organizationId?: string) => {
         }));
       }
 
+      // キャッシュに保存
+      setWeekAvailabilityCache(prev => ({
+        ...prev,
+        [cacheKey]: weekSlots
+      }));
+      
       setWeekTimeSlots(weekSlots);
     } catch (err) {
       console.error("Error fetching week availability:", err);
     } finally {
       setLoadingWeek(false);
     }
-  }, [organizationId]);
+  }, [organizationId, weekAvailabilityCache]);
+
+  // 前後の週を先読み（バックグラウンド）
+  const prefetchAdjacentWeeks = useCallback(async (currentWeekStart: Date) => {
+    if (!organizationId) return;
+    
+    const nextWeek = addDays(currentWeekStart, 7);
+    const prevWeek = addDays(currentWeekStart, -7);
+    const today = new Date();
+    
+    // 次の週を先読み
+    const nextCacheKey = format(nextWeek, "yyyy-MM-dd");
+    if (!weekAvailabilityCache[nextCacheKey]) {
+      fetchWeekAvailability(nextWeek, false);
+    }
+    
+    // 前の週を先読み（過去でなければ）
+    if (!isBefore(prevWeek, startOfWeek(today, { weekStartsOn: 1 }))) {
+      const prevCacheKey = format(prevWeek, "yyyy-MM-dd");
+      if (!weekAvailabilityCache[prevCacheKey]) {
+        fetchWeekAvailability(prevWeek, false);
+      }
+    }
+  }, [organizationId, weekAvailabilityCache, fetchWeekAvailability]);
+
+  // キャッシュをクリア（リアルタイム更新時に使用）
+  const clearWeekCache = useCallback(() => {
+    setWeekAvailabilityCache({});
+  }, []);
 
   // リアルタイム空き確認（送信前チェック用）
   const checkRealTimeAvailability = useCallback(async (
@@ -229,7 +279,8 @@ export const useAvailability = (organizationId?: string) => {
           filter: `organization_id=eq.${organizationId}`,
         },
         () => {
-          // 空き状況を再取得
+          // キャッシュをクリアして空き状況を再取得
+          clearWeekCache();
           fetchMonthAvailability(currentMonth);
         }
       )
@@ -238,7 +289,7 @@ export const useAvailability = (organizationId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [organizationId, currentMonth, fetchMonthAvailability]);
+  }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache]);
 
   return {
     monthAvailability,
@@ -250,10 +301,12 @@ export const useAvailability = (organizationId?: string) => {
     fetchMonthAvailability,
     fetchDayAvailability,
     fetchWeekAvailability,
+    prefetchAdjacentWeeks,
     checkRealTimeAvailability,
     getAvailabilityForDate,
     getSlotAvailability,
     handleMonthChange,
+    clearWeekCache,
     TIME_SLOTS,
   };
 };
