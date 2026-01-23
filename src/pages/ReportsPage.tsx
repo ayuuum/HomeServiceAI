@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AdminHeader } from '@/components/AdminHeader';
 import { MobileNav } from '@/components/MobileNav';
+import { Icon } from '@/components/ui/icon';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { exportToCSV, formatCurrencyForExport, type ColumnConfig } from '@/lib/exportUtils';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -147,9 +150,30 @@ export default function ReportsPage() {
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Card className="md:col-span-2 shadow-subtle border-none">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold">売上推移</CardTitle>
-                  <CardDescription>日別の売上金額</CardDescription>
+                <CardHeader className="pb-2 flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-bold">売上推移</CardTitle>
+                    <CardDescription>日別の売上金額</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const columns: ColumnConfig[] = [
+                        { key: 'date', header: '日付' },
+                        { key: '売上', header: '売上金額', formatter: formatCurrencyForExport },
+                      ];
+                      exportToCSV(salesData, columns, 'sales_report');
+                      toast({
+                        title: 'エクスポート完了',
+                        description: '売上レポートをCSVファイルでダウンロードしました',
+                      });
+                    }}
+                    disabled={salesData.length === 0}
+                  >
+                    <Icon name="download" size={14} className="mr-1.5" />
+                    CSVエクスポート
+                  </Button>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <ResponsiveContainer width="100%" height={350}>

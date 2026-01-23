@@ -29,6 +29,7 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
 import type { Customer } from "@/types/booking";
+import { exportToCSV, formatDateForExport, formatCurrencyForExport, type ColumnConfig } from "@/lib/exportUtils";
 
 export default function CustomerManagement() {
   const queryClient = useQueryClient();
@@ -283,6 +284,28 @@ export default function CustomerManagement() {
             <Button onClick={fixMissingCustomers} variant="outline" className="w-full sm:w-auto h-12 px-6" disabled={isFixing}>
               <Icon name="sync" size={16} className={`mr-2 ${isFixing ? "animate-spin" : ""}`} />
               データ同期
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto h-12 px-6"
+              onClick={() => {
+                const columns: ColumnConfig[] = [
+                  { key: 'name', header: '顧客名' },
+                  { key: 'phone', header: '電話番号' },
+                  { key: 'email', header: 'メールアドレス' },
+                  { key: 'postalCode', header: '郵便番号' },
+                  { key: 'address', header: '住所' },
+                  { key: 'addressBuilding', header: '建物名' },
+                  { key: 'bookingCount', header: '利用回数' },
+                  { key: 'totalSpend', header: '利用総額', formatter: formatCurrencyForExport },
+                ];
+                exportToCSV(filteredCustomers, columns, 'customers');
+                toast.success('顧客データをエクスポートしました');
+              }}
+              disabled={filteredCustomers.length === 0}
+            >
+              <Icon name="download" size={16} className="mr-2" />
+              CSVエクスポート
             </Button>
           </div>
 
