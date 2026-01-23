@@ -15,9 +15,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { startOfDay, subDays } from "date-fns";
+import { startOfDay, subDays, format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
+import { exportToCSV, formatDateForExport, formatCurrencyForExport, type ColumnConfig } from "@/lib/exportUtils";
 
 const container = {
   hidden: { opacity: 0 },
@@ -335,8 +336,36 @@ const AdminDashboard = () => {
 
             {/* Recent Bookings */}
             <Card className="shadow-subtle border-none">
-              <CardHeader className="border-b border-border/50 bg-muted/30 py-4">
+              <CardHeader className="border-b border-border/50 bg-muted/30 py-4 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-semibold text-foreground">最近の予約</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const columns: ColumnConfig[] = [
+                      { key: 'id', header: '予約ID' },
+                      { key: 'selectedDate', header: '予約日', formatter: formatDateForExport },
+                      { key: 'selectedTime', header: '時間' },
+                      { key: 'customerName', header: '顧客名' },
+                      { key: 'customerPhone', header: '電話番号' },
+                      { key: 'customerEmail', header: 'メールアドレス' },
+                      { key: 'serviceName', header: 'サービス名' },
+                      { key: 'totalPrice', header: '合計金額', formatter: formatCurrencyForExport },
+                      { key: 'status', header: 'ステータス', formatter: (val) => 
+                        val === 'pending' ? '承認待ち' : 
+                        val === 'confirmed' ? '確定済み' : 
+                        val === 'cancelled' ? 'キャンセル' : val 
+                      },
+                      { key: 'createdAt', header: '作成日', formatter: formatDateForExport },
+                    ];
+                    exportToCSV(bookings, columns, 'bookings');
+                    toast.success('予約データをエクスポートしました');
+                  }}
+                  disabled={bookings.length === 0}
+                >
+                  <Icon name="download" size={14} className="mr-1.5" />
+                  CSVエクスポート
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 {loading ? (
