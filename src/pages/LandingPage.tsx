@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 
 const LandingPage = () => {
   const scrollToContact = () => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -15,11 +15,7 @@ const LandingPage = () => {
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/images/logo.png" 
-              alt="ハウクリPro" 
-              className="h-8 w-auto"
-            />
+            <img src="/images/logo.png" alt="ハウクリPro" className="h-8 w-auto" />
           </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm">
@@ -37,13 +33,19 @@ const LandingPage = () => {
             <br className="md:hidden" />
             もっとスマートに
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-4 max-w-2xl mx-auto">
             予約受付・顧客管理・スケジュール調整を
             <br className="hidden md:block" />
             AIで簡単にできるサービス
           </p>
-          <Button 
-            size="lg" 
+          {/* 追加: アプリの目的の詳細説明 */}
+          <p className="text-base md:text-lg text-primary-foreground/80 mb-8 max-w-3xl mx-auto">
+            ハウクリProは、ハウスクリーニング事業者向けの業務管理システムです。
+            オンライン予約の自動受付、顧客情報の一元管理、スタッフのスケジュール最適化、
+            売上分析など、事業運営に必要な機能を統合し、業務効率化と顧客満足度向上を実現します。
+          </p>
+          <Button
+            size="lg"
             className="bg-card text-primary hover:bg-card/90 font-semibold px-8 py-6 text-lg"
             onClick={scrollToContact}
           >
@@ -55,9 +57,7 @@ const LandingPage = () => {
       {/* Features Section */}
       <section className="py-16 md:py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">
-            主な機能
-          </h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">主な機能</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <FeatureCard
               icon={<Calendar className="h-10 w-10" />}
@@ -66,7 +66,7 @@ const LandingPage = () => {
             />
             <FeatureCard
               icon={<Users className="h-10 w-10" />}
-              title="顧客管理（CRM）"
+              title="顧客管理(CRM)"
               description="顧客情報・予約履歴を一元管理。リピート促進に活用できます。"
             />
             <FeatureCard
@@ -86,9 +86,7 @@ const LandingPage = () => {
       {/* Benefits Section */}
       <section className="py-16 md:py-20 bg-secondary">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">
-            導入メリット
-          </h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">導入メリット</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <BenefitCard
               icon={<Zap className="h-8 w-8 text-primary" />}
@@ -112,9 +110,7 @@ const LandingPage = () => {
       {/* CTA Section */}
       <section id="contact" className="py-16 md:py-20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-            導入のご相談はこちら
-          </h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">導入のご相談はこちら</h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             お気軽にお問い合わせください。デモのご案内も可能です。
           </p>
