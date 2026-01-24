@@ -246,6 +246,7 @@ export type Database = {
           line_user_id: string
           message_type: string
           organization_id: string
+          read_at: string | null
           sent_at: string
         }
         Insert: {
@@ -258,6 +259,7 @@ export type Database = {
           line_user_id: string
           message_type?: string
           organization_id: string
+          read_at?: string | null
           sent_at?: string
         }
         Update: {
@@ -270,6 +272,7 @@ export type Database = {
           line_user_id?: string
           message_type?: string
           organization_id?: string
+          read_at?: string | null
           sent_at?: string
         }
         Relationships: [
