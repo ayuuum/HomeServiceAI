@@ -16,10 +16,10 @@ async function verifySignature(body: string, signature: string, channelSecret: s
     false,
     ["sign"]
   );
-  
+
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
   const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-  
+
   return signature === expectedSignature;
 }
 
@@ -36,7 +36,7 @@ serve(async (req) => {
 
     const signature = req.headers.get("x-line-signature");
     const bodyText = await req.text();
-    
+
     if (!signature) {
       console.error("Missing x-line-signature header");
       return new Response(JSON.stringify({ error: "Missing signature" }), {
@@ -47,7 +47,7 @@ serve(async (req) => {
 
     const body = JSON.parse(bodyText);
     const destination = body.destination; // Bot User ID
-    
+
     console.log("Webhook received for destination:", destination);
 
     // Find organization by line_bot_user_id
@@ -90,7 +90,7 @@ serve(async (req) => {
 
     for (const event of events) {
       const lineUserId = event.source?.userId;
-      
+
       if (!lineUserId) {
         console.log("Skipping event without userId:", event.type);
         continue;
@@ -98,7 +98,7 @@ serve(async (req) => {
 
       // Find or create customer
       let customerId: string | null = null;
-      
+
       const { data: existingCustomer } = await supabase
         .from("customers")
         .select("id")
@@ -108,10 +108,34 @@ serve(async (req) => {
 
       if (existingCustomer) {
         customerId = existingCustomer.id;
+
+        // Update profile if missing or periodically
+        if (org.line_channel_token) {
+          try {
+            const profileRes = await fetch(`https://api.line.me/v2/bot/profile/${lineUserId}`, {
+              headers: { "Authorization": `Bearer ${org.line_channel_token}` },
+            });
+
+            if (profileRes.ok) {
+              const profile = await profileRes.json();
+              await supabase
+                .from("customers")
+                .update({
+                  name: profile.displayName,
+                  avatar_url: profile.pictureUrl,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("id", customerId);
+            }
+          } catch (error) {
+            console.error("Failed to update LINE profile:", error);
+          }
+        }
       } else if (event.type === "follow" || event.type === "message") {
         // Get user profile from LINE
         let displayName = "LINE User";
-        
+        let pictureUrl = null;
+
         if (org.line_channel_token) {
           try {
             const profileRes = await fetch(`https://api.line.me/v2/bot/profile/${lineUserId}`, {
@@ -119,10 +143,11 @@ serve(async (req) => {
                 "Authorization": `Bearer ${org.line_channel_token}`,
               },
             });
-            
+
             if (profileRes.ok) {
               const profile = await profileRes.json();
               displayName = profile.displayName || displayName;
+              pictureUrl = profile.pictureUrl || null;
             }
           } catch (error) {
             console.error("Failed to fetch LINE profile:", error);
@@ -134,7 +159,8 @@ serve(async (req) => {
           .rpc('create_customer_secure', {
             p_organization_id: org.id,
             p_name: displayName,
-            p_line_user_id: lineUserId
+            p_line_user_id: lineUserId,
+            p_avatar_url: pictureUrl
           });
 
         if (createError) {

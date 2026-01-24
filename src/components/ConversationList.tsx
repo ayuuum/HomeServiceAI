@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface Conversation {
     customerId: string;
     customerName: string;
+    avatarUrl: string | null;
     lineUserId: string;
     lastMessage: string;
     lastMessageAt: string;
@@ -31,7 +32,7 @@ export function ConversationList({ selectedCustomerId, onSelectConversation }: C
             // Get all customers with LINE user ID
             const { data: customers, error: customersError } = await supabase
                 .from('customers')
-                .select('id, name, line_user_id')
+                .select('id, name, avatar_url, line_user_id')
                 .not('line_user_id', 'is', null);
 
             if (customersError) throw customersError;
@@ -60,6 +61,7 @@ export function ConversationList({ selectedCustomerId, onSelectConversation }: C
                     return {
                         customerId: customer.id,
                         customerName: customer.name || 'LINE User',
+                        avatarUrl: customer.avatar_url,
                         lineUserId: customer.line_user_id!,
                         lastMessage: lastMessage?.content || '',
                         lastMessageAt: lastMessage?.sent_at || '',
@@ -130,6 +132,13 @@ export function ConversationList({ selectedCustomerId, onSelectConversation }: C
                     >
                         <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10 flex-shrink-0">
+                                {conversation.avatarUrl && (
+                                    <img
+                                        src={conversation.avatarUrl}
+                                        alt={conversation.customerName}
+                                        className="h-full w-full object-cover rounded-full"
+                                    />
+                                )}
                                 <AvatarFallback className="bg-[#06C755] text-white text-sm">
                                     {conversation.customerName.charAt(0)}
                                 </AvatarFallback>
