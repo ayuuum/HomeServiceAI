@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader } from "@/components/AdminHeader";
-import { MobileNav } from "@/components/MobileNav";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
@@ -124,13 +124,10 @@ export default function CalendarPage() {
     return (
         <div className="min-h-screen bg-background">
             <AdminHeader />
-            <div className="container mx-auto p-4 md:p-6">
+            <div className="container max-w-6xl mx-auto px-4 py-6">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-2 text-foreground">
-                            <Icon name="event_note" size={32} className="text-primary" />
-                            予約管理
-                        </h1>
+                        <h1 className="text-2xl font-bold text-foreground">予約管理</h1>
                         <p className="text-muted-foreground mt-1">
                             予約の確認・承認・管理ができます
                         </p>
@@ -334,7 +331,6 @@ export default function CalendarPage() {
                 onReject={handleReject}
                 onSuccess={fetchBookings}
             />
-            <MobileNav />
         </div>
     );
 }

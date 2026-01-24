@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff, Loader2, Building2, User, Store } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, User, Store } from 'lucide-react';
+import authLogo from '@/assets/auth-logo.png';
 
 const signupSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -106,9 +107,7 @@ export default function SignupPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo and Brand */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25">
-              <Building2 className="w-8 h-8 text-primary-foreground" />
-            </div>
+            <img src={authLogo} alt="Logo" className="w-20 h-20 object-contain" />
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">アカウント登録</h1>
               <p className="text-sm text-muted-foreground mt-1">Haukuri Proをはじめましょう</p>

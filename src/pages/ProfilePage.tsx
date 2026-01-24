@@ -10,7 +10,7 @@ import { Icon } from '@/components/ui/icon';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
-import { MobileNav } from '@/components/MobileNav';
+
 import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
@@ -1064,7 +1064,6 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
-      <MobileNav />
     </div>
   );
 }

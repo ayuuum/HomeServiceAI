@@ -48,6 +48,14 @@ export default function InboxPage() {
         <div className="min-h-screen bg-background flex flex-col">
             <AdminHeader />
 
+            {/* Page Header */}
+            <div className="border-b bg-card">
+                <div className="container max-w-6xl mx-auto px-4 py-4">
+                    <h1 className="text-2xl font-bold">受信トレイ</h1>
+                    <p className="text-muted-foreground mt-1">LINEメッセージの確認・返信ができます</p>
+                </div>
+            </div>
+
             <div className="flex-1 flex overflow-hidden">
                 {/* Conversation List - Left Panel */}
                 <div className={cn(
@@ -57,7 +65,7 @@ export default function InboxPage() {
                     {/* List Header */}
                     <div className="p-4 border-b flex items-center gap-2">
                         <Icon name="inbox" size={20} className="text-[#06C755]" />
-                        <h1 className="font-semibold text-lg">受信トレイ</h1>
+                        <span className="font-semibold">会話一覧</span>
                     </div>
 
                     {/* Conversation List */}

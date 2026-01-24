@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff, Loader2, Building2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import authLogo from '@/assets/auth-logo.png';
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "有効なメールアドレスを入力してください" }),
@@ -98,9 +99,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo and Brand */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25">
-              <Building2 className="w-8 h-8 text-primary-foreground" />
-            </div>
+            <img src={authLogo} alt="Logo" className="w-20 h-20 object-contain" />
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Haukuri Pro</h1>
               <p className="text-sm text-muted-foreground mt-1">ビジネス管理システム</p>
