@@ -16,11 +16,11 @@ import { useAuth } from "@/contexts/AuthContext";
 export function MobileNav() {
   const { signOut, user, organization } = useAuth();
   const navigate = useNavigate();
-  
+
   // Build booking page URL with organization slug (using public URL for customer sharing)
   const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://cleaning-booking.lovable.app';
-  const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
-    ? `${publicBaseUrl}/booking/${organization.slug}` 
+  const bookingPageUrl = organization?.slug && organization.slug !== 'default'
+    ? `${publicBaseUrl}/booking/${organization.slug}`
     : publicBaseUrl;
 
   const handleLogout = async () => {
@@ -65,6 +65,14 @@ export function MobileNav() {
           >
             <Icon name="event_note" size={20} />
             予約管理
+          </NavLink>
+          <NavLink
+            to="/admin/inbox"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <Icon name="inbox" size={20} />
+            受信トレイ
           </NavLink>
           <NavLink
             to="/admin/reports"

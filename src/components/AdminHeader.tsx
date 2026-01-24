@@ -27,8 +27,8 @@ export function AdminHeader() {
 
   // Build booking page URL with organization slug (using public URL for customer sharing)
   const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://cleaning-booking.lovable.app';
-  const bookingPageUrl = organization?.slug && organization.slug !== 'default' 
-    ? `${publicBaseUrl}/booking/${organization.slug}` 
+  const bookingPageUrl = organization?.slug && organization.slug !== 'default'
+    ? `${publicBaseUrl}/booking/${organization.slug}`
     : publicBaseUrl;
 
   return (
@@ -72,6 +72,14 @@ export function AdminHeader() {
             >
               <Icon name="event_note" size={16} />
               予約管理
+            </NavLink>
+            <NavLink
+              to="/admin/inbox"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+            >
+              <Icon name="inbox" size={16} />
+              受信トレイ
             </NavLink>
             <NavLink
               to="/admin/reports"

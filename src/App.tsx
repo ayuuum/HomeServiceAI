@@ -16,6 +16,7 @@ import ReportsPage from "./pages/ReportsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CustomerManagement from "./pages/CustomerManagement";
 import CalendarPage from "./pages/CalendarPage";
+import InboxPage from "./pages/InboxPage";
 import CancelBookingPage from "./pages/CancelBookingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -61,6 +62,11 @@ const App = () => (
             <Route path="/admin/calendar" element={
               <ProtectedRoute>
                 <CalendarPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/inbox" element={
+              <ProtectedRoute>
+                <InboxPage />
               </ProtectedRoute>
             } />
             <Route path="/admin/profile" element={
