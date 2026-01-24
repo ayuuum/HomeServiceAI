@@ -138,50 +138,29 @@ export function LineSettingsForm() {
     try {
       setIsTesting(true);
 
-      // Get current settings
-      const { data: org, error: fetchError } = await supabase
-        .from('organizations')
-        .select('line_channel_token')
-        .eq('id', organization.id)
-        .single();
+      // Call Edge Function to test LINE connection (avoids CORS issues)
+      const { data, error } = await supabase.functions.invoke('test-line-connection');
 
-      if (fetchError || !org?.line_channel_token) {
-        toast({
-          variant: "destructive",
-          title: "テスト失敗",
-          description: "Channel Access Tokenが設定されていません",
-        });
-        return;
+      if (error) {
+        throw new Error(error.message || '接続テストに失敗しました');
       }
 
-      // Test API by getting bot info
-      const response = await fetch('https://api.line.me/v2/bot/info', {
-        headers: {
-          'Authorization': `Bearer ${org.line_channel_token}`,
-        },
-      });
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-      if (response.ok) {
-        const botInfo = await response.json();
-        
+      if (data?.success && data?.botInfo) {
         // Auto-fill bot user ID
-        if (botInfo.userId && !botUserId) {
-          setBotUserId(botInfo.userId);
-          
-          // Save bot user ID
-          await supabase
-            .from('organizations')
-            .update({ line_bot_user_id: botInfo.userId })
-            .eq('id', organization.id);
+        if (data.botInfo.userId) {
+          setBotUserId(data.botInfo.userId);
         }
 
         toast({
           title: "接続成功",
-          description: `LINE公式アカウント「${botInfo.displayName}」と接続されています`,
+          description: `LINE公式アカウント「${data.botInfo.displayName}」と接続されています`,
         });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'API接続に失敗しました');
+        throw new Error('予期しないレスポンスです');
       }
     } catch (error) {
       console.error('Test connection error:', error);
