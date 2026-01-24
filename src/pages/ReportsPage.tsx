@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AdminHeader } from '@/components/AdminHeader';
-import { MobileNav } from '@/components/MobileNav';
+
 import { Icon } from '@/components/ui/icon';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -121,13 +121,13 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+    <div className="min-h-screen bg-background">
       <AdminHeader />
-      <div className="container mx-auto p-4 md:p-6">
+      <div className="container max-w-6xl mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">経営ダッシュボード</h1>
-            <p className="text-muted-foreground mt-2">売上と予約の統計情報</p>
+            <h1 className="text-2xl font-bold">経営ダッシュボード</h1>
+            <p className="text-muted-foreground mt-1">売上と予約の統計情報</p>
           </div>
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[180px]">
@@ -288,7 +288,6 @@ export default function ReportsPage() {
           </div>
         )}
       </div>
-      <MobileNav />
     </div>
   );
 }
