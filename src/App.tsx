@@ -16,8 +16,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CustomerManagement from "./pages/CustomerManagement";
 import CalendarPage from "./pages/CalendarPage";
 import CancelBookingPage from "./pages/CancelBookingPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +39,8 @@ const App = () => (
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminDashboard />
