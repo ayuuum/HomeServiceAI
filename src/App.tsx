@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
 import BookingPage from "./pages/BookingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -29,11 +30,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Landing page */}
+            <Route path="/" element={<LandingPage />} />
             {/* Public booking page with organization slug */}
             <Route path="/booking/:orgSlug" element={<BookingPage />} />
-            {/* Default booking page (redirects to default org or shows org selector) */}
-            <Route path="/" element={<BookingPage />} />
-            {/* Public cancel booking page */}
+            {/* Default booking page */}
+            <Route path="/booking" element={<BookingPage />} />
             <Route path="/cancel/:token" element={<CancelBookingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
