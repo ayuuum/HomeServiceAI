@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wind, ChefHat, Bath, Shield, Clock, Sparkles } from "lucide-react";
+import { Calendar, Users, UserCheck, BarChart3, Clock, Zap, Heart, Mail } from "lucide-react";
 import Footer from "@/components/Footer";
 
 const LandingPage = () => {
+  const scrollToContact = () => {
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -30,94 +34,97 @@ const LandingPage = () => {
       <section className="bg-primary py-16 md:py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4">
-            プロの技術で、<br className="md:hidden" />
-            暮らしをもっと快適に
+            ハウスクリーニング業務を、
+            <br className="md:hidden" />
+            もっとスマートに
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            エアコン、キッチン、浴室のクリーニングを
+            予約受付・顧客管理・スケジュール調整を
             <br className="hidden md:block" />
-            簡単オンライン予約
+            ワンストップで
           </p>
-          <Link to="/booking/default">
-            <Button 
-              size="lg" 
-              className="bg-card text-primary hover:bg-card/90 font-semibold px-8 py-6 text-lg"
-            >
-              今すぐ予約する
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="bg-card text-primary hover:bg-card/90 font-semibold px-8 py-6 text-lg"
+            onClick={scrollToContact}
+          >
+            お問い合わせ
+          </Button>
         </div>
       </section>
 
-      {/* Services Section */}
+      {/* Features Section */}
       <section className="py-16 md:py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">
-            サービス一覧
+            主な機能
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <ServiceCard
-              icon={<Wind className="h-10 w-10" />}
-              title="エアコンクリーニング"
-              description="分解洗浄で内部のカビ・ホコリを徹底除去。清潔な空気で快適な生活を。"
-              imageUrl="/images/services/service-aircon.jpg"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <FeatureCard
+              icon={<Calendar className="h-10 w-10" />}
+              title="オンライン予約受付"
+              description="お客様が24時間いつでもWeb予約。電話対応の手間を削減できます。"
             />
-            <ServiceCard
-              icon={<ChefHat className="h-10 w-10" />}
-              title="キッチンクリーニング"
-              description="頑固な油汚れ・焦げ付きをプロの技術でピカピカに。衛生的なキッチンへ。"
-              imageUrl="/images/services/service-kitchen.jpg"
+            <FeatureCard
+              icon={<Users className="h-10 w-10" />}
+              title="顧客管理（CRM）"
+              description="顧客情報・予約履歴を一元管理。リピート促進に活用できます。"
             />
-            <ServiceCard
-              icon={<Bath className="h-10 w-10" />}
-              title="浴室クリーニング"
-              description="水垢・カビ・石鹸カスを徹底除去。清潔で気持ちの良いバスタイムを。"
-              imageUrl="/images/services/service-bathroom.jpg"
+            <FeatureCard
+              icon={<UserCheck className="h-10 w-10" />}
+              title="スタッフ管理"
+              description="スタッフのスケジュールをカレンダーで可視化。配置の最適化に。"
+            />
+            <FeatureCard
+              icon={<BarChart3 className="h-10 w-10" />}
+              title="売上レポート"
+              description="売上・予約数を自動集計。経営判断をサポートします。"
             />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Benefits Section */}
       <section className="py-16 md:py-20 bg-secondary">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-12">
-            選ばれる理由
+            導入メリット
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <FeatureCard
-              icon={<Sparkles className="h-8 w-8 text-primary" />}
-              title="プロの技術"
-              description="経験豊富なスタッフが、専門機材を使って徹底クリーニング"
+            <BenefitCard
+              icon={<Zap className="h-8 w-8 text-primary" />}
+              title="予約業務を効率化"
+              description="電話・メール対応を削減。予約確認・リマインドも自動化。"
             />
-            <FeatureCard
-              icon={<Shield className="h-8 w-8 text-primary" />}
-              title="安心価格"
-              description="明確な料金体系で、追加料金の心配なし"
-            />
-            <FeatureCard
+            <BenefitCard
               icon={<Clock className="h-8 w-8 text-primary" />}
-              title="簡単予約"
-              description="24時間オンライン予約。最短翌日対応可能"
+              title="24時間自動受付"
+              description="営業時間外も予約を逃さない。機会損失を防止します。"
+            />
+            <BenefitCard
+              icon={<Heart className="h-8 w-8 text-primary" />}
+              title="顧客満足度向上"
+              description="スムーズな予約体験で、リピート率アップに貢献。"
             />
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 md:py-20">
+      <section id="contact" className="py-16 md:py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-            今すぐ予約しませんか？
+            導入のご相談はこちら
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            オンラインで簡単予約。お見積もりも即座に確認できます。
+            お気軽にお問い合わせください。デモのご案内も可能です。
           </p>
-          <Link to="/booking/default">
-            <Button size="lg" className="font-semibold px-8 py-6 text-lg">
-              予約ページへ
+          <a href="mailto:contact@haukuripro.com">
+            <Button size="lg" className="font-semibold px-8 py-6 text-lg gap-2">
+              <Mail className="h-5 w-5" />
+              お問い合わせ
             </Button>
-          </Link>
+          </a>
         </div>
       </section>
 
@@ -129,27 +136,6 @@ const LandingPage = () => {
   );
 };
 
-interface ServiceCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  imageUrl: string;
-}
-
-const ServiceCard = ({ icon, title, description, imageUrl }: ServiceCardProps) => (
-  <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-    <div 
-      className="h-40 bg-cover bg-center"
-      style={{ backgroundImage: `url(${imageUrl})` }}
-    />
-    <CardContent className="p-6">
-      <div className="text-primary mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </CardContent>
-  </Card>
-);
-
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
@@ -157,6 +143,22 @@ interface FeatureCardProps {
 }
 
 const FeatureCard = ({ icon, title, description }: FeatureCardProps) => (
+  <Card className="hover:shadow-lg transition-shadow">
+    <CardContent className="p-6 text-center">
+      <div className="text-primary mb-4 flex justify-center">{icon}</div>
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </CardContent>
+  </Card>
+);
+
+interface BenefitCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+const BenefitCard = ({ icon, title, description }: BenefitCardProps) => (
   <div className="text-center">
     <div className="flex justify-center mb-4">{icon}</div>
     <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
