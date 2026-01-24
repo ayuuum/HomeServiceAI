@@ -33,14 +33,14 @@ const LandingPage = () => {
       <section className="bg-primary py-16 md:py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4">
-            ハウスクリーニング業務を、
+            ハウスクリーニングの予約を、
             <br className="md:hidden" />
             もっとスマートに
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
             予約受付・顧客管理・スケジュール調整を
             <br className="hidden md:block" />
-            ワンストップで
+            AIで簡単にできるサービス
           </p>
           <Button 
             size="lg" 
