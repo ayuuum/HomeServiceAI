@@ -20,7 +20,6 @@ const LandingPage = () => {
               alt="ハウクリPro" 
               className="h-8 w-auto"
             />
-            <span className="font-bold text-xl text-foreground">ハウクリPro</span>
           </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm">
