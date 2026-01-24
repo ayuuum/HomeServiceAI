@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.send-booking-email]
 verify_jwt = false
+
+[functions.test-line-connection]
+verify_jwt = false
