@@ -35,8 +35,7 @@ const TermsOfServicePage = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">第3条（利用登録）</h2>
             <p className="text-muted-foreground leading-relaxed mb-2">
-              当サービスの一部機能を利用するには、利用登録が必要です。
-              登録にあたり、以下の事項に同意いただきます：
+              当サービスの一部機能を利用するには、利用登録が必要です。 登録にあたり、以下の事項に同意いただきます：
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
               <li>正確かつ最新の情報を提供すること</li>
@@ -47,9 +46,7 @@ const TermsOfServicePage = () => {
 
           <section>
             <h2 className="text-xl font-semibold mb-3">第4条（禁止事項）</h2>
-            <p className="text-muted-foreground leading-relaxed mb-2">
-              ユーザーは、以下の行為を行ってはなりません：
-            </p>
+            <p className="text-muted-foreground leading-relaxed mb-2">ユーザーは、以下の行為を行ってはなりません：</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
               <li>法令または公序良俗に違反する行為</li>
               <li>当サービスの運営を妨害する行為</li>
@@ -78,9 +75,7 @@ const TermsOfServicePage = () => {
 
           <section>
             <h2 className="text-xl font-semibold mb-3">第7条（免責事項）</h2>
-            <p className="text-muted-foreground leading-relaxed mb-2">
-              当サービスは以下について責任を負いません：
-            </p>
+            <p className="text-muted-foreground leading-relaxed mb-2">当サービスは以下について責任を負いません：</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
               <li>サービスの中断、遅延、停止による損害</li>
               <li>ユーザー間またはユーザーと第三者との間のトラブル</li>
@@ -113,9 +108,7 @@ const TermsOfServicePage = () => {
             </p>
           </section>
 
-          <p className="text-sm text-muted-foreground mt-8 pt-4 border-t">
-            最終更新日: 2024年1月
-          </p>
+          <p className="text-sm text-muted-foreground mt-8 pt-4 border-t">最終更新日: 2026年1月</p>
         </div>
       </div>
     </div>
