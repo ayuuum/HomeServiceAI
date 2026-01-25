@@ -30,10 +30,19 @@ export function ConversationList({ selectedCustomerId, onSelectConversation }: C
         queryKey: ['line-conversations'],
         queryFn: async () => {
             // Get all customers with LINE user ID
+            // Using type assertion because avatar_url exists in DB but not in generated types yet
             const { data: customers, error: customersError } = await supabase
                 .from('customers')
                 .select('id, name, avatar_url, line_user_id')
-                .not('line_user_id', 'is', null);
+                .not('line_user_id', 'is', null) as unknown as {
+                    data: Array<{
+                        id: string;
+                        name: string | null;
+                        avatar_url: string | null;
+                        line_user_id: string;
+                    }> | null;
+                    error: Error | null;
+                };
 
             if (customersError) throw customersError;
 
