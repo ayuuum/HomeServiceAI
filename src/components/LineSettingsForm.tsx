@@ -12,10 +12,11 @@ import { Eye, EyeOff, Copy, Check, ExternalLink } from 'lucide-react';
 export function LineSettingsForm() {
   const { organization, refreshOrganization } = useAuth();
   const { toast } = useToast();
-  
+
   const [channelToken, setChannelToken] = useState('');
   const [channelSecret, setChannelSecret] = useState('');
   const [botUserId, setBotUserId] = useState('');
+  const [liffId, setLiffId] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +37,7 @@ export function LineSettingsForm() {
 
     const { data, error } = await supabase
       .from('organizations')
-      .select('line_channel_token, line_channel_secret, line_bot_user_id')
+      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id')
       .eq('id', organization.id)
       .single();
 
@@ -57,6 +58,9 @@ export function LineSettingsForm() {
       if (data.line_bot_user_id) {
         setBotUserId(data.line_bot_user_id);
       }
+      if (data.line_liff_id) {
+        setLiffId(data.line_liff_id);
+      }
     }
   };
 
@@ -67,7 +71,7 @@ export function LineSettingsForm() {
       setIsLoading(true);
 
       const updates: Record<string, string | null> = {};
-      
+
       // Only update if value is not masked
       if (channelToken && !channelToken.includes('•')) {
         updates.line_channel_token = channelToken.trim();
@@ -77,6 +81,9 @@ export function LineSettingsForm() {
       }
       if (botUserId) {
         updates.line_bot_user_id = botUserId.trim();
+      }
+      if (liffId) {
+        updates.line_liff_id = liffId.trim();
       }
 
       if (Object.keys(updates).length === 0) {
@@ -178,6 +185,7 @@ export function LineSettingsForm() {
     setChannelToken('');
     setChannelSecret('');
     setBotUserId('');
+    setLiffId('');
     setHasExistingConfig(false);
   };
 
@@ -291,6 +299,22 @@ export function LineSettingsForm() {
           />
         </div>
 
+        {/* LIFF ID */}
+        <div className="space-y-2">
+          <Label htmlFor="liffId">LIFF ID</Label>
+          <p className="text-xs text-muted-foreground">
+            LINE Developersの「LIFF」タブで作成したLIFFアプリのIDを入力してください。
+            これにより、LINEから予約した際の顧客情報の自動紐付けが有効になります。
+          </p>
+          <Input
+            id="liffId"
+            value={liffId}
+            onChange={(e) => setLiffId(e.target.value)}
+            placeholder="例: 1234567890-abcdefgh"
+            className="font-mono"
+          />
+        </div>
+
         {/* Action buttons */}
         <div className="flex flex-wrap gap-3 pt-4">
           <Button
@@ -310,7 +334,7 @@ export function LineSettingsForm() {
               </>
             )}
           </Button>
-          
+
           <Button
             onClick={handleSave}
             disabled={isLoading}

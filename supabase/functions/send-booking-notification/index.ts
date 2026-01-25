@@ -20,7 +20,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { bookingId, notificationType }: NotificationRequest = await req.json();
@@ -63,10 +63,10 @@ serve(async (req) => {
     if (!lineUserId) {
       console.log("Customer has no LINE user ID, skipping LINE notification");
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: "No LINE user ID - notification skipped",
-          notificationSent: false 
+          notificationSent: false
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -75,17 +75,17 @@ serve(async (req) => {
     // Fetch organization's LINE token
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .select("line_channel_token, name")
+      .select("line_channel_token, name, admin_line_user_id")
       .eq("id", booking.organization_id)
       .single();
 
     if (orgError || !org?.line_channel_token) {
       console.log("Organization has no LINE channel token configured");
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: "LINE channel not configured - notification skipped",
-          notificationSent: false 
+          notificationSent: false
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -116,23 +116,45 @@ serve(async (req) => {
       );
     }
 
-    // Log the sent message
+    // Log the sent message to customer
     await supabase.from("line_messages").insert({
       organization_id: booking.organization_id,
       customer_id: booking.customer_id,
       line_user_id: lineUserId,
       content: message,
-      direction: "outgoing",
+      direction: "outbound",
       message_type: "text",
     });
+
+    // --- Admin Notification ---
+    if (org.admin_line_user_id && (notificationType === 'confirmed' || notificationType === 'cancelled')) {
+      const adminMessage = `【管理通知】新しい${notificationType === 'confirmed' ? '予約' : 'キャンセル'}がありました。\n\n顧客: ${booking.customer_name}様\n日時: ${booking.selected_date} ${booking.selected_time}\n合計: ¥${booking.total_price?.toLocaleString()}`;
+
+      try {
+        await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${org.line_channel_token}`,
+          },
+          body: JSON.stringify({
+            to: org.admin_line_user_id,
+            messages: [{ type: "text", text: adminMessage }],
+          }),
+        });
+        console.log(`Successfully sent admin notification to ${org.admin_line_user_id}`);
+      } catch (adminErr) {
+        console.error("Failed to send admin notification:", adminErr);
+      }
+    }
 
     console.log(`Successfully sent ${notificationType} notification to ${lineUserId}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Notification sent successfully",
-        notificationSent: true 
+        notificationSent: true
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -147,7 +169,7 @@ serve(async (req) => {
 });
 
 function buildNotificationMessage(
-  booking: any, 
+  booking: any,
   notificationType: 'confirmed' | 'cancelled' | 'reminder',
   orgName: string | null
 ): string {

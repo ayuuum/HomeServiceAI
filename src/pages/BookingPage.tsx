@@ -24,6 +24,7 @@ interface Organization {
   brand_color?: string;
   welcome_message?: string;
   header_layout?: string;
+  line_liff_id?: string;
 }
 
 const BookingPage = () => {
@@ -33,7 +34,7 @@ const BookingPage = () => {
   const [orgError, setOrgError] = useState<string | null>(null);
   const [bookingUser, setBookingUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  
+
   // Wizard step state (1-4)
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -100,7 +101,7 @@ const BookingPage = () => {
     handleRemovePhoto,
     submitBooking,
     getOptionsForService,
-  } = useBooking(organization?.id);
+  } = useBooking(organization?.id, organization?.line_liff_id);
 
   const {
     dayTimeSlots,
@@ -284,7 +285,7 @@ const BookingPage = () => {
 
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
-        <header 
+        <header
           className="bg-card border-b border-border sticky top-0 z-40"
           style={organization.brand_color ? { borderColor: `${organization.brand_color}20` } : undefined}
         >
@@ -292,7 +293,7 @@ const BookingPage = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {organization.header_layout === 'name_only' ? (
-                  <span 
+                  <span
                     className="text-lg sm:text-xl font-bold"
                     style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
                   >
@@ -301,10 +302,10 @@ const BookingPage = () => {
                 ) : (
                   <>
                     {organization.logo_url ? (
-                      <img 
-                        src={organization.logo_url} 
-                        alt={organization.name} 
-                        className="h-7 sm:h-8 w-auto max-w-[150px] object-contain" 
+                      <img
+                        src={organization.logo_url}
+                        alt={organization.name}
+                        className="h-7 sm:h-8 w-auto max-w-[150px] object-contain"
                       />
                     ) : (
                       <img src="/images/logo.png" alt="ハウクリPro" className="h-7 sm:h-8 w-auto" />
@@ -407,7 +408,7 @@ const BookingPage = () => {
                 <Icon name="fact_check" size={20} className="text-primary" />
                 <h2 className="text-lg sm:text-xl font-bold">予約内容の確認</h2>
               </div>
-              
+
               {/* Service Summary */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
@@ -448,9 +449,9 @@ const BookingPage = () => {
                 <Separator className="mb-3" />
                 <div className="space-y-1">
                   <p className="text-sm text-foreground">
-                    {selectedDate?.toLocaleDateString('ja-JP', { 
-                      year: 'numeric', 
-                      month: 'long', 
+                    {selectedDate?.toLocaleDateString('ja-JP', {
+                      year: 'numeric',
+                      month: 'long',
                       day: 'numeric',
                       weekday: 'short'
                     })} {selectedTime}
@@ -515,7 +516,7 @@ const BookingPage = () => {
               </div>
             </div>
           )}
-          
+
           {/* Navigation buttons */}
           <div className="p-3">
             <div className="container max-w-4xl mx-auto flex items-center gap-2">

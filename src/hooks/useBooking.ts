@@ -6,6 +6,7 @@ import { calculateDiscount } from "@/lib/discountCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useBookingStorage } from "./useBookingStorage";
+import liff from "@line/liff";
 
 export interface SelectedService {
     serviceId: string;
@@ -19,7 +20,7 @@ export interface SelectedOption {
     option: ServiceOption;
 }
 
-export const useBooking = (organizationId?: string) => {
+export const useBooking = (organizationId?: string, liffId?: string) => {
     // State management
     const [allServices, setAllServices] = useState<Service[]>([]);
     const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
@@ -40,7 +41,9 @@ export const useBooking = (organizationId?: string) => {
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
     const [loading, setLoading] = useState(true);
-    
+    const [lineUserId, setLineUserId] = useState<string | null>(null);
+    const [isLiffInitialized, setIsLiffInitialized] = useState(false);
+
     // Storage hook for form persistence
     const { saveBookingData, loadBookingData, clearBookingData } = useBookingStorage(organizationId || '');
     const hasRestoredRef = useRef(false);
@@ -102,13 +105,13 @@ export const useBooking = (organizationId?: string) => {
     // Restore saved data from localStorage after services are loaded
     useEffect(() => {
         if (!organizationId || allServices.length === 0 || hasRestoredRef.current) return;
-        
+
         const storedData = loadBookingData();
         if (!storedData) return;
-        
+
         hasRestoredRef.current = true;
         isRestoringRef.current = true;
-        
+
         // Restore services
         if (storedData.selectedServices?.length > 0) {
             const restoredServices: SelectedService[] = [];
@@ -122,7 +125,7 @@ export const useBooking = (organizationId?: string) => {
                 setSelectedServices(restoredServices);
             }
         }
-        
+
         // Restore other fields
         if (storedData.selectedDate) setSelectedDate(new Date(storedData.selectedDate));
         if (storedData.selectedTime) setSelectedTime(storedData.selectedTime);
@@ -135,7 +138,7 @@ export const useBooking = (organizationId?: string) => {
         if (storedData.customerAddress) setCustomerAddress(storedData.customerAddress);
         if (storedData.customerAddressBuilding) setCustomerAddressBuilding(storedData.customerAddressBuilding);
         if (storedData.notes) setNotes(storedData.notes);
-        
+
         // Wait for options to load then restore them
         if (storedData.selectedOptions?.length > 0) {
             // Options will be restored after allOptions is populated
@@ -154,9 +157,9 @@ export const useBooking = (organizationId?: string) => {
             // Delay to wait for options fetch
             setTimeout(restoreOptions, 1000);
         }
-        
+
         toast.info("前回の入力内容を復元しました");
-        
+
         setTimeout(() => {
             isRestoringRef.current = false;
         }, 1500);
@@ -165,16 +168,16 @@ export const useBooking = (organizationId?: string) => {
     // Auto-save form data to localStorage (debounced)
     useEffect(() => {
         if (!organizationId || isRestoringRef.current) return;
-        
+
         const timeoutId = setTimeout(() => {
             saveBookingData({
-                selectedServices: selectedServices.map(s => ({ 
-                    serviceId: s.serviceId, 
-                    quantity: s.quantity 
+                selectedServices: selectedServices.map(s => ({
+                    serviceId: s.serviceId,
+                    quantity: s.quantity
                 })),
-                selectedOptions: selectedOptions.map(o => ({ 
-                    optionId: o.optionId, 
-                    quantity: o.quantity 
+                selectedOptions: selectedOptions.map(o => ({
+                    optionId: o.optionId,
+                    quantity: o.quantity
                 })),
                 selectedDate: selectedDate?.toISOString() || null,
                 selectedTime: selectedTime || null,
@@ -189,18 +192,18 @@ export const useBooking = (organizationId?: string) => {
                 notes,
             });
         }, 500);
-        
+
         return () => clearTimeout(timeoutId);
     }, [
         organizationId,
-        selectedServices, 
-        selectedOptions, 
-        selectedDate, 
+        selectedServices,
+        selectedOptions,
+        selectedDate,
         selectedTime,
-        hasParking, 
-        customerLastName, 
-        customerFirstName, 
-        customerEmail, 
+        hasParking,
+        customerLastName,
+        customerFirstName,
+        customerEmail,
         customerPhone,
         customerPostalCode,
         customerAddress,
@@ -257,6 +260,54 @@ export const useBooking = (organizationId?: string) => {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // Initialize LIFF and fetch LINE user info
+    useEffect(() => {
+        if (!liffId || isLiffInitialized) return;
+
+        const initLiff = async () => {
+            try {
+                await liff.init({ liffId });
+                setIsLiffInitialized(true);
+
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    setLineUserId(profile.userId);
+
+                    // Fetch existing customer info by line_user_id
+                    const { data: customer, error } = await supabase
+                        .from('customers')
+                        .select('*')
+                        .eq('line_user_id', profile.userId)
+                        .eq('organization_id', organizationId)
+                        .maybeSingle();
+
+                    if (!error && customer) {
+                        if (customer.name) {
+                            const parts = customer.name.trim().split(/\s+/);
+                            if (parts.length >= 2) {
+                                setCustomerLastName(parts[0]);
+                                setCustomerFirstName(parts.slice(1).join(' '));
+                            } else {
+                                setCustomerLastName(customer.name);
+                            }
+                        }
+                        if (customer.email) setCustomerEmail(customer.email);
+                        if (customer.phone) setCustomerPhone(customer.phone);
+                        if (customer.postal_code) setCustomerPostalCode(customer.postal_code);
+                        if (customer.address) setCustomerAddress(customer.address);
+                        if (customer.address_building) setCustomerAddressBuilding(customer.address_building);
+
+                        toast.info("LINEアカウントの登録情報を復元しました");
+                    }
+                }
+            } catch (err) {
+                console.error("LIFF initialization failed", err);
+            }
+        };
+
+        initLiff();
+    }, [liffId, organizationId, isLiffInitialized]);
 
     // Fetch options for selected services
     useEffect(() => {
@@ -479,19 +530,21 @@ export const useBooking = (organizationId?: string) => {
 
                         if (existingCustomer) {
                             customerId = existingCustomer.id;
-                            // Update existing customer info to keep it fresh
-                            await supabase
-                                .from('customers')
-                                .update({
-                                    name: `${customerLastName} ${customerFirstName}`.trim(),
-                                    email: customerEmail.trim() || null,
-                                    phone: customerPhone.trim() || null,
-                                    postal_code: customerPostalCode.trim() || null,
-                                    address: customerAddress.trim() || null,
-                                    address_building: customerAddressBuilding.trim() || null,
-                                })
-                                .eq('id', customerId);
                         }
+                    }
+                }
+
+                // Search by lineUserId if available (even for unauthenticated users)
+                if (!customerId && lineUserId) {
+                    const { data: existingCustomer } = await supabase
+                        .from('customers')
+                        .select('id')
+                        .eq('line_user_id', lineUserId)
+                        .eq('organization_id', organizationId)
+                        .maybeSingle();
+
+                    if (existingCustomer) {
+                        customerId = existingCustomer.id;
                     }
                 }
 
@@ -506,11 +559,26 @@ export const useBooking = (organizationId?: string) => {
                             p_phone: customerPhone || null,
                             p_postal_code: customerPostalCode || null,
                             p_address: customerAddress || null,
-                            p_address_building: customerAddressBuilding || null
+                            p_address_building: customerAddressBuilding || null,
+                            p_line_user_id: lineUserId || null
                         });
 
                     if (customerError) throw customerError;
                     customerId = newCustomerId;
+                } else if (customerId) {
+                    // Update existing customer info to keep it fresh (including line_user_id if just linked)
+                    await supabase
+                        .from('customers')
+                        .update({
+                            name: `${customerLastName} ${customerFirstName}`.trim(),
+                            email: customerEmail.trim() || null,
+                            phone: customerPhone.trim() || null,
+                            postal_code: customerPostalCode.trim() || null,
+                            address: customerAddress.trim() || null,
+                            address_building: customerAddressBuilding.trim() || null,
+                            line_user_id: lineUserId || null // Sync lineUserId if it was missing
+                        })
+                        .eq('id', customerId);
                 }
 
                 if (!customerId) {
@@ -578,12 +646,12 @@ export const useBooking = (organizationId?: string) => {
                     try {
                         console.log('[useBooking] Sending confirmation email for booking:', newBookingId);
                         const { error: emailError } = await supabase.functions.invoke('send-booking-email', {
-                            body: { 
-                                bookingId: newBookingId, 
-                                emailType: 'confirmation' 
+                            body: {
+                                bookingId: newBookingId,
+                                emailType: 'confirmation'
                             }
                         });
-                        
+
                         if (emailError) {
                             console.error('[useBooking] Email send error:', emailError);
                             // Don't fail the booking if email fails

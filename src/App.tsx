@@ -20,6 +20,7 @@ import InboxPage from "./pages/InboxPage";
 import CancelBookingPage from "./pages/CancelBookingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import MyBookingsPage from "./pages/liff/MyBookingsPage";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             {/* Public booking page with organization slug */}
             <Route path="/booking/:orgSlug" element={<BookingPage />} />
+            <Route path="/booking/:orgSlug/my-bookings" element={<MyBookingsPage />} />
             {/* Default booking page */}
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/cancel/:token" element={<CancelBookingPage />} />
