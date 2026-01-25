@@ -189,6 +189,7 @@ export type Database = {
         Row: {
           address: string | null
           address_building: string | null
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -202,6 +203,7 @@ export type Database = {
         Insert: {
           address?: string | null
           address_building?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -215,6 +217,7 @@ export type Database = {
         Update: {
           address?: string | null
           address_building?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -473,19 +476,34 @@ export type Database = {
     }
     Functions: {
       cancel_booking_by_token: { Args: { p_token: string }; Returns: boolean }
-      create_customer_secure: {
-        Args: {
-          p_address?: string
-          p_address_building?: string
-          p_email?: string
-          p_line_user_id?: string
-          p_name?: string
-          p_organization_id: string
-          p_phone?: string
-          p_postal_code?: string
-        }
-        Returns: string
-      }
+      create_customer_secure:
+        | {
+            Args: {
+              p_address?: string
+              p_address_building?: string
+              p_email?: string
+              p_line_user_id?: string
+              p_name?: string
+              p_organization_id: string
+              p_phone?: string
+              p_postal_code?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_address?: string
+              p_address_building?: string
+              p_avatar_url?: string
+              p_email?: string
+              p_line_user_id?: string
+              p_name?: string
+              p_organization_id: string
+              p_phone?: string
+              p_postal_code?: string
+            }
+            Returns: string
+          }
       get_booking_by_cancel_token: {
         Args: { p_token: string }
         Returns: {
