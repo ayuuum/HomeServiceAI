@@ -1,63 +1,113 @@
 
-# 受信トレイ機能修正計画
 
-## 問題の原因
+# LINEプロフィール写真表示 - 実装計画
 
-`line_messages`テーブルに`read_at`カラムが存在しないため、ビルドエラーが発生しています。
+## 現状分析
 
-**現在のテーブル構造:**
-| カラム名 | 型 |
-|---------|-----|
-| id | uuid |
-| organization_id | uuid |
-| customer_id | uuid |
-| line_user_id | text |
-| direction | text |
-| message_type | text |
-| content | text |
-| line_message_id | text |
-| sent_at | timestamp |
-| created_at | timestamp |
+### 問題点
+TypeScript型定義ファイル（`src/integrations/supabase/types.ts`）が実際のデータベーススキーマと同期していません。
 
-`read_at`カラムは**存在しません**。
+| 項目 | 実際のDB | 型定義ファイル |
+|------|----------|---------------|
+| `avatar_url`カラム | 存在する | 定義されていない |
+
+### 既存の実装状況
+
+LINE Webhook（`supabase/functions/line-webhook/index.ts`）では、既にLINEプロフィール写真を取得・保存する処理が実装されています：
+
+```text
+新規顧客作成時:
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│ LINE Webhook│ ──→ │ LINE API     │ ──→ │ customers   │
+│             │     │ /v2/bot/     │     │ avatar_url  │
+└─────────────┘     │ profile/{id} │     └─────────────┘
+                    └──────────────┘
+
+既存顧客更新時:
+同じ流れでavatar_urlを更新
+```
 
 ## 解決方法
 
-`read_at`カラムをデータベースに追加して、未読管理機能を有効にします。
+### 1. ConversationList.tsxの修正
 
-### 1. データベース変更
+型エラーを回避しながら`avatar_url`を取得できるようにします。
 
-**SQLマイグレーション:**
-```sql
-ALTER TABLE line_messages 
-ADD COLUMN read_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+**変更内容：**
+- Supabaseクエリで型アサーションを使用
+- `avatar_url`フィールドを正しく取得・表示
+
+```typescript
+// 修正前
+const { data: customers } = await supabase
+  .from('customers')
+  .select('id, name, avatar_url, line_user_id')  // 型エラー
+
+// 修正後
+const { data: customers } = await supabase
+  .from('customers')
+  .select('id, name, avatar_url, line_user_id')
+  .not('line_user_id', 'is', null) as unknown as { 
+    data: Array<{
+      id: string;
+      name: string | null;
+      avatar_url: string | null;
+      line_user_id: string;
+    }> | null;
+    error: any;
+  };
 ```
 
-### 2. RLSポリシーの確認
+### 2. プロフィール写真の表示確認
 
-現在のRLSポリシーにはUPDATE権限がないため、`read_at`を更新するためのポリシーを追加します：
+既存のUIコードでは、`avatar_url`が存在する場合に画像を表示する処理が既に実装されています：
 
-```sql
-CREATE POLICY "Users can update messages for their organization"
-ON line_messages
-FOR UPDATE
-USING (organization_id = get_user_organization_id())
-WITH CHECK (organization_id = get_user_organization_id());
+```tsx
+<Avatar className="h-10 w-10 flex-shrink-0">
+  {conversation.avatarUrl && (
+    <img
+      src={conversation.avatarUrl}
+      alt={conversation.customerName}
+      className="h-full w-full object-cover rounded-full"
+    />
+  )}
+  <AvatarFallback className="bg-[#06C755] text-white text-sm">
+    {conversation.customerName.charAt(0)}
+  </AvatarFallback>
+</Avatar>
 ```
 
-### 3. TypeScript型の自動更新
+## 動作フロー
 
-マイグレーション後、Supabaseの型定義が自動的に更新され、ビルドエラーが解消されます。
+```text
+プロフィール写真表示までの流れ:
 
-## 変更内容
+1. LINEユーザーがメッセージ送信
+         ↓
+2. Webhook受信 → LINE API でプロフィール取得
+         ↓
+3. customers.avatar_url に保存
+         ↓
+4. ConversationList でavatar_url取得
+         ↓
+5. 受信トレイにプロフィール写真表示
+```
 
-| 変更対象 | 内容 |
-|---------|------|
-| データベース | `line_messages`テーブルに`read_at`カラムを追加 |
-| RLSポリシー | UPDATE権限のポリシーを追加 |
+## 変更ファイル
 
-## 実装後の動作
+| ファイル | 変更内容 |
+|----------|---------|
+| `src/components/ConversationList.tsx` | 型アサーションを追加してavatar_urlを正しく取得 |
 
-- 会話リストで未読メッセージ数が表示される
-- 会話を開くと、メッセージが既読としてマークされる
-- LINEからの新着メッセージはリアルタイムで表示される
+## 技術的注意事項
+
+- `src/integrations/supabase/types.ts`は自動生成ファイルのため直接編集不可
+- 型定義は次回のスキーマ同期時に自動更新される予定
+- 今回は型アサーションで一時的に回避
+
+## 期待される結果
+
+修正後、受信トレイの会話リストで：
+- LINEプロフィール写真がアバターとして表示される
+- 写真がない場合は名前の頭文字がフォールバックとして表示される
+
