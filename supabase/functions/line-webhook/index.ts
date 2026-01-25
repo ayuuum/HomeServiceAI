@@ -101,7 +101,7 @@ serve(async (req) => {
 
       const { data: existingCustomer } = await supabase
         .from("customers")
-        .select("id")
+        .select("id, avatar_url")
         .eq("line_user_id", lineUserId)
         .eq("organization_id", org.id)
         .maybeSingle();
@@ -112,13 +112,16 @@ serve(async (req) => {
         // Update profile if missing or periodically
         if (org.line_channel_token) {
           try {
+            console.log("Fetching LINE profile for user:", lineUserId);
             const profileRes = await fetch(`https://api.line.me/v2/bot/profile/${lineUserId}`, {
               headers: { "Authorization": `Bearer ${org.line_channel_token}` },
             });
 
             if (profileRes.ok) {
               const profile = await profileRes.json();
-              await supabase
+              console.log("LINE profile fetched:", { displayName: profile.displayName, hasPicture: !!profile.pictureUrl });
+              
+              const { error: updateError } = await supabase
                 .from("customers")
                 .update({
                   name: profile.displayName,
@@ -126,10 +129,21 @@ serve(async (req) => {
                   updated_at: new Date().toISOString()
                 })
                 .eq("id", customerId);
+              
+              if (updateError) {
+                console.error("Failed to update customer profile:", updateError);
+              } else {
+                console.log("Customer profile updated successfully with avatar_url:", profile.pictureUrl);
+              }
+            } else {
+              const errorText = await profileRes.text();
+              console.error("LINE profile API error:", profileRes.status, errorText);
             }
           } catch (error) {
             console.error("Failed to update LINE profile:", error);
           }
+        } else {
+          console.log("No LINE channel token configured, skipping profile update");
         }
       } else if (event.type === "follow" || event.type === "message") {
         // Get user profile from LINE
@@ -138,6 +152,7 @@ serve(async (req) => {
 
         if (org.line_channel_token) {
           try {
+            console.log("Fetching LINE profile for new user:", lineUserId);
             const profileRes = await fetch(`https://api.line.me/v2/bot/profile/${lineUserId}`, {
               headers: {
                 "Authorization": `Bearer ${org.line_channel_token}`,
@@ -148,6 +163,10 @@ serve(async (req) => {
               const profile = await profileRes.json();
               displayName = profile.displayName || displayName;
               pictureUrl = profile.pictureUrl || null;
+              console.log("New user profile fetched:", { displayName, hasPicture: !!pictureUrl });
+            } else {
+              const errorText = await profileRes.text();
+              console.error("LINE profile API error for new user:", profileRes.status, errorText);
             }
           } catch (error) {
             console.error("Failed to fetch LINE profile:", error);
@@ -167,6 +186,7 @@ serve(async (req) => {
           console.error("Failed to create customer:", createError);
         } else {
           customerId = newCustomerId;
+          console.log("New customer created with id:", customerId);
         }
       }
 
