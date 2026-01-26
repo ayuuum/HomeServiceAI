@@ -46,11 +46,17 @@ export function AdminAIAssistant() {
     let assistantContent = "";
 
     try {
-      // Get the user's session access token
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      // Get the user's session access token - refresh if needed
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      let accessToken = sessionData.session?.access_token;
       
-      if (!accessToken) {
+      // If session exists but might be expired, try to refresh
+      if (sessionData.session && !accessToken) {
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        accessToken = refreshData.session?.access_token;
+      }
+      
+      if (!accessToken || sessionError) {
         toast.error("ログインが必要です", { description: "AIアシスタントを使用するにはログインしてください" });
         setIsLoading(false);
         return;
