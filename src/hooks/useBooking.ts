@@ -499,86 +499,28 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
             // ---------------------------------
 
             try {
-                // 1. Create or Find Customer
-                let customerId: string | undefined;
+                // 1. Find or Create Customer using secure RPC function
+                // This function handles:
+                // - Search by line_user_id (highest priority)
+                // - Search by phone number (normalized)
+                // - Search by email
+                // - Create new customer if no match found
+                // - Update existing customer info if found
+                const { data: customerId, error: customerError } = await supabase
+                    .rpc('find_or_create_customer', {
+                        p_organization_id: organizationId,
+                        p_name: `${customerLastName} ${customerFirstName}`.trim(),
+                        p_email: customerEmail || null,
+                        p_phone: customerPhone || null,
+                        p_postal_code: customerPostalCode || null,
+                        p_address: customerAddress || null,
+                        p_address_building: customerAddressBuilding || null,
+                        p_line_user_id: lineUserId || null
+                    });
 
-                // Check if user is authenticated - only authenticated users can search existing customers
-                const { data: { user } } = await supabase.auth.getUser();
-
-                // Only search for existing customer if user is authenticated (has SELECT permission)
-                if (user && (customerEmail || customerPhone)) {
-                    // Build query conditions
-                    let query = supabase
-                        .from('customers')
-                        .select('id');
-
-                    const conditions = [];
-                    if (customerEmail) conditions.push(`email.eq.${customerEmail}`);
-
-                    if (customerPhone) {
-                        // Search for both the input format and the normalized format (no hyphens)
-                        const normalizedPhone = customerPhone.replace(/[^\d]/g, '');
-                        conditions.push(`phone.eq.${customerPhone}`);
-                        if (normalizedPhone !== customerPhone) {
-                            conditions.push(`phone.eq.${normalizedPhone}`);
-                        }
-                    }
-
-                    if (conditions.length > 0) {
-                        query = query.or(conditions.join(','));
-                        const { data: existingCustomer } = await query.maybeSingle();
-
-                        if (existingCustomer) {
-                            customerId = existingCustomer.id;
-                        }
-                    }
-                }
-
-                // Search by lineUserId if available (even for unauthenticated users)
-                if (!customerId && lineUserId) {
-                    const { data: existingCustomer } = await supabase
-                        .from('customers')
-                        .select('id')
-                        .eq('line_user_id', lineUserId)
-                        .eq('organization_id', organizationId)
-                        .maybeSingle();
-
-                    if (existingCustomer) {
-                        customerId = existingCustomer.id;
-                    }
-                }
-
-                // For unauthenticated users or when no existing customer found, create new customer
-                if (!customerId) {
-                    // Use secure RPC function to create customer with organization validation
-                    const { data: newCustomerId, error: customerError } = await supabase
-                        .rpc('create_customer_secure', {
-                            p_organization_id: organizationId,
-                            p_name: `${customerLastName} ${customerFirstName}`.trim(),
-                            p_email: customerEmail || null,
-                            p_phone: customerPhone || null,
-                            p_postal_code: customerPostalCode || null,
-                            p_address: customerAddress || null,
-                            p_address_building: customerAddressBuilding || null,
-                            p_line_user_id: lineUserId || null
-                        });
-
-                    if (customerError) throw customerError;
-                    customerId = newCustomerId;
-                } else if (customerId) {
-                    // Update existing customer info to keep it fresh (including line_user_id if just linked)
-                    await supabase
-                        .from('customers')
-                        .update({
-                            name: `${customerLastName} ${customerFirstName}`.trim(),
-                            email: customerEmail.trim() || null,
-                            phone: customerPhone.trim() || null,
-                            postal_code: customerPostalCode.trim() || null,
-                            address: customerAddress.trim() || null,
-                            address_building: customerAddressBuilding.trim() || null,
-                            line_user_id: lineUserId || null // Sync lineUserId if it was missing
-                        })
-                        .eq('id', customerId);
+                if (customerError) {
+                    console.error("Error finding/creating customer:", customerError);
+                    throw customerError;
                 }
 
                 if (!customerId) {
