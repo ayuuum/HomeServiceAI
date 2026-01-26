@@ -516,6 +516,20 @@ export type Database = {
             }
             Returns: string
           }
+      find_or_create_customer: {
+        Args: {
+          p_address?: string
+          p_address_building?: string
+          p_avatar_url?: string
+          p_email?: string
+          p_line_user_id?: string
+          p_name: string
+          p_organization_id: string
+          p_phone?: string
+          p_postal_code?: string
+        }
+        Returns: string
+      }
       get_booking_by_cancel_token: {
         Args: { p_token: string }
         Returns: {
