@@ -46,21 +46,20 @@ export function AdminAIAssistant() {
     let assistantContent = "";
 
     try {
-      // Get the user's session access token - refresh if needed
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      let accessToken = sessionData.session?.access_token;
+      // Always refresh session to ensure it's valid on the server
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       
-      // If session exists but might be expired, try to refresh
-      if (sessionData.session && !accessToken) {
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        accessToken = refreshData.session?.access_token;
-      }
-      
-      if (!accessToken || sessionError) {
-        toast.error("ログインが必要です", { description: "AIアシスタントを使用するにはログインしてください" });
+      if (refreshError || !refreshData.session) {
+        // Session is invalid or expired - clear and ask user to re-login
+        await supabase.auth.signOut();
+        toast.error("セッションの有効期限が切れました", { 
+          description: "再度ログインしてください" 
+        });
         setIsLoading(false);
         return;
       }
+      
+      const accessToken = refreshData.session.access_token;
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
