@@ -1,113 +1,273 @@
 
+# AIエージェント機能 - 包括的実装計画
 
-# LINEプロフィール写真表示 - 実装計画
+## 概要
 
-## 現状分析
-
-### 問題点
-TypeScript型定義ファイル（`src/integrations/supabase/types.ts`）が実際のデータベーススキーマと同期していません。
-
-| 項目 | 実際のDB | 型定義ファイル |
-|------|----------|---------------|
-| `avatar_url`カラム | 存在する | 定義されていない |
-
-### 既存の実装状況
-
-LINE Webhook（`supabase/functions/line-webhook/index.ts`）では、既にLINEプロフィール写真を取得・保存する処理が実装されています：
+4つのAI機能を段階的に実装し、お客様と管理者の両方に価値を提供します。
 
 ```text
-新規顧客作成時:
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ LINE Webhook│ ──→ │ LINE API     │ ──→ │ customers   │
-│             │     │ /v2/bot/     │     │ avatar_url  │
-└─────────────┘     │ profile/{id} │     └─────────────┘
-                    └──────────────┘
-
-既存顧客更新時:
-同じ流れでavatar_urlを更新
+┌─────────────────────────────────────────────────────────────────┐
+│                    AIエージェント機能全体像                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ LINE自動応答 │  │ 管理者向け   │  │ 音声対話             │  │
+│  │ AIエージェント│  │ AIアシスタント│  │ AIエージェント       │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
+│         │                 │                     │              │
+│         ▼                 ▼                     ▼              │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Lovable AI Gateway                         │   │
+│  │         (google/gemini-3-flash-preview)                 │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                既存の予約AIアシスタント                   │  │
+│  │              (booking-assistant) 改善                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## 解決方法
+---
 
-### 1. ConversationList.tsxの修正
+## フェーズ1: LINE自動応答AIエージェント
 
-型エラーを回避しながら`avatar_url`を取得できるようにします。
+顧客からのLINEメッセージに対してAIが自動で返信し、よくある質問への対応や予約案内を行います。
 
-**変更内容：**
-- Supabaseクエリで型アサーションを使用
-- `avatar_url`フィールドを正しく取得・表示
+### 機能概要
+- 顧客がLINEでメッセージを送ると、AIが自動で返信
+- 予約状況の確認、サービス案内、料金説明などを自動化
+- スタッフへのエスカレーション機能（複雑な問い合わせは通知）
+- 予約作成フローへの誘導
 
-```typescript
-// 修正前
-const { data: customers } = await supabase
-  .from('customers')
-  .select('id, name, avatar_url, line_user_id')  // 型エラー
-
-// 修正後
-const { data: customers } = await supabase
-  .from('customers')
-  .select('id, name, avatar_url, line_user_id')
-  .not('line_user_id', 'is', null) as unknown as { 
-    data: Array<{
-      id: string;
-      name: string | null;
-      avatar_url: string | null;
-      line_user_id: string;
-    }> | null;
-    error: any;
-  };
-```
-
-### 2. プロフィール写真の表示確認
-
-既存のUIコードでは、`avatar_url`が存在する場合に画像を表示する処理が既に実装されています：
-
-```tsx
-<Avatar className="h-10 w-10 flex-shrink-0">
-  {conversation.avatarUrl && (
-    <img
-      src={conversation.avatarUrl}
-      alt={conversation.customerName}
-      className="h-full w-full object-cover rounded-full"
-    />
-  )}
-  <AvatarFallback className="bg-[#06C755] text-white text-sm">
-    {conversation.customerName.charAt(0)}
-  </AvatarFallback>
-</Avatar>
-```
-
-## 動作フロー
-
-```text
-プロフィール写真表示までの流れ:
-
-1. LINEユーザーがメッセージ送信
-         ↓
-2. Webhook受信 → LINE API でプロフィール取得
-         ↓
-3. customers.avatar_url に保存
-         ↓
-4. ConversationList でavatar_url取得
-         ↓
-5. 受信トレイにプロフィール写真表示
-```
-
-## 変更ファイル
+### 実装内容
 
 | ファイル | 変更内容 |
 |----------|---------|
-| `src/components/ConversationList.tsx` | 型アサーションを追加してavatar_urlを正しく取得 |
+| `supabase/functions/line-ai-agent/index.ts` | 新規作成 - AIエージェントのコアロジック |
+| `supabase/functions/line-webhook/index.ts` | AI応答トリガーを追加 |
+| `supabase/config.toml` | 新しいEdge Function設定を追加 |
+| `src/components/LineSettingsForm.tsx` | AI自動応答の有効/無効切り替えUI |
 
-## 技術的注意事項
+### AI応答フロー
 
-- `src/integrations/supabase/types.ts`は自動生成ファイルのため直接編集不可
-- 型定義は次回のスキーマ同期時に自動更新される予定
-- 今回は型アサーションで一時的に回避
+```text
+顧客がLINEでメッセージ送信
+         │
+         ▼
+┌─────────────────┐
+│  line-webhook   │
+│  (メッセージ受信)│
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│ AI応答が有効？   │─No─→│ 通常処理        │
+│                 │     │ (受信トレイ表示) │
+└────────┬────────┘     └─────────────────┘
+        Yes
+         │
+         ▼
+┌─────────────────┐
+│ line-ai-agent   │
+│ (AI返信生成)    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│ Lovable AI Gateway                      │
+│ - サービス情報をコンテキストに含める    │
+│ - 予約可能日時を取得                    │
+│ - 過去の会話履歴を参照                  │
+└────────┬────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ LINE API        │
+│ (返信送信)      │
+└─────────────────┘
+```
 
-## 期待される結果
+### データベース変更
 
-修正後、受信トレイの会話リストで：
-- LINEプロフィール写真がアバターとして表示される
-- 写真がない場合は名前の頭文字がフォールバックとして表示される
+`organizations`テーブルに設定カラムを追加：
+- `line_ai_enabled` (boolean) - AI自動応答の有効/無効
+- `line_ai_system_prompt` (text) - カスタムシステムプロンプト
+- `line_ai_escalation_keywords` (jsonb) - エスカレーションキーワード
 
+---
+
+## フェーズ2: 管理者向けAIアシスタント
+
+管理画面で予約分析やレポート生成、業務効率化をサポートするAIアシスタントです。
+
+### 機能概要
+- ダッシュボードにAIチャットウィジェットを設置
+- 「今週の売上は？」「一番人気のサービスは？」など自然言語で質問
+- 予約傾向分析、顧客セグメント分析
+- 業務改善のサジェスチョン
+
+### 実装内容
+
+| ファイル | 変更内容 |
+|----------|---------|
+| `supabase/functions/admin-ai-assistant/index.ts` | 新規作成 - 管理者向けAIロジック |
+| `src/components/AdminAIAssistant.tsx` | 新規作成 - チャットUIコンポーネント |
+| `src/pages/AdminDashboard.tsx` | AIアシスタントウィジェットを追加 |
+
+### 対話例
+
+```text
+管理者: 「今月の売上分析をして」
+
+AI: 📊 今月の売上分析
+
+【概要】
+- 総売上: ¥1,234,567 (前月比 +15%)
+- 予約件数: 89件
+
+【人気サービスTOP3】
+1. エアコンクリーニング (32件)
+2. キッチンクリーニング (24件)
+3. 浴室クリーニング (18件)
+
+【改善提案】
+せっかくエアコン需要が高いので、室外機洗浄オプション
+のセット割引を検討してはいかがでしょうか？
+```
+
+---
+
+## フェーズ3: 音声対話AIエージェント (ElevenLabs)
+
+マイクを使って音声でAIと会話できる機能です。ハンズフリーで予約確認や問い合わせができます。
+
+### 機能概要
+- ブラウザのマイクを使用した音声入力
+- AI応答の音声読み上げ
+- 予約ページと管理画面の両方で利用可能
+
+### 実装内容
+
+| ファイル | 変更内容 |
+|----------|---------|
+| `supabase/functions/elevenlabs-conversation-token/index.ts` | 新規作成 - ElevenLabs認証トークン取得 |
+| `src/components/VoiceAgent.tsx` | 新規作成 - 音声対話UIコンポーネント |
+| `src/components/booking/BookingAssistant.tsx` | 音声入力ボタンを追加 |
+
+### 必要なAPI設定
+- ElevenLabs API キー（Connectorで接続）
+- ElevenLabs Agent IDの設定
+
+### 音声対話フロー
+
+```text
+┌─────────────────┐
+│ マイクボタン押下 │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ 音声録音開始     │
+│ (Web Audio API)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ ElevenLabs      │
+│ WebSocket接続   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│ リアルタイム音声認識        │
+│ + AI応答生成                │
+│ + 音声合成                  │
+└────────┬────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ 音声再生         │
+└─────────────────┘
+```
+
+---
+
+## フェーズ4: 予約フォームAI改善
+
+既存の予約AIアシスタントをさらに強化します。
+
+### 改善内容
+- 会話履歴の保持（セッション間で継続）
+- より詳細なサービス説明
+- 写真付きのおすすめ表示
+- 予約完了までのガイド機能
+
+### 実装内容
+
+| ファイル | 変更内容 |
+|----------|---------|
+| `supabase/functions/booking-assistant/index.ts` | システムプロンプト改善、ツール呼び出し追加 |
+| `src/components/booking/BookingAssistant.tsx` | UI/UX改善、画像表示対応 |
+| `src/hooks/useBookingAssistant.ts` | 新規作成 - 状態管理ロジック分離 |
+
+---
+
+## 技術仕様
+
+### 使用するAIモデル
+
+| 機能 | モデル | 理由 |
+|------|--------|------|
+| LINE自動応答 | google/gemini-3-flash-preview | 高速応答、コスト効率 |
+| 管理者アシスタント | google/gemini-3-flash-preview | データ分析、複雑な推論 |
+| 音声対話 | ElevenLabs Agent | リアルタイム音声処理 |
+| 予約アシスタント | google/gemini-3-flash-preview | 既存実装と統一 |
+
+### セキュリティ考慮事項
+- すべてのAI呼び出しはEdge Function経由（APIキー保護）
+- 顧客データはorganization_idでスコープ制限
+- 機密情報をAIに送信しないフィルタリング
+
+### 必要なシークレット
+
+| シークレット名 | 用途 | 状態 |
+|---------------|------|------|
+| LOVABLE_API_KEY | Lovable AI Gateway | 設定済み |
+| ELEVENLABS_API_KEY | 音声対話AI | 要設定 |
+
+---
+
+## 実装順序
+
+```text
+Week 1: フェーズ1 (LINE自動応答AI)
+   ├─ DB変更 + Edge Function作成
+   ├─ line-webhook連携
+   └─ 設定UI追加
+
+Week 2: フェーズ2 (管理者向けAI)
+   ├─ admin-ai-assistant Edge Function
+   └─ ダッシュボードウィジェット
+
+Week 3: フェーズ3 (音声対話AI)
+   ├─ ElevenLabs連携設定
+   └─ VoiceAgentコンポーネント
+
+Week 4: フェーズ4 (予約AI改善)
+   └─ 既存機能の強化
+```
+
+---
+
+## 注意事項
+
+### ElevenLabs連携について
+音声対話AI機能を使用するには、ElevenLabsのAPIキーとAgent IDが必要です。
+ElevenLabsダッシュボードでエージェントを作成し、必要な設定を行う必要があります。
+
+### レート制限
+- Lovable AIには1分あたりのリクエスト制限があります
+- LINE自動応答では、短時間に大量のメッセージが来た場合の制御が必要です
+- 429エラー発生時は適切にユーザーへ通知します
