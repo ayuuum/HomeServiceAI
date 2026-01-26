@@ -53,7 +53,7 @@ serve(async (req) => {
     // Find organization by line_bot_user_id
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .select("id, line_channel_secret, line_channel_token")
+      .select("id, line_channel_secret, line_channel_token, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords")
       .eq("line_bot_user_id", destination)
       .single();
 
@@ -240,6 +240,40 @@ serve(async (req) => {
           console.error("Failed to save message:", insertError);
         } else {
           console.log("Message saved successfully");
+
+          // Trigger AI agent if enabled
+          if (org.line_ai_enabled && org.line_channel_token && message.type === "text") {
+            console.log("AI auto-response enabled, triggering line-ai-agent");
+            
+            try {
+              const aiResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/line-ai-agent`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                },
+                body: JSON.stringify({
+                  organizationId: org.id,
+                  lineUserId: lineUserId,
+                  customerId: customerId,
+                  userMessage: content,
+                  channelToken: org.line_channel_token,
+                  systemPrompt: org.line_ai_system_prompt,
+                  escalationKeywords: org.line_ai_escalation_keywords,
+                }),
+              });
+
+              if (!aiResponse.ok) {
+                const errorText = await aiResponse.text();
+                console.error("AI agent error:", aiResponse.status, errorText);
+              } else {
+                const aiResult = await aiResponse.json();
+                console.log("AI agent response:", aiResult.success ? "success" : "failed", aiResult.escalated ? "(escalated)" : "");
+              }
+            } catch (aiError) {
+              console.error("Failed to trigger AI agent:", aiError);
+            }
+          }
         }
       }
 

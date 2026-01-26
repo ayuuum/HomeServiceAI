@@ -5,9 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
-import { Eye, EyeOff, Copy, Check, ExternalLink } from 'lucide-react';
+import { Eye, EyeOff, Copy, Check, ExternalLink, Bot } from 'lucide-react';
 
 export function LineSettingsForm() {
   const { organization, refreshOrganization } = useAuth();
@@ -23,6 +25,11 @@ export function LineSettingsForm() {
   const [isTesting, setIsTesting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasExistingConfig, setHasExistingConfig] = useState(false);
+  
+  // AI Settings
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiSystemPrompt, setAiSystemPrompt] = useState('');
+  const [aiEscalationKeywords, setAiEscalationKeywords] = useState('スタッフ, 人間, 担当者, クレーム, 苦情');
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/line-webhook`;
 
@@ -37,7 +44,7 @@ export function LineSettingsForm() {
 
     const { data, error } = await supabase
       .from('organizations')
-      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id')
+      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords')
       .eq('id', organization.id)
       .single();
 
@@ -55,11 +62,24 @@ export function LineSettingsForm() {
       if (data.line_channel_secret) {
         setChannelSecret('••••••••••••••••');
       }
-      if (data.line_bot_user_id) {
-        setBotUserId(data.line_bot_user_id);
+      if ((data as any).line_bot_user_id) {
+        setBotUserId((data as any).line_bot_user_id);
       }
-      if (data.line_liff_id) {
-        setLiffId(data.line_liff_id);
+      if ((data as any).line_liff_id) {
+        setLiffId((data as any).line_liff_id);
+      }
+      // AI settings
+      if ((data as any).line_ai_enabled !== undefined) {
+        setAiEnabled((data as any).line_ai_enabled);
+      }
+      if ((data as any).line_ai_system_prompt) {
+        setAiSystemPrompt((data as any).line_ai_system_prompt);
+      }
+      if ((data as any).line_ai_escalation_keywords) {
+        const keywords = (data as any).line_ai_escalation_keywords;
+        if (Array.isArray(keywords)) {
+          setAiEscalationKeywords(keywords.join(', '));
+        }
       }
     }
   };
@@ -70,7 +90,7 @@ export function LineSettingsForm() {
     try {
       setIsLoading(true);
 
-      const updates: Record<string, string | null> = {};
+      const updates: Record<string, string | boolean | string[] | null> = {};
 
       // Only update if value is not masked
       if (channelToken && !channelToken.includes('•')) {
@@ -85,14 +105,14 @@ export function LineSettingsForm() {
       if (liffId) {
         updates.line_liff_id = liffId.trim();
       }
-
-      if (Object.keys(updates).length === 0) {
-        toast({
-          variant: "destructive",
-          title: "入力エラー",
-          description: "保存する値を入力してください",
-        });
-        return;
+      
+      // Always update AI settings
+      updates.line_ai_enabled = aiEnabled;
+      if (aiSystemPrompt) {
+        updates.line_ai_system_prompt = aiSystemPrompt.trim();
+      }
+      if (aiEscalationKeywords) {
+        updates.line_ai_escalation_keywords = aiEscalationKeywords.split(',').map(k => k.trim()).filter(Boolean);
       }
 
       const { error } = await supabase
@@ -315,7 +335,59 @@ export function LineSettingsForm() {
           />
         </div>
 
-        {/* Action buttons */}
+        {/* AI Auto-Response Section */}
+        <div className="pt-6 border-t space-y-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">AI自動応答</h3>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="aiEnabled">AI自動応答を有効にする</Label>
+              <p className="text-xs text-muted-foreground">
+                LINEからのメッセージにAIが自動で返信します
+              </p>
+            </div>
+            <Switch
+              id="aiEnabled"
+              checked={aiEnabled}
+              onCheckedChange={setAiEnabled}
+            />
+          </div>
+
+          {aiEnabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="aiSystemPrompt">カスタムプロンプト（任意）</Label>
+                <p className="text-xs text-muted-foreground">
+                  AIの応答スタイルをカスタマイズできます。空欄の場合はデフォルトのプロンプトが使用されます。
+                </p>
+                <Textarea
+                  id="aiSystemPrompt"
+                  value={aiSystemPrompt}
+                  onChange={(e) => setAiSystemPrompt(e.target.value)}
+                  placeholder="例: 明るく丁寧な言葉遣いで、お客様のご質問に回答してください。予約の案内を積極的に行ってください。"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="aiEscalationKeywords">エスカレーションキーワード</Label>
+                <p className="text-xs text-muted-foreground">
+                  これらのキーワードが含まれるメッセージは、AIではなくスタッフに通知されます（カンマ区切り）
+                </p>
+                <Input
+                  id="aiEscalationKeywords"
+                  value={aiEscalationKeywords}
+                  onChange={(e) => setAiEscalationKeywords(e.target.value)}
+                  placeholder="スタッフ, 人間, 担当者, クレーム, 苦情"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-3 pt-4">
           <Button
             onClick={handleTestConnection}
