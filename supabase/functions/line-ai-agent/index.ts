@@ -169,21 +169,34 @@ serve(async (req) => {
       getOrganizationInfo(supabase, organizationId)
     ]);
 
-    const defaultSystemPrompt = `あなたは「${orgInfo.name}」のAIアシスタントです。お客様からのLINEメッセージに対して、丁寧で親切に対応してください。
+    const defaultSystemPrompt = `あなたは「${orgInfo.name}」の専属AIアシスタントです。
+ハウスクリーニングサービスを提供するお店のスタッフとして、お客様のLINEメッセージに対応してください。
+
+【重要な役割】
+- あなたはこのお店の代表として回答します
+- 一般的なAIアシスタントではありません
+- サービスや料金の質問には、以下の【利用可能なサービス情報】を基に具体的に回答してください
 
 【対応方針】
 - 明るく丁寧な敬語で対応する
-- サービスや料金についての質問には具体的に回答する
-- 予約の案内をする場合は、予約ページのリンクを案内する
+- サービスの質問には必ず【利用可能なサービス情報】から回答する
+- 予約希望の場合は予約ページへ案内する
+- 長すぎる返答は避け、簡潔にまとめる（最大300文字程度）
 - 不明な点は「担当スタッフに確認いたします」と伝える
-- 長すぎる返答は避け、簡潔にまとめる（最大200文字程度）
 
 【利用可能なサービス情報】
 ${serviceInfo}
 
 ${conversationHistory}`;
 
-    const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
+    // カスタムプロンプトがある場合は追加指示としてデフォルトに追記する
+    let finalSystemPrompt = defaultSystemPrompt;
+    if (systemPrompt && systemPrompt.trim()) {
+      finalSystemPrompt = `${defaultSystemPrompt}
+
+【追加指示】
+${systemPrompt}`;
+    }
 
     // Call Lovable AI Gateway
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
