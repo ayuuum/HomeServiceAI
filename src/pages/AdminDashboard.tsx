@@ -19,6 +19,7 @@ import { startOfDay, subDays, format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { exportToCSV, formatDateForExport, formatCurrencyForExport, type ColumnConfig } from "@/lib/exportUtils";
+import { AdminAIAssistant } from "@/components/AdminAIAssistant";
 
 const container = {
   hidden: { opacity: 0 },
@@ -443,6 +444,9 @@ const AdminDashboard = () => {
         onOpenChange={setNewBookingModalOpen}
         onBookingCreated={fetchBookings}
       />
+
+      {/* AI Assistant Widget */}
+      <AdminAIAssistant />
     </div>
   );
 };
