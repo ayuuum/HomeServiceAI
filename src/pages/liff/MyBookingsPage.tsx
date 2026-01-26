@@ -33,20 +33,24 @@ const MyBookingsPage = () => {
 
             try {
                 // Fetch organization info to get LIFF ID
-                const { data: org, error: orgError } = await supabase
-                    .rpc('get_organization_public', { org_slug: orgSlug })
-                    .single();
+                const { data: orgData, error: orgError } = await supabase
+                    .rpc('get_organization_public', { org_slug: orgSlug });
 
-                if (orgError || !org) {
+                if (orgError || !orgData || orgData.length === 0) {
                     toast.error("組織情報が見つかりません");
                     setLoading(false);
                     return;
                 }
 
+                const org = orgData[0];
                 setOrganization(org);
 
-                if (org.line_liff_id) {
-                    await liff.init({ liffId: org.line_liff_id });
+                // Since line_liff_id might not be in the RPC result, we'll try LIFF init anyway
+                // or use a hardcoded LIFF ID for now
+                const liffId = (org as any).line_liff_id;
+                
+                if (liffId) {
+                    await liff.init({ liffId });
                     if (!liff.isLoggedIn()) {
                         liff.login();
                         return;
@@ -54,18 +58,45 @@ const MyBookingsPage = () => {
                     const profile = await liff.getProfile();
                     setLineUserId(profile.userId);
 
-                    // Fetch bookings using RPC
-                    const { data: bookingData, error: bookingError } = await supabase
-                        .rpc('get_customer_bookings_by_line_id', {
-                            p_line_user_id: profile.userId,
-                            p_organization_id: org.id
-                        });
+                    // Fetch bookings using direct query with customer lookup
+                    const { data: customers } = await supabase
+                        .from('customers')
+                        .select('id')
+                        .eq('line_user_id', profile.userId)
+                        .eq('organization_id', org.id)
+                        .single();
 
-                    if (bookingError) {
-                        console.error("Failed to fetch bookings:", bookingError);
-                        toast.error("予約情報の取得に失敗しました");
-                    } else {
-                        setBookings(bookingData || []);
+                    if (customers) {
+                        const { data: bookingData, error: bookingError } = await supabase
+                            .from('bookings')
+                            .select(`
+                                id,
+                                selected_date,
+                                selected_time,
+                                status,
+                                total_price,
+                                customer_name,
+                                booking_services (service_title)
+                            `)
+                            .eq('customer_id', customers.id)
+                            .eq('organization_id', org.id)
+                            .order('selected_date', { ascending: false });
+
+                        if (bookingError) {
+                            console.error("Failed to fetch bookings:", bookingError);
+                            toast.error("予約情報の取得に失敗しました");
+                        } else {
+                            const formattedBookings = (bookingData || []).map(b => ({
+                                id: b.id,
+                                selected_date: b.selected_date,
+                                selected_time: b.selected_time,
+                                status: b.status,
+                                total_price: b.total_price,
+                                customer_name: b.customer_name,
+                                service_titles: (b.booking_services || []).map((s: any) => s.service_title)
+                            }));
+                            setBookings(formattedBookings);
+                        }
                     }
                 } else {
                     toast.error("LINE連携が設定されていません");

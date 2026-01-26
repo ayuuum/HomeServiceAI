@@ -40,6 +40,7 @@ serve(async (req) => {
         selected_time,
         customer_name,
         organization_id,
+        customer_id,
         organizations (
           line_channel_token,
           name
@@ -55,13 +56,16 @@ serve(async (req) => {
 
         console.log(`Found ${pendingBookings?.length || 0} potential bookings to check.`);
 
-        const results = [];
+        const results: { id: string; status: string; error?: string }[] = [];
 
         for (const booking of (pendingBookings || [])) {
             try {
-                const lineUserId = booking.customers?.line_user_id;
-                const channelToken = booking.organizations?.line_channel_token;
-                const orgName = booking.organizations?.name;
+                const customers = booking.customers as { line_user_id: string } | { line_user_id: string }[] | null;
+                const organizations = booking.organizations as { line_channel_token: string; name: string } | { line_channel_token: string; name: string }[] | null;
+                
+                const lineUserId = Array.isArray(customers) ? customers[0]?.line_user_id : customers?.line_user_id;
+                const channelToken = Array.isArray(organizations) ? organizations[0]?.line_channel_token : organizations?.line_channel_token;
+                const orgName = Array.isArray(organizations) ? organizations[0]?.name : organizations?.name;
 
                 if (!lineUserId || !channelToken) {
                     console.log(`Skipping booking ${booking.id}: missing lineUserId or channelToken`);
@@ -117,9 +121,9 @@ serve(async (req) => {
 
                     results.push({ id: booking.id, status: 'sent' });
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error(`Error processing booking ${booking.id}:`, err);
-                results.push({ id: booking.id, status: 'error', error: err.message });
+                results.push({ id: booking.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' });
             }
         }
 

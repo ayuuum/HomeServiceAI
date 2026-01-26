@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.test-line-connection]
 verify_jwt = false
+
+[functions.cron-send-reminders]
+verify_jwt = false
+
+[functions.line-ai-agent]
+verify_jwt = false
