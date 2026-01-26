@@ -359,15 +359,16 @@ export function LineSettingsForm() {
           {aiEnabled && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="aiSystemPrompt">カスタムプロンプト（任意）</Label>
+                <Label htmlFor="aiSystemPrompt">AI応答スタイルの追加指示（任意）</Label>
                 <p className="text-xs text-muted-foreground">
-                  AIの応答スタイルをカスタマイズできます。空欄の場合はデフォルトのプロンプトが使用されます。
+                  AIの応答スタイルを調整するための追加指示です。サービス情報は自動的に含まれます。
+                  例：「フレンドリーな口調で」「敬語を厳密に」
                 </p>
                 <Textarea
                   id="aiSystemPrompt"
                   value={aiSystemPrompt}
                   onChange={(e) => setAiSystemPrompt(e.target.value)}
-                  placeholder="例: 明るく丁寧な言葉遣いで、お客様のご質問に回答してください。予約の案内を積極的に行ってください。"
+                  placeholder="例: 明るく元気な言葉遣いで対応してください"
                   rows={3}
                 />
               </div>
