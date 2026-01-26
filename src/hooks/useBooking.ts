@@ -515,7 +515,8 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                         p_postal_code: customerPostalCode || null,
                         p_address: customerAddress || null,
                         p_address_building: customerAddressBuilding || null,
-                        p_line_user_id: lineUserId || null
+                        p_line_user_id: lineUserId || null,
+                        p_avatar_url: null
                     });
 
                 if (customerError) {
