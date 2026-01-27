@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Copy, Check, ExternalLink, Bot } from 'lucide-react';
 
 export function LineSettingsForm() {
@@ -26,6 +27,9 @@ export function LineSettingsForm() {
   const [copied, setCopied] = useState(false);
   const [hasExistingConfig, setHasExistingConfig] = useState(false);
   
+  // Reminder Settings
+  const [reminderHours, setReminderHours] = useState<number[]>([24]);
+
   // AI Settings
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiSystemPrompt, setAiSystemPrompt] = useState('');
@@ -44,7 +48,7 @@ export function LineSettingsForm() {
 
     const { data, error } = await supabase
       .from('organizations')
-      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords')
+      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords, line_reminder_hours_before')
       .eq('id', organization.id)
       .single();
 
@@ -67,6 +71,13 @@ export function LineSettingsForm() {
       }
       if ((data as any).line_liff_id) {
         setLiffId((data as any).line_liff_id);
+      }
+      // Reminder settings
+      if ((data as any).line_reminder_hours_before) {
+        const hours = (data as any).line_reminder_hours_before;
+        if (Array.isArray(hours)) {
+          setReminderHours(hours);
+        }
       }
       // AI settings
       if ((data as any).line_ai_enabled !== undefined) {
@@ -106,7 +117,8 @@ export function LineSettingsForm() {
         updates.line_liff_id = liffId.trim();
       }
       
-      // Always update AI settings
+      // Always update reminder and AI settings
+      (updates as any).line_reminder_hours_before = reminderHours;
       updates.line_ai_enabled = aiEnabled;
       if (aiSystemPrompt) {
         updates.line_ai_system_prompt = aiSystemPrompt.trim();
@@ -333,6 +345,48 @@ export function LineSettingsForm() {
             placeholder="例: 1234567890-abcdefgh"
             className="font-mono"
           />
+        </div>
+
+        {/* Reminder Settings Section */}
+        <div className="pt-6 border-t space-y-4">
+          <div className="flex items-center gap-2">
+            <Icon name="notifications" size={20} className="text-primary" />
+            <h3 className="font-semibold">リマインダー設定</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            予約前に自動でリマインダーを送信するタイミングを設定します
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { value: 1, label: '1時間前' },
+              { value: 3, label: '3時間前' },
+              { value: 24, label: '24時間前（1日前）' },
+              { value: 48, label: '48時間前（2日前）' },
+              { value: 72, label: '72時間前（3日前）' },
+            ].map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`reminder-${option.value}`}
+                  checked={reminderHours.includes(option.value)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setReminderHours([...reminderHours, option.value].sort((a, b) => a - b));
+                    } else {
+                      setReminderHours(reminderHours.filter(h => h !== option.value));
+                    }
+                  }}
+                />
+                <Label htmlFor={`reminder-${option.value}`} className="text-sm cursor-pointer">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+          {reminderHours.length === 0 && (
+            <p className="text-xs text-amber-600">
+              タイミングが選択されていないため、自動リマインダーは送信されません
+            </p>
+          )}
         </div>
 
         {/* AI Auto-Response Section */}

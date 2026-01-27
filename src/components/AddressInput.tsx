@@ -58,7 +58,7 @@ export const AddressInput = ({
 
   const searchAddress = useCallback(async (zipcode?: string) => {
     const digits = (zipcode || postalCode).replace(/[^\d]/g, "");
-    
+
     if (digits.length !== 7) {
       toast.error("郵便番号は7桁で入力してください");
       return;
@@ -111,30 +111,31 @@ export const AddressInput = ({
               placeholder="例：100-0001"
               value={postalCode}
               onChange={handlePostalCodeChange}
-              disabled={disabled}
+              disabled={disabled || isSearching}
               maxLength={8}
-              className="pl-9 h-11 text-base"
+              inputMode="numeric"
+              pattern="\d*"
+              className={`pl-9 h-11 text-base ${isSearching ? "pr-9" : ""}`}
             />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Icon name="sync" size={16} className="animate-spin text-muted-foreground" />
+              </div>
+            )}
           </div>
           <Button
             type="button"
             variant="outline"
             onClick={() => searchAddress()}
             disabled={disabled || isSearching || postalCode.replace(/[^\d]/g, "").length !== 7}
-            className="h-11 px-3 touch-manipulation flex items-center justify-center gap-1.5 text-sm"
+            className="h-11 px-3 touch-manipulation flex items-center justify-center gap-1.5 text-sm whitespace-nowrap"
           >
-            {isSearching ? (
-              <Icon name="sync" size={18} className="animate-spin" />
-            ) : (
-              <>
-                <Icon name="search" size={18} className="shrink-0" />
-                <span>検索</span>
-              </>
-            )}
+            <Icon name="search" size={18} className="shrink-0" />
+            <span>住所検索</span>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          郵便番号を入力すると自動で住所が入力されます
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          ハイフンなしでも検索可能です
         </p>
       </div>
 

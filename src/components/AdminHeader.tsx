@@ -82,6 +82,14 @@ export function AdminHeader() {
               受信トレイ
             </NavLink>
             <NavLink
+              to="/admin/broadcast"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+            >
+              <Icon name="campaign" size={16} />
+              一斉配信
+            </NavLink>
+            <NavLink
               to="/admin/reports"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"

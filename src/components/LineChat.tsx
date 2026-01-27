@@ -80,8 +80,8 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
           <div className="space-y-4">
             {messages.map((message, index) => {
               const isOutbound = message.direction === 'outbound';
-              const showDate = index === 0 || 
-                format(new Date(message.sentAt), 'yyyy-MM-dd') !== 
+              const showDate = index === 0 ||
+                format(new Date(message.sentAt), 'yyyy-MM-dd') !==
                 format(new Date(messages[index - 1].sentAt), 'yyyy-MM-dd');
 
               return (
@@ -99,13 +99,40 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
                   )}>
                     <div className={cn(
                       "max-w-[75%] rounded-2xl px-4 py-2",
-                      isOutbound 
-                        ? "bg-[#06C755] text-white rounded-br-md" 
+                      isOutbound
+                        ? "bg-[#06C755] text-white rounded-br-md"
                         : "bg-muted text-foreground rounded-bl-md"
                     )}>
-                      <p className="whitespace-pre-wrap break-words text-sm">
-                        {message.content}
-                      </p>
+                      {message.messageType === 'image' ? (
+                        <div className="relative group">
+                          <img
+                            src={message.content}
+                            alt="送信画像"
+                            className="max-w-full rounded-lg max-h-[300px] object-cover"
+                            onError={(e) => {
+                              // Fallback for broken images or legacy placeholders
+                              if (message.content.startsWith('[画像]')) return; // Already handled by UI text? no, we need to show content text.
+                              // Actually, if it's not a URL, it might be the old [画像] text. 
+                              // But here we trust messageType. If it fails to load, maybe show a broken icon or just the text.
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.querySelector('.fallback')?.classList.remove('hidden');
+                            }}
+                          />
+                          <p className="fallback hidden text-sm break-words">{message.content}</p>
+                        </div>
+                      ) : message.messageType === 'video' ? (
+                        <div className="relative">
+                          <video
+                            src={message.content}
+                            controls
+                            className="max-w-full rounded-lg max-h-[300px]"
+                          />
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap break-words text-sm">
+                          {message.content}
+                        </p>
+                      )}
                       <p className={cn(
                         "text-[10px] mt-1",
                         isOutbound ? "text-white/70" : "text-muted-foreground"

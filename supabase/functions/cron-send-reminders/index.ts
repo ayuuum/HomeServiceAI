@@ -6,8 +6,28 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function buildReminderMessage(
+    orgName: string,
+    customerName: string,
+    selectedDate: string,
+    selectedTime: string,
+    hoursBefore: number
+): string {
+    let timingText: string;
+    if (hoursBefore >= 72) {
+        timingText = `${Math.round(hoursBefore / 24)}日後`;
+    } else if (hoursBefore >= 48) {
+        timingText = "明後日";
+    } else if (hoursBefore >= 24) {
+        timingText = "明日";
+    } else {
+        timingText = "本日";
+    }
+
+    return `【リマインド】ご予約が${timingText}になりました。\n\n${orgName}\n日時: ${selectedDate} ${selectedTime}\nお名前: ${customerName}様\n\nご来店をお待ちしております。`;
+}
+
 serve(async (req) => {
-    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -19,113 +39,148 @@ serve(async (req) => {
 
         console.log("Starting cron-send-reminders job...");
 
-        // 1. Fetch bookings that are ~24 hours away and haven't sent reminder
-        // We look for bookings between 23 and 25 hours from now to be safe
         const now = new Date();
-        const targetMin = new Date(now.getTime() + 23 * 60 * 60 * 1000).toISOString();
-        const targetMax = new Date(now.getTime() + 25 * 60 * 60 * 1000).toISOString();
 
-        console.log(`Searching for bookings scheduled between ${targetMin} and ${targetMax}`);
+        // Fetch all organizations with LINE configured and their reminder settings
+        const { data: orgs, error: orgsError } = await supabase
+            .from('organizations')
+            .select('id, name, line_channel_token, line_reminder_hours_before')
+            .not('line_channel_token', 'is', null);
 
-        // Since selected_date and selected_time are separate text/date columns, 
-        // we use a RAW query or join logic.
-        // However, to keep it simple and avoid complex casting in PostgREST,
-        // we fetch active bookings and filter in JS if needed, or use a specific join.
+        if (orgsError) throw orgsError;
 
-        const { data: pendingBookings, error: fetchError } = await supabase
-            .from('bookings')
-            .select(`
-        id,
-        selected_date,
-        selected_time,
-        customer_name,
-        organization_id,
-        customer_id,
-        organizations (
-          line_channel_token,
-          name
-        ),
-        customers (
-          line_user_id
-        )
-      `)
-            .eq('status', 'pending')
-            .is('line_reminder_sent_at', null);
+        console.log(`Found ${orgs?.length || 0} organizations with LINE configured`);
 
-        if (fetchError) throw fetchError;
+        const results: { id: string; hoursBefore: number; status: string; error?: string }[] = [];
 
-        console.log(`Found ${pendingBookings?.length || 0} potential bookings to check.`);
+        for (const org of (orgs || [])) {
+            const reminderHours: number[] = (org as any).line_reminder_hours_before || [24];
+            const channelToken = org.line_channel_token;
 
-        const results: { id: string; status: string; error?: string }[] = [];
+            if (!channelToken) continue;
 
-        for (const booking of (pendingBookings || [])) {
-            try {
+            console.log(`Processing org ${org.id} with reminder timings: [${reminderHours.join(', ')}]h`);
+
+            // Fetch pending/confirmed bookings that have linked customers with LINE
+            const { data: bookings, error: bookingsError } = await supabase
+                .from('bookings')
+                .select(`
+                    id,
+                    selected_date,
+                    selected_time,
+                    customer_name,
+                    organization_id,
+                    customer_id,
+                    line_reminders_sent,
+                    customers (
+                        line_user_id
+                    )
+                `)
+                .eq('organization_id', org.id)
+                .in('status', ['pending', 'confirmed'])
+                .not('customer_id', 'is', null);
+
+            if (bookingsError) {
+                console.error(`Error fetching bookings for org ${org.id}:`, bookingsError);
+                continue;
+            }
+
+            for (const booking of (bookings || [])) {
                 const customers = booking.customers as { line_user_id: string } | { line_user_id: string }[] | null;
-                const organizations = booking.organizations as { line_channel_token: string; name: string } | { line_channel_token: string; name: string }[] | null;
-                
                 const lineUserId = Array.isArray(customers) ? customers[0]?.line_user_id : customers?.line_user_id;
-                const channelToken = Array.isArray(organizations) ? organizations[0]?.line_channel_token : organizations?.line_channel_token;
-                const orgName = Array.isArray(organizations) ? organizations[0]?.name : organizations?.name;
 
-                if (!lineUserId || !channelToken) {
-                    console.log(`Skipping booking ${booking.id}: missing lineUserId or channelToken`);
-                    continue;
-                }
+                if (!lineUserId) continue;
 
-                // Combine date and time to check if it's in the window
-                // selected_date: "2026-01-26", selected_time: "10:00"
+                // Parse booking datetime
                 const bookingDateTime = new Date(`${booking.selected_date}T${booking.selected_time}:00`);
                 const hoursUntilBooking = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-                // Send reminder if between 23 and 25 hours away
-                if (hoursUntilBooking >= 23 && hoursUntilBooking <= 25) {
-                    console.log(`Sending reminder for booking ${booking.id} (Scheduled: ${booking.selected_date} ${booking.selected_time})`);
+                // Get already-sent reminders from JSONB
+                const remindersSent: Record<string, string> = (booking as any).line_reminders_sent || {};
 
-                    const message = `【リマインド】ご予約が明日になりました。\n\n${orgName}\n日時: ${booking.selected_date} ${booking.selected_time}\nお名前: ${booking.customer_name}様\n\nご来店をお待ちしております。`;
+                for (const hoursBefore of reminderHours) {
+                    const key = String(hoursBefore);
 
-                    const lineRes = await fetch("https://api.line.me/v2/bot/message/push", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${channelToken}`,
-                        },
-                        body: JSON.stringify({
-                            to: lineUserId,
-                            messages: [{ type: "text", text: message }],
-                        }),
-                    });
+                    // Skip if this reminder was already sent
+                    if (remindersSent[key]) continue;
 
-                    if (!lineRes.ok) {
-                        const errorText = await lineRes.text();
-                        throw new Error(`LINE API Error: ${lineRes.status} ${errorText}`);
+                    // Check if we're in the window: hoursBefore-1 to hoursBefore+1
+                    if (hoursUntilBooking >= (hoursBefore - 1) && hoursUntilBooking <= (hoursBefore + 1)) {
+                        try {
+                            console.log(`Sending ${hoursBefore}h reminder for booking ${booking.id}`);
+
+                            const message = buildReminderMessage(
+                                org.name || 'ハウクリPro',
+                                booking.customer_name,
+                                booking.selected_date,
+                                booking.selected_time,
+                                hoursBefore
+                            );
+
+                            const lineRes = await fetch("https://api.line.me/v2/bot/message/push", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${channelToken}`,
+                                },
+                                body: JSON.stringify({
+                                    to: lineUserId,
+                                    messages: [{ type: "text", text: message }],
+                                }),
+                            });
+
+                            if (!lineRes.ok) {
+                                const errorText = await lineRes.text();
+                                throw new Error(`LINE API Error: ${lineRes.status} ${errorText}`);
+                            }
+
+                            // Update reminders_sent JSONB
+                            const updatedSent = { ...remindersSent, [key]: new Date().toISOString() };
+                            const updateData: Record<string, unknown> = {
+                                line_reminders_sent: updatedSent,
+                            };
+                            // Also update legacy field for backward compatibility
+                            if (hoursBefore === 24) {
+                                updateData.line_reminder_sent_at = new Date().toISOString();
+                            }
+
+                            const { error: updateError } = await supabase
+                                .from('bookings')
+                                .update(updateData)
+                                .eq('id', booking.id);
+
+                            if (updateError) throw updateError;
+
+                            // Update local state to prevent duplicate sends within same run
+                            remindersSent[key] = new Date().toISOString();
+
+                            // Log message
+                            await supabase.from('line_messages').insert({
+                                organization_id: booking.organization_id,
+                                customer_id: booking.customer_id,
+                                line_user_id: lineUserId,
+                                direction: "outbound",
+                                message_type: "text",
+                                content: message,
+                                sent_at: new Date().toISOString()
+                            });
+
+                            results.push({ id: booking.id, hoursBefore, status: 'sent' });
+                        } catch (err: unknown) {
+                            console.error(`Error sending ${hoursBefore}h reminder for booking ${booking.id}:`, err);
+                            results.push({
+                                id: booking.id,
+                                hoursBefore,
+                                status: 'error',
+                                error: err instanceof Error ? err.message : 'Unknown error'
+                            });
+                        }
                     }
-
-                    // Update reminder status
-                    const { error: updateError } = await supabase
-                        .from('bookings')
-                        .update({ line_reminder_sent_at: new Date().toISOString() })
-                        .eq('id', booking.id);
-
-                    if (updateError) throw updateError;
-
-                    // Log message
-                    await supabase.from('line_messages').insert({
-                        organization_id: booking.organization_id,
-                        customer_id: booking.customer_id,
-                        line_user_id: lineUserId,
-                        direction: "outbound",
-                        message_type: "text",
-                        content: message,
-                        sent_at: new Date().toISOString()
-                    });
-
-                    results.push({ id: booking.id, status: 'sent' });
                 }
-            } catch (err: unknown) {
-                console.error(`Error processing booking ${booking.id}:`, err);
-                results.push({ id: booking.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' });
             }
         }
+
+        console.log(`Cron job completed. Results: ${results.length} reminders processed`);
 
         return new Response(JSON.stringify({ success: true, results }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -120,7 +120,7 @@ serve(async (req) => {
             if (profileRes.ok) {
               const profile = await profileRes.json();
               console.log("LINE profile fetched:", { displayName: profile.displayName, hasPicture: !!profile.pictureUrl });
-              
+
               const { error: updateError } = await supabase
                 .from("customers")
                 .update({
@@ -129,7 +129,7 @@ serve(async (req) => {
                   updated_at: new Date().toISOString()
                 })
                 .eq("id", customerId);
-              
+
               if (updateError) {
                 console.error("Failed to update customer profile:", updateError);
               } else {
@@ -222,6 +222,61 @@ serve(async (req) => {
             content = `[${message.type}]`;
         }
 
+        // Handle Image/Video content
+        if (message.type === 'image' || message.type === 'video') {
+          if (org.line_channel_token) {
+            try {
+              console.log(`Downloading ${message.type} content for message ${message.id}`);
+
+              // Get content from LINE
+              const contentRes = await fetch(`https://api-data.line.me/v2/bot/message/${message.id}/content`, {
+                headers: {
+                  "Authorization": `Bearer ${org.line_channel_token}`,
+                },
+              });
+
+              if (contentRes.ok) {
+                const blob = await contentRes.blob();
+                const buffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(buffer);
+
+                // Upload to Supabase Storage
+                // Path: {orgId}/{lineUserId}/{messageId}.{ext}
+                const ext = message.type === 'image' ? 'jpg' : 'mp4'; // LINE sends jpeg/mp4 usually
+                const filePath = `${org.id}/${lineUserId}/${message.id}.${ext}`;
+
+                const { error: uploadError } = await supabase.storage
+                  .from('chat-attachments')
+                  .upload(filePath, uint8Array, {
+                    contentType: message.type === 'image' ? 'image/jpeg' : 'video/mp4',
+                    upsert: true
+                  });
+
+                if (uploadError) {
+                  console.error("Failed to upload to storage:", uploadError);
+                  content = `[${message.type}: 保存失敗]`;
+                } else {
+                  // Get Public URL
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('chat-attachments')
+                    .getPublicUrl(filePath);
+
+                  content = publicUrl;
+                  console.log(`Media saved to storage: ${publicUrl}`);
+                }
+              } else {
+                console.error("Failed to download from LINE:", contentRes.status);
+                content = `[${message.type}: 取得失敗]`;
+              }
+            } catch (err) {
+              console.error("Error processing media:", err);
+              content = `[${message.type}: エラー]`;
+            }
+          } else {
+            content = `[${message.type}: トークン未設定]`;
+          }
+        }
+
         // Save message to database
         const { error: insertError } = await supabase
           .from("line_messages")
@@ -244,7 +299,7 @@ serve(async (req) => {
           // Trigger AI agent if enabled
           if (org.line_ai_enabled && org.line_channel_token && message.type === "text") {
             console.log("AI auto-response enabled, triggering line-ai-agent");
-            
+
             try {
               const aiResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/line-ai-agent`, {
                 method: "POST",

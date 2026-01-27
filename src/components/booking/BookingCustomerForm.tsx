@@ -166,11 +166,16 @@ export const BookingCustomerForm = ({
             <Input
               id="phone"
               type="tel"
+              inputMode="tel"
+              pattern="[0-9-]*"
               placeholder="090-1234-5678"
               value={customerPhone}
               onChange={(e) => onPhoneChange(e.target.value)}
-              className="h-11 text-base"
+              className="h-11 text-base placeholder:text-muted-foreground/50"
             />
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              ハイフンなしでも入力可能です
+            </p>
           </div>
 
           {/* Email field */}

@@ -39,6 +39,7 @@ export const BookingDetailModal = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   if (!booking) return null;
 
@@ -71,6 +72,25 @@ export const BookingDetailModal = ({
 
   const handleEditSuccess = () => {
     onSuccess?.();
+  };
+
+  const handleSendReminder = async () => {
+    try {
+      setIsSendingReminder(true);
+      const { data, error } = await supabase.functions.invoke('send-booking-reminder', {
+        body: { bookingId: booking.id }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("リマインダーを送信しました");
+    } catch (error) {
+      console.error('Reminder error:', error);
+      toast.error(error instanceof Error ? error.message : "リマインダーの送信に失敗しました");
+    } finally {
+      setIsSendingReminder(false);
+    }
   };
 
   return (
@@ -319,6 +339,19 @@ export const BookingDetailModal = ({
                 </Button>
                 <Button
                   variant="outline"
+                  className="flex-1 h-11"
+                  onClick={handleSendReminder}
+                  disabled={isSendingReminder || !booking.customerId}
+                >
+                  {isSendingReminder ? (
+                    <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="notifications" size={16} className="mr-2" />
+                  )}
+                  リマインド送信
+                </Button>
+                <Button
+                  variant="outline"
                   className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
                   onClick={async () => {
                     try {
@@ -359,6 +392,19 @@ export const BookingDetailModal = ({
                 >
                   <Icon name="edit" size={16} className="mr-2" />
                   編集
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={handleSendReminder}
+                  disabled={isSendingReminder || !booking.customerId}
+                >
+                  {isSendingReminder ? (
+                    <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="notifications" size={16} className="mr-2" />
+                  )}
+                  リマインド送信
                 </Button>
                 <Button
                   variant="outline"

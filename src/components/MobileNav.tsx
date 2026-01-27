@@ -75,6 +75,14 @@ export function MobileNav() {
             受信トレイ
           </NavLink>
           <NavLink
+            to="/admin/broadcast"
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+            activeClassName="bg-muted text-primary font-medium"
+          >
+            <Icon name="campaign" size={20} />
+            一斉配信
+          </NavLink>
+          <NavLink
             to="/admin/reports"
             className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
             activeClassName="bg-muted text-primary font-medium"
