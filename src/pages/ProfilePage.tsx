@@ -63,6 +63,7 @@ export default function ProfilePage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [brandColor, setBrandColor] = useState('#1E3A8A');
   const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [bookingHeadline, setBookingHeadline] = useState('');
   const [headerLayout, setHeaderLayout] = useState<'logo_only' | 'logo_and_name' | 'name_only'>('logo_and_name');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
@@ -92,6 +93,7 @@ export default function ProfilePage() {
       setLogoUrl(organization.logo_url || null);
       setBrandColor(organization.brand_color || '#1E3A8A');
       setWelcomeMessage(organization.welcome_message || '');
+      setBookingHeadline((organization as any).booking_headline || '');
       setHeaderLayout((organization.header_layout as 'logo_only' | 'logo_and_name' | 'name_only') || 'logo_and_name');
     }
   }, [organization]);
@@ -422,6 +424,7 @@ export default function ProfilePage() {
         .update({
           brand_color: brandColor,
           welcome_message: welcomeMessage || null,
+          booking_headline: bookingHeadline || null,
           header_layout: headerLayout,
         })
         .eq('id', organization?.id);
@@ -811,6 +814,22 @@ export default function ProfilePage() {
 
               <Separator />
 
+              {/* Booking Headline */}
+              <div className="space-y-3">
+                <Label htmlFor="bookingHeadline">見出しテキスト</Label>
+                <Input
+                  id="bookingHeadline"
+                  value={bookingHeadline}
+                  onChange={(e) => setBookingHeadline(e.target.value)}
+                  placeholder={`${organization?.name || '店舗名'}で簡単予約`}
+                />
+                <p className="text-xs text-muted-foreground">
+                  空欄の場合「{organization?.name || '店舗名'}で簡単予約」が表示されます
+                </p>
+              </div>
+
+              <Separator />
+
               {/* Welcome Message */}
               <div className="space-y-3">
                 <Label htmlFor="welcomeMessage">ウェルカムメッセージ</Label>
@@ -861,7 +880,7 @@ export default function ProfilePage() {
                     className="text-lg font-bold"
                     style={{ color: brandColor }}
                   >
-                    {organization?.name || '店舗名'}で簡単予約
+                    {bookingHeadline || `${organization?.name || '店舗名'}で簡単予約`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {welcomeMessage || 'サービスを選んで、日時を選ぶだけ。'}
