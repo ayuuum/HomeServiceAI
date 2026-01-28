@@ -152,11 +152,11 @@ export default function CalendarPage() {
                 {/* 今日の予約リスト */}
                 <Card className="mb-6 shadow-subtle border-none">
                     <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                                <Icon name="today" size={20} className="text-primary" />
-                                今日の予約
-                                <Badge variant="secondary" className="ml-2">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                            <CardTitle className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
+                                <Icon name="today" size={18} className="text-primary shrink-0" />
+                                <span className="whitespace-nowrap">今日の予約</span>
+                                <Badge variant="secondary" className="text-xs">
                                     {todayBookings.length}件
                                 </Badge>
                             </CardTitle>
@@ -169,7 +169,7 @@ export default function CalendarPage() {
                                         behavior: 'smooth' 
                                     });
                                 }}
-                                className="text-sm"
+                                className="text-xs md:text-sm self-start md:self-auto"
                             >
                                 <Icon name="calendar_today" size={16} className="mr-1" />
                                 カレンダーで見る
