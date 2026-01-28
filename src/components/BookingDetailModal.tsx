@@ -95,12 +95,9 @@ export const BookingDetailModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
         <DialogHeader>
-          <DialogTitle className="text-2xl">予約詳細</DialogTitle>
-          <DialogDescription>
-            予約ID: {booking.id}
-          </DialogDescription>
+          <DialogTitle className="text-lg md:text-2xl">予約詳細</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -135,8 +132,8 @@ export const BookingDetailModal = ({
               <Icon name="description" size={20} className="text-primary" />
               サービス内容
             </h3>
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <p className="font-semibold text-lg">{booking.serviceName}</p>
+            <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
+              <p className="font-semibold text-base md:text-lg">{booking.serviceName}</p>
               {booking.optionsSummary.length > 0 && (
                 <div className="pt-2">
                   <p className="text-sm text-muted-foreground mb-2">選択オプション:</p>
@@ -161,26 +158,26 @@ export const BookingDetailModal = ({
               <Icon name="person" size={20} className="text-primary" />
               お客様情報
             </h3>
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+            <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground w-24">お名前:</span>
+                <span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">お名前:</span>
                 <span className="font-medium">{booking.customerName}</span>
               </div>
               {booking.customerEmail && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground w-24">メール:</span>
+                  <span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">メール:</span>
                   <span className="font-medium">{booking.customerEmail}</span>
                 </div>
               )}
               {booking.customerPhone && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground w-24">電話番号:</span>
+                  <span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">電話番号:</span>
                   <span className="font-medium">{booking.customerPhone}</span>
                 </div>
               )}
               {(booking.customerPostalCode || booking.customerAddress) && (
                 <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground w-24">住所:</span>
+                  <span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">住所:</span>
                   <div className="font-medium">
                     <p>
                       {booking.customerPostalCode && `〒${booking.customerPostalCode} `}
@@ -203,7 +200,7 @@ export const BookingDetailModal = ({
               <Icon name="calendar_today" size={20} className="text-primary" />
               予約日時
             </h3>
-            <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+            <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-3">
               <div className="flex items-center gap-3">
                 <Icon name="calendar_today" size={20} className="text-muted-foreground" />
                 <span className="font-medium">
@@ -278,11 +275,11 @@ export const BookingDetailModal = ({
           {/* Price */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg">料金</h3>
-            <div className="bg-primary/5 p-4 rounded-lg">
+            <div className="bg-primary/5 p-3 md:p-4 rounded-lg">
               <div className="flex items-baseline justify-between">
-                <span className="text-lg font-semibold">合計金額</span>
+                <span className="text-base md:text-lg font-semibold">合計金額</span>
                 <div className="text-right">
-                  <p className="text-3xl font-bold text-primary">
+                  <p className="text-2xl md:text-3xl font-bold text-primary">
                     ¥{booking.totalPrice.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground">税込</p>
@@ -301,58 +298,58 @@ export const BookingDetailModal = ({
           {/* Actions */}
           {booking.status === "pending" && (
             <div className="space-y-3 pt-4">
-              <div className="flex gap-3">
+              <div className="flex gap-2 md:gap-3">
                 <Button
-                  className="flex-1 btn-primary h-12"
+                  className="flex-1 btn-primary h-10 md:h-12 text-sm md:text-base"
                   onClick={handleApprove}
                   disabled={isApproving}
                 >
                   {isApproving ? (
-                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
+                    <Icon name="sync" size={18} className="mr-1 md:mr-2 animate-spin" />
                   ) : (
-                    <Icon name="check_circle" size={20} className="mr-2" />
+                    <Icon name="check_circle" size={18} className="mr-1 md:mr-2" />
                   )}
-                  予約を承認する
+                  <span className="hidden md:inline">予約を</span>承認<span className="hidden md:inline">する</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  className="flex-1 h-10 md:h-12 text-sm md:text-base border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={handleReject}
                   disabled={isRejecting}
                 >
                   {isRejecting ? (
-                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
+                    <Icon name="sync" size={18} className="mr-1 md:mr-2 animate-spin" />
                   ) : (
-                    <Icon name="cancel" size={20} className="mr-2" />
+                    <Icon name="cancel" size={18} className="mr-1 md:mr-2" />
                   )}
-                  予約を却下する
+                  <span className="hidden md:inline">予約を</span>却下<span className="hidden md:inline">する</span>
                 </Button>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 md:gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 h-11"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
                   onClick={() => setEditModalOpen(true)}
                 >
-                  <Icon name="edit" size={16} className="mr-2" />
+                  <Icon name="edit" size={14} className="mr-1 md:mr-2" />
                   編集
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-11"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
                   onClick={handleSendReminder}
                   disabled={isSendingReminder || !booking.customerId}
                 >
                   {isSendingReminder ? (
-                    <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                    <Icon name="sync" size={14} className="mr-1 md:mr-2 animate-spin" />
                   ) : (
-                    <Icon name="notifications" size={16} className="mr-2" />
+                    <Icon name="notifications" size={14} className="mr-1 md:mr-2" />
                   )}
-                  リマインド送信
+                  <span className="hidden md:inline">リマインド送信</span><span className="md:hidden">通知</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm border-destructive/50 text-destructive hover:bg-destructive/10"
                   onClick={async () => {
                     try {
                       const { error } = await supabase
@@ -384,31 +381,31 @@ export const BookingDetailModal = ({
                 <Icon name="check_circle" size={32} className="text-success mx-auto mb-2" />
                 <p className="text-sm font-medium text-success">この予約は承認済みです</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 md:gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 h-11"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
                   onClick={() => setEditModalOpen(true)}
                 >
-                  <Icon name="edit" size={16} className="mr-2" />
+                  <Icon name="edit" size={14} className="mr-1 md:mr-2" />
                   編集
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-11"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
                   onClick={handleSendReminder}
                   disabled={isSendingReminder || !booking.customerId}
                 >
                   {isSendingReminder ? (
-                    <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                    <Icon name="sync" size={14} className="mr-1 md:mr-2 animate-spin" />
                   ) : (
-                    <Icon name="notifications" size={16} className="mr-2" />
+                    <Icon name="notifications" size={14} className="mr-1 md:mr-2" />
                   )}
-                  リマインド送信
+                  <span className="hidden md:inline">リマインド送信</span><span className="md:hidden">通知</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-11 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  className="flex-1 h-9 md:h-11 text-xs md:text-sm border-destructive/50 text-destructive hover:bg-destructive/10"
                   onClick={async () => {
                     try {
                       const { error } = await supabase
