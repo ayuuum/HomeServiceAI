@@ -655,6 +655,8 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     customerPostalCode,
                     customerAddress,
                     customerAddressBuilding,
+                    hasParking,
+                    notes,
                 };
 
             } catch (error) {

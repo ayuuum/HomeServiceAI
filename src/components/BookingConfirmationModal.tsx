@@ -27,6 +27,8 @@ interface BookingConfirmationModalProps {
     customerPostalCode?: string;
     customerAddress?: string;
     customerAddressBuilding?: string;
+    hasParking?: string;
+    notes?: string;
   } | null;
 }
 
@@ -171,6 +173,33 @@ export const BookingConfirmationModal = ({
                           <Phone className="w-3 h-3" />
                           {bookingData.customerPhone}
                         </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 事前情報（駐車場・備考） */}
+              {(bookingData.hasParking || bookingData.notes) && (
+                <div className="flex items-start gap-2">
+                  <Icon name="info" className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-muted-foreground">事前情報</span>
+                    <div className="space-y-0.5">
+                      {bookingData.hasParking && (
+                        <p className="text-sm font-medium flex items-center gap-1">
+                          <Icon 
+                            name={bookingData.hasParking === "yes" ? "local_parking" : "block"} 
+                            size={14} 
+                            className={bookingData.hasParking === "yes" ? "text-success" : "text-muted-foreground"} 
+                          />
+                          駐車場: {bookingData.hasParking === "yes" ? "あり" : "なし"}
+                        </p>
+                      )}
+                      {bookingData.notes && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          備考: {bookingData.notes}
+                        </p>
                       )}
                     </div>
                   </div>
