@@ -95,14 +95,26 @@ export default function BroadcastPage() {
       if (!organization?.id) return [];
 
       const { data, error } = await supabase
-        .from('broadcasts')
+        .from('broadcasts' as any)
         .select('*')
         .eq('organization_id', organization.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
-      return data || [];
+      return (data as unknown) as Array<{
+        id: string;
+        organization_id: string;
+        title: string;
+        message: string;
+        segment_filters: Record<string, unknown>;
+        recipient_count: number;
+        sent_count: number;
+        failed_count: number;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }> || [];
     },
     enabled: !!organization?.id,
   });
@@ -190,7 +202,7 @@ export default function BroadcastPage() {
       segmentFilters.line_connected_only = true;
 
       const { data: broadcast, error: createError } = await supabase
-        .from('broadcasts')
+        .from('broadcasts' as any)
         .insert({
           organization_id: organization.id,
           title: title.trim() || `配信 ${format(new Date(), 'yyyy/MM/dd HH:mm')}`,
@@ -203,24 +215,25 @@ export default function BroadcastPage() {
         .single();
 
       if (createError) throw createError;
+      const typedBroadcast = (broadcast as unknown) as { id: string };
 
       // 2. Insert recipients
       const recipients = filteredCustomers.map(c => ({
-        broadcast_id: broadcast.id,
+        broadcast_id: typedBroadcast.id,
         customer_id: c.id,
         line_user_id: c.line_user_id!,
         status: 'pending' as const,
       }));
 
       const { error: recipientsError } = await supabase
-        .from('broadcast_recipients')
+        .from('broadcast_recipients' as any)
         .insert(recipients);
 
       if (recipientsError) throw recipientsError;
 
       // 3. Invoke send-broadcast edge function
       const { data: result, error: sendError } = await supabase.functions.invoke('send-broadcast', {
-        body: { broadcastId: broadcast.id },
+        body: { broadcastId: typedBroadcast.id },
       });
 
       if (sendError) throw sendError;

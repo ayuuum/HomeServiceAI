@@ -117,6 +117,7 @@ export type Database = {
           diagnosis_has_parking: boolean | null
           diagnosis_notes: string | null
           id: string
+          line_reminder_sent_at: string | null
           organization_id: string | null
           selected_date: string
           selected_time: string
@@ -139,6 +140,7 @@ export type Database = {
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
+          line_reminder_sent_at?: string | null
           organization_id?: string | null
           selected_date: string
           selected_time: string
@@ -161,6 +163,7 @@ export type Database = {
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
           id?: string
+          line_reminder_sent_at?: string | null
           organization_id?: string | null
           selected_date?: string
           selected_time?: string
@@ -178,6 +181,104 @@ export type Database = {
           },
           {
             foreignKeyName: "bookings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcast_recipients: {
+        Row: {
+          broadcast_id: string
+          created_at: string | null
+          customer_id: string
+          error_message: string | null
+          id: string
+          line_user_id: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          broadcast_id: string
+          created_at?: string | null
+          customer_id: string
+          error_message?: string | null
+          id?: string
+          line_user_id: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          broadcast_id?: string
+          created_at?: string | null
+          customer_id?: string
+          error_message?: string | null
+          id?: string
+          line_user_id?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcasts: {
+        Row: {
+          created_at: string | null
+          failed_count: number | null
+          id: string
+          message: string
+          organization_id: string
+          recipient_count: number | null
+          segment_filters: Json | null
+          sent_count: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          message: string
+          organization_id: string
+          recipient_count?: number | null
+          segment_filters?: Json | null
+          sent_count?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          message?: string
+          organization_id?: string
+          recipient_count?: number | null
+          segment_filters?: Json | null
+          sent_count?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcasts_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -308,6 +409,7 @@ export type Database = {
           line_channel_secret: string | null
           line_channel_token: string | null
           line_liff_id: string | null
+          line_reminder_hours_before: number[] | null
           logo_url: string | null
           name: string
           slug: string
@@ -326,6 +428,7 @@ export type Database = {
           line_channel_secret?: string | null
           line_channel_token?: string | null
           line_liff_id?: string | null
+          line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name: string
           slug: string
@@ -344,6 +447,7 @@ export type Database = {
           line_channel_secret?: string | null
           line_channel_token?: string | null
           line_liff_id?: string | null
+          line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name?: string
           slug?: string
