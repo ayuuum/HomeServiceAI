@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import { Icon } from "@/components/ui/icon";
 import { Booking, Customer } from "@/types/booking";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
@@ -37,9 +39,54 @@ export const CustomerDetailModal = ({
   onChat,
   onViewAllHistory,
 }: CustomerDetailModalProps) => {
+  const queryClient = useQueryClient();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState("");
 
+  // Reset editing state when customer changes or modal closes
+  useEffect(() => {
+    if (!open || !customer) {
+      setIsEditingNotes(false);
+      setEditedNotes("");
+    }
+  }, [open, customer]);
+
+  const updateNotesMutation = useMutation({
+    mutationFn: async (notes: string) => {
+      if (!customer?.id) throw new Error("Customer ID not found");
+      
+      const { error } = await supabase
+        .from("customers")
+        .update({ notes: notes || null })
+        .eq("id", customer.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("メモを保存しました");
+      setIsEditingNotes(false);
+    },
+    onError: (error) => {
+      toast.error("メモの保存に失敗しました: " + error.message);
+    },
+  });
+
+  const handleStartEditing = () => {
+    setEditedNotes(customer?.notes || "");
+    setIsEditingNotes(true);
+  };
+
+  const handleCancelEditing = () => {
+    setIsEditingNotes(false);
+    setEditedNotes("");
+  };
+
+  const handleSaveNotes = () => {
+    updateNotesMutation.mutate(editedNotes);
+  };
   const { data: recentBookings = [], isLoading } = useQuery({
     queryKey: ["customer-recent-bookings", customer?.id],
     queryFn: async () => {
@@ -183,17 +230,67 @@ export const CustomerDetailModal = ({
 
           {/* Notes/Memo */}
           <div className="space-y-3 py-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Icon name="notes" size={16} />
-              <span className="text-sm font-medium">メモ・備考</span>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-3">
-              {customer.notes ? (
-                <p className="text-sm whitespace-pre-wrap">{customer.notes}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">メモはありません</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Icon name="notes" size={16} />
+                <span className="text-sm font-medium">メモ・備考</span>
+              </div>
+              {!isEditingNotes && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={handleStartEditing}
+                >
+                  <Icon name="edit" size={14} className="mr-1" />
+                  編集
+                </Button>
               )}
             </div>
+            
+            {isEditingNotes ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={editedNotes}
+                  onChange={(e) => setEditedNotes(e.target.value)}
+                  placeholder="顧客に関する注意事項やメモを入力..."
+                  className="min-h-[100px] resize-y text-sm"
+                  maxLength={2000}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {editedNotes.length}/2000
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8"
+                      onClick={handleCancelEditing}
+                      disabled={updateNotesMutation.isPending}
+                    >
+                      キャンセル
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8"
+                      onClick={handleSaveNotes}
+                      disabled={updateNotesMutation.isPending}
+                    >
+                      {updateNotesMutation.isPending ? "保存中..." : "保存"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-3">
+                {customer.notes ? (
+                  <p className="text-sm whitespace-pre-wrap">{customer.notes}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">メモはありません</p>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />
