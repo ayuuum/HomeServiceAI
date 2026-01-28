@@ -398,6 +398,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          booking_headline: string | null
           brand_color: string | null
           created_at: string | null
           header_layout: string | null
@@ -417,6 +418,7 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          booking_headline?: string | null
           brand_color?: string | null
           created_at?: string | null
           header_layout?: string | null
@@ -436,6 +438,7 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          booking_headline?: string | null
           brand_color?: string | null
           created_at?: string | null
           header_layout?: string | null
@@ -652,6 +655,7 @@ export type Database = {
       get_organization_public: {
         Args: { org_slug: string }
         Returns: {
+          booking_headline: string
           brand_color: string
           created_at: string
           header_layout: string
