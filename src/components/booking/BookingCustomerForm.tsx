@@ -22,6 +22,8 @@ interface BookingCustomerFormProps {
   onAddressChange: (value: string) => void;
   addressBuilding: string;
   onAddressBuildingChange: (value: string) => void;
+  hasParking: string;
+  onHasParkingChange: (value: string) => void;
   notes: string;
   onNotesChange: (value: string) => void;
   photos: File[];
@@ -48,6 +50,8 @@ export const BookingCustomerForm = ({
   onAddressChange,
   addressBuilding,
   onAddressBuildingChange,
+  hasParking,
+  onHasParkingChange,
   notes,
   onNotesChange,
   photos,
@@ -212,10 +216,46 @@ export const BookingCustomerForm = ({
         </div>
       </section>
 
-      {/* Photos & Notes Section */}
+      {/* Diagnostic Info Section */}
       <section>
         <Separator className="mb-4 sm:mb-5" />
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Icon name="info" size={20} className="text-primary" />
+          <h3 className="text-lg sm:text-xl font-bold">事前情報</h3>
+        </div>
         <div className="space-y-4 sm:space-y-5">
+          {/* Parking Availability */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-base sm:text-lg font-semibold">駐車場の有無</Label>
+              <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">必須</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              作業車両を停める駐車スペースはありますか？
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant={hasParking === "yes" ? "default" : "outline"}
+                className={`h-11 text-base ${hasParking === "yes" ? "" : "hover:bg-muted"}`}
+                onClick={() => onHasParkingChange("yes")}
+              >
+                <Icon name="local_parking" size={18} className="mr-2" />
+                あり
+              </Button>
+              <Button
+                type="button"
+                variant={hasParking === "no" ? "default" : "outline"}
+                className={`h-11 text-base ${hasParking === "no" ? "" : "hover:bg-muted"}`}
+                onClick={() => onHasParkingChange("no")}
+              >
+                <Icon name="block" size={18} className="mr-2" />
+                なし
+              </Button>
+            </div>
+          </div>
+
+          {/* Photos Upload */}
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <Label className="text-base sm:text-lg font-semibold">現場写真のアップロード</Label>
@@ -260,6 +300,7 @@ export const BookingCustomerForm = ({
             </div>
           </div>
 
+          {/* Notes */}
           <div>
             <div className="flex items-center gap-1.5 mb-2">
               <Label className="text-base sm:text-lg font-semibold">備考・特記事項</Label>

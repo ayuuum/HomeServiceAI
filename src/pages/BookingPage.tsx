@@ -389,6 +389,8 @@ const BookingPage = () => {
               onAddressChange={setCustomerAddress}
               addressBuilding={customerAddressBuilding}
               onAddressBuildingChange={setCustomerAddressBuilding}
+              hasParking={hasParking}
+              onHasParkingChange={setHasParking}
               notes={notes}
               onNotesChange={setNotes}
               photos={photos}
