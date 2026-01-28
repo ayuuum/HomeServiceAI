@@ -47,7 +47,7 @@ export function AdminHeader() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 ml-6">
+          <nav className="hidden lg:flex items-center gap-1 ml-6">
             <NavLink
               to="/admin"
               end
@@ -121,7 +121,7 @@ export function AdminHeader() {
         <div className="flex items-center gap-2 sm:gap-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon" className="hidden sm:flex">
+              <Button variant="outline" size="icon" className="hidden lg:flex">
                 <Icon name="logout" size={16} />
               </Button>
             </AlertDialogTrigger>
