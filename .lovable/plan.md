@@ -1,100 +1,115 @@
 
-# LIFF セットアップガイドの更新
 
-## 背景・ユーザーからの情報
+# 予約確認通知機能 - 修正計画
 
-LINEからの公式情報として以下が確認されました：
-- LIFFアプリは **LINEログインチャネル** に追加する必要がある（Messaging APIチャネルでは不可）
-- LIFFは今後「LINEミニアプリ」ブランドに統合予定
-- 新規作成時はLINEミニアプリが推奨されるが、日本・台湾以外では引き続きLIFFを使用
-- 既存・今後のLIFFアプリも継続サポート
+## 現状まとめ
 
----
+### 動作中の機能
+- **予約確定・キャンセル通知**: `send-booking-notification` Edge Functionで実装済み
+- **手動リマインダー送信**: `send-booking-reminder` Edge Functionで実装済み
+- **LINE メッセージログ**: `line_messages` テーブルに記録
 
-## 現在の実装状況
-
-| 項目 | 状態 |
-|------|------|
-| LIFF SDK | `@line/liff` v2.27.3 インストール済み |
-| マイページ | `/booking/:orgSlug/my-bookings` 実装済み |
-| DB設定 | `organizations.line_liff_id` カラム存在 |
-| 管理画面 | LINE設定フォームにLIFF ID入力欄あり |
+### ビルドエラーの原因
+コードが参照している以下のDB構造が存在しない：
+1. `organizations.line_reminder_hours_before` カラム
+2. `bookings.line_reminder_sent_at` カラム  
+3. `broadcasts` テーブル
+4. `broadcast_recipients` テーブル
 
 ---
 
-## 更新内容
+## 修正内容
 
-### 1. ドキュメント更新 (`docs/line_integration_guide.md`)
+### 1. データベースマイグレーション
 
-LIFFアプリのセットアップセクションを追加：
-
-```text
-## 4. LIFFアプリの設定（顧客向けマイページ）
-
-### 重要：LINEログインチャネルを使用
-
-LIFFアプリはMessaging APIチャネルには追加できません。
-必ず **LINEログインチャネル** に追加してください。
-
-> 日本・台湾でサービスを提供する場合は、
-> LINEミニアプリでの作成が推奨されています。
-> ただし、既存のLIFFアプリも引き続き利用可能です。
-
-### セットアップ手順
-
-1. LINE Developersコンソールで「LINEログイン」チャネルを開く
-2. 「LIFF」タブを選択し「追加」をクリック
-3. 以下の設定を入力：
-   - LIFFアプリ名: 例「予約確認」
-   - サイズ: Tall または Full
-   - エンドポイントURL: 
-     `https://cleaning-booking.lovable.app/booking/nook/my-bookings`
-   - Scope: `profile` を有効化
-   - ボットリンク機能: On (Aggressive)
-4. 作成後に表示される「LIFF ID」をコピー
-5. 管理画面 > プロフィール設定 > LINE設定 に LIFF ID を入力して保存
-
-### リッチメニューからの連携
-
-LINE公式アカウントのリッチメニューに以下URLを設定：
-`https://liff.line.me/{LIFF_ID}`
-
-これにより、顧客がリッチメニューから予約履歴を確認できます。
+#### organizations テーブル拡張
+```sql
+ALTER TABLE organizations 
+ADD COLUMN line_reminder_hours_before integer[] DEFAULT '{24}';
 ```
 
-### 2. 知識ベース/メモリの更新
+#### bookings テーブル拡張
+```sql
+ALTER TABLE bookings 
+ADD COLUMN line_reminder_sent_at timestamptz;
+```
 
-LIFF設定に関する重要ポイントを記録：
-- LIFFはLINEログインチャネルに追加（Messaging APIは不可）
-- LINEミニアプリへの移行が将来的に推奨されるが、LIFFも継続サポート
+#### broadcasts テーブル作成
+```sql
+CREATE TABLE broadcasts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL REFERENCES organizations(id),
+  title text NOT NULL,
+  message text NOT NULL,
+  segment_filters jsonb DEFAULT '{}',
+  recipient_count integer DEFAULT 0,
+  sent_count integer DEFAULT 0,
+  failed_count integer DEFAULT 0,
+  status text DEFAULT 'draft',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+#### broadcast_recipients テーブル作成
+```sql
+CREATE TABLE broadcast_recipients (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  broadcast_id uuid NOT NULL REFERENCES broadcasts(id),
+  customer_id uuid NOT NULL REFERENCES customers(id),
+  line_user_id text NOT NULL,
+  status text DEFAULT 'pending',
+  sent_at timestamptz,
+  error_message text,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### 2. RLSポリシー設定
+
+各テーブルに組織ベースのアクセス制御を追加
 
 ---
 
 ## 技術詳細
 
-### チャネル構成（推奨）
+### 通知フロー図
 
 ```text
-LINEプロバイダー
-├── LINEログインチャネル
-│   ├── Supabase Auth連携用（ユーザー認証）
-│   └── LIFFアプリ（マイページ・予約確認）
-│
-└── Messaging APIチャネル
-    └── 管理者からのメッセージ送信・Webhook受信
+[管理者操作]
+     │
+     ▼
+┌─────────────────┐
+│ 予約ステータス変更 │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ send-booking-notification │
+│  (Edge Function)         │
+└────────┬────────────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+[顧客通知]  [管理者通知]
+    │         │
+    ▼         ▼
+LINE Push API
+    │
+    ▼
+line_messages に記録
 ```
 
-### 現在のコード対応
+### 自動リマインダー（将来対応）
 
-LIFF機能は `src/pages/liff/MyBookingsPage.tsx` で既に実装済み：
-- `liff.init()` でLIFF IDを使用して初期化
-- `liff.getProfile()` でLINEユーザー情報を取得
-- LINE User IDを使って予約履歴を検索
+`cron-send-reminders` が存在するが、pg_cron のスケジュール登録が必要
 
 ---
 
 ## 期待される結果
 
-- ドキュメントがLINE公式の最新仕様に準拠
-- ユーザーが迷わずLIFFアプリを正しく設定可能
-- 将来的なLINEミニアプリ移行への備えも記載
+- ビルドエラーが解消される
+- 一斉配信機能（BroadcastPage）が動作する
+- リマインダー設定が保存可能になる
+- 予約通知が正常に送信される
+
