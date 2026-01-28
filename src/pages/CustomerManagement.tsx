@@ -262,7 +262,7 @@ export default function CustomerManagement() {
       <AdminHeader />
       <div className="container max-w-6xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">顧客管理</h1>
+          <h1 className="text-lg md:text-xl font-bold text-foreground">顧客管理</h1>
           <p className="text-muted-foreground mt-1">顧客情報を一覧で管理できます</p>
         </div>
 

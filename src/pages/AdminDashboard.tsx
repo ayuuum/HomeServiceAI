@@ -185,7 +185,7 @@ const AdminDashboard = () => {
       <section className="container max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold">管理ダッシュボード</h1>
+            <h1 className="text-lg md:text-xl font-bold">管理ダッシュボード</h1>
             <p className="text-sm text-muted-foreground mt-1">
               予約とサービスを一元管理
             </p>

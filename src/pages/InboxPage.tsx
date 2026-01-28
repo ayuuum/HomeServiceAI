@@ -51,7 +51,7 @@ export default function InboxPage() {
             {/* Page Header */}
             <div className="border-b bg-card">
                 <div className="container max-w-6xl mx-auto px-4 py-4">
-                    <h1 className="text-2xl font-bold">受信トレイ</h1>
+                    <h1 className="text-lg md:text-xl font-bold">受信トレイ</h1>
                     <p className="text-muted-foreground mt-1">LINEメッセージの確認・返信ができます</p>
                 </div>
             </div>

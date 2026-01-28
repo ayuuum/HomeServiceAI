@@ -131,7 +131,7 @@ export default function CalendarPage() {
             <div className="flex flex-col gap-4 mb-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-xl md:text-2xl font-bold text-foreground">予約管理</h1>
+                            <h1 className="text-lg md:text-xl font-bold text-foreground">予約管理</h1>
                             <p className="text-muted-foreground text-sm mt-1">
                                 予約の確認・承認・管理ができます
                             </p>
