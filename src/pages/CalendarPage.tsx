@@ -192,7 +192,7 @@ export default function CalendarPage() {
                                     <button
                                         key={booking.id}
                                         onClick={() => handleBookingClick(booking)}
-                                        className={`w-full text-left p-4 rounded-lg border transition-all hover:shadow-md flex items-center justify-between gap-4 ${
+                                        className={`w-full text-left p-3 md:p-4 rounded-lg border transition-all hover:shadow-md ${
                                             booking.status === "confirmed"
                                                 ? "bg-success/5 border-success/20 hover:bg-success/10"
                                                 : booking.status === "cancelled"
@@ -200,40 +200,80 @@ export default function CalendarPage() {
                                                     : "bg-warning/5 border-warning/20 hover:bg-warning/10"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`text-lg font-bold tabular-nums ${
-                                                booking.status === "confirmed" ? "text-success" : 
-                                                booking.status === "pending" ? "text-warning" : "text-muted-foreground"
-                                            }`}>
-                                                {booking.selectedTime}
+                                        {/* Mobile Layout */}
+                                        <div className="md:hidden">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-base font-bold tabular-nums ${
+                                                        booking.status === "confirmed" ? "text-success" : 
+                                                        booking.status === "pending" ? "text-warning" : "text-muted-foreground"
+                                                    }`}>
+                                                        {booking.selectedTime}
+                                                    </span>
+                                                    <Badge
+                                                        variant={
+                                                            booking.status === "confirmed" ? "default" :
+                                                            booking.status === "pending" ? "secondary" : "outline"
+                                                        }
+                                                        className={`text-xs ${
+                                                            booking.status === "confirmed" ? "bg-success text-success-foreground" :
+                                                            booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
+                                                        }`}
+                                                    >
+                                                        {booking.status === "confirmed" ? "確定" :
+                                                         booking.status === "pending" ? "承認待ち" : "キャンセル"}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="font-bold text-sm text-foreground">
+                                                        ¥{booking.totalPrice.toLocaleString()}
+                                                    </span>
+                                                    <Icon name="chevron_right" size={18} className="text-muted-foreground" />
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-foreground">
-                                                    {booking.customerName}
-                                                </span>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {booking.serviceName}
-                                                </span>
+                                            <div>
+                                                <p className="font-semibold text-sm text-foreground">{booking.customerName}</p>
+                                                <p className="text-xs text-muted-foreground">{booking.serviceName}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-bold text-foreground">
-                                                ¥{booking.totalPrice.toLocaleString()}
-                                            </span>
-                                            <Badge
-                                                variant={
-                                                    booking.status === "confirmed" ? "default" :
-                                                    booking.status === "pending" ? "secondary" : "outline"
-                                                }
-                                                className={
-                                                    booking.status === "confirmed" ? "bg-success text-success-foreground" :
-                                                    booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
-                                                }
-                                            >
-                                                {booking.status === "confirmed" ? "確定" :
-                                                 booking.status === "pending" ? "承認待ち" : "キャンセル"}
-                                            </Badge>
-                                            <Icon name="chevron_right" size={20} className="text-muted-foreground" />
+
+                                        {/* Desktop Layout */}
+                                        <div className="hidden md:flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`text-lg font-bold tabular-nums ${
+                                                    booking.status === "confirmed" ? "text-success" : 
+                                                    booking.status === "pending" ? "text-warning" : "text-muted-foreground"
+                                                }`}>
+                                                    {booking.selectedTime}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-foreground">
+                                                        {booking.customerName}
+                                                    </span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {booking.serviceName}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-foreground">
+                                                    ¥{booking.totalPrice.toLocaleString()}
+                                                </span>
+                                                <Badge
+                                                    variant={
+                                                        booking.status === "confirmed" ? "default" :
+                                                        booking.status === "pending" ? "secondary" : "outline"
+                                                    }
+                                                    className={
+                                                        booking.status === "confirmed" ? "bg-success text-success-foreground" :
+                                                        booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
+                                                    }
+                                                >
+                                                    {booking.status === "confirmed" ? "確定" :
+                                                     booking.status === "pending" ? "承認待ち" : "キャンセル"}
+                                                </Badge>
+                                                <Icon name="chevron_right" size={20} className="text-muted-foreground" />
+                                            </div>
                                         </div>
                                     </button>
                                 ))}
