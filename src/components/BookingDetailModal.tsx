@@ -192,6 +192,41 @@ export const BookingDetailModal = ({
             </div>
           </div>
 
+          {/* Pre-information (Diagnosis) */}
+          {(booking.diagnosisHasParking !== undefined || booking.diagnosisNotes) && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Icon name="assignment" size={20} className="text-primary" />
+                  事前情報
+                </h3>
+                <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
+                  {booking.diagnosisHasParking !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <Icon 
+                        name={booking.diagnosisHasParking ? "local_parking" : "block"} 
+                        size={18} 
+                        className={booking.diagnosisHasParking ? "text-success" : "text-muted-foreground"} 
+                      />
+                      <span className="text-sm">
+                        駐車場: {booking.diagnosisHasParking ? "あり" : "なし"}
+                      </span>
+                    </div>
+                  )}
+                  {booking.diagnosisNotes && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">備考:</p>
+                      <p className="text-sm whitespace-pre-wrap bg-background/50 p-2 rounded border">
+                        {booking.diagnosisNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* Date & Time */}
@@ -251,6 +286,18 @@ export const BookingDetailModal = ({
                   }
                   if (booking.customerEmail) {
                     detailsLines.push(booking.customerEmail);
+                  }
+
+                  // 事前情報を追加
+                  if (booking.diagnosisHasParking !== undefined || booking.diagnosisNotes) {
+                    detailsLines.push(``);
+                    detailsLines.push(`【事前情報】`);
+                    if (booking.diagnosisHasParking !== undefined) {
+                      detailsLines.push(`駐車場: ${booking.diagnosisHasParking ? 'あり' : 'なし'}`);
+                    }
+                    if (booking.diagnosisNotes) {
+                      detailsLines.push(`備考: ${booking.diagnosisNotes}`);
+                    }
                   }
 
                   const url = generateGoogleCalendarUrl({
