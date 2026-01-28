@@ -30,6 +30,10 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const emailChangeSchema = z.object({
+  newEmail: z.string().email({ message: "有効なメールアドレスを入力してください" }),
+});
+
 const slugSchema = z.string()
   .min(3, { message: "3文字以上で入力してください" })
   .max(50, { message: "50文字以内で入力してください" })
@@ -48,8 +52,10 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   
   // Organization settings state
   const [organizationName, setOrganizationName] = useState('');
@@ -231,6 +237,43 @@ export default function ProfilePage() {
       }
     } finally {
       setIsLoadingPassword(false);
+    }
+  };
+
+  const handleEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      emailChangeSchema.parse({ newEmail });
+      setIsLoadingEmail(true);
+
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      if (error) throw error;
+
+      setNewEmail('');
+      toast({
+        title: "確認メール送信",
+        description: "新しいメールアドレスに確認メールを送信しました。メール内のリンクをクリックして変更を完了してください。",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "入力エラー",
+          description: error.errors[0].message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "変更失敗",
+          description: error instanceof Error ? error.message : "メールアドレス変更に失敗しました",
+        });
+      }
+    } finally {
+      setIsLoadingEmail(false);
     }
   };
 
@@ -1083,6 +1126,52 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     'パスワードを変更'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Email Change Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="mail" size={20} />
+                メールアドレス変更
+              </CardTitle>
+              <CardDescription>ログインに使用するメールアドレスを変更します</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEmailChange} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>現在のメールアドレス</Label>
+                  <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
+                    {user?.email || '未設定'}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newEmail">新しいメールアドレス</Label>
+                  <Input
+                    id="newEmail"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="new@example.com"
+                    disabled={isLoadingEmail}
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Icon name="info" size={16} />
+                  <span>確認メールが新しいアドレスに送信されます</span>
+                </div>
+                <Button type="submit" disabled={isLoadingEmail || !newEmail}>
+                  {isLoadingEmail ? (
+                    <>
+                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                      送信中...
+                    </>
+                  ) : (
+                    'メールアドレスを変更'
                   )}
                 </Button>
               </form>
