@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Customer } from "@/types/booking";
@@ -32,6 +33,7 @@ const customerSchema = z.object({
   address: z.string().max(500).optional(),
   addressBuilding: z.string().max(200).optional(),
   lineUserId: z.string().max(100).optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 type CustomerFormData = z.infer<typeof customerSchema>;
@@ -61,6 +63,7 @@ export function CustomerFormModal({
       address: "",
       addressBuilding: "",
       lineUserId: "",
+      notes: "",
     },
   });
 
@@ -74,6 +77,7 @@ export function CustomerFormModal({
         address: customer.address || "",
         addressBuilding: customer.addressBuilding || "",
         lineUserId: customer.lineUserId || "",
+        notes: customer.notes || "",
       });
     } else {
       form.reset({
@@ -84,6 +88,7 @@ export function CustomerFormModal({
         address: "",
         addressBuilding: "",
         lineUserId: "",
+        notes: "",
       });
     }
   }, [customer, form]);
@@ -99,6 +104,7 @@ export function CustomerFormModal({
         address: data.address || null,
         address_building: data.addressBuilding || null,
         line_user_id: data.lineUserId || null,
+        notes: data.notes || null,
       };
 
       if (customer) {
@@ -239,6 +245,24 @@ export function CustomerFormModal({
                   <FormLabel>LINE User ID</FormLabel>
                   <FormControl>
                     <Input placeholder="U1234567890abcdef..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>メモ・備考</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="顧客に関する注意事項やメモを入力..." 
+                      className="min-h-[100px] resize-y"
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

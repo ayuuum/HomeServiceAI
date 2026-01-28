@@ -181,6 +181,21 @@ export const CustomerDetailModal = ({
             </div>
           </div>
 
+          {/* Notes/Memo */}
+          <div className="space-y-3 py-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Icon name="notes" size={16} />
+              <span className="text-sm font-medium">メモ・備考</span>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3">
+              {customer.notes ? (
+                <p className="text-sm whitespace-pre-wrap">{customer.notes}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">メモはありません</p>
+              )}
+            </div>
+          </div>
+
           <Separator />
 
           {/* Recent Bookings */}
