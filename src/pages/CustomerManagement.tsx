@@ -309,8 +309,7 @@ export default function CustomerManagement() {
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            {isLoading ? (
+          {isLoading ? (
               <div className="p-8 text-center text-muted-foreground">
                 読み込み中...
               </div>
@@ -319,92 +318,150 @@ export default function CustomerManagement() {
                 {searchTerm ? "検索結果がありません" : "顧客データがありません"}
               </div>
             ) : (
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent border-b border-border">
-                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell">住所</TableHead>
-                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
-                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
-                    <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px]">アクション</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                {/* Mobile Card Layout */}
+                <div className="md:hidden divide-y divide-border">
                   {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-16">
-                      <TableCell className="font-bold text-foreground px-6">
-                        {customer.name || "-"}
-                      </TableCell>
-                      <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
-                      <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
-                      <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px]" title={`${customer.address || ""}${customer.addressBuilding ? ` ${customer.addressBuilding}` : ""}`}>
-                        <div className="truncate">
-                          {customer.postalCode && `〒${customer.postalCode} `}
-                          {customer.address || "-"}
+                    <div key={customer.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-foreground truncate">{customer.name || "-"}</p>
+                          <p className="text-sm text-muted-foreground truncate">{customer.phone || "-"}</p>
+                          {customer.email && (
+                            <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
+                          )}
                         </div>
-                        {customer.addressBuilding && (
-                          <div className="truncate text-xs">{customer.addressBuilding}</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right px-6 font-medium">
-                        {customer.bookingCount}回
-                      </TableCell>
-                      <TableCell className="text-right px-6">
-                        <span className="font-bold text-foreground tabular-nums text-lg">
-                          ¥{customer.totalSpend?.toLocaleString()}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right px-6">
-                        <div className="flex gap-1 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-9 w-9 p-0 rounded-full ${
-                              customer.lineUserId 
-                                ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10" 
-                                : "text-muted-foreground/40 cursor-not-allowed"
-                            }`}
-                            onClick={() => customer.lineUserId && setChattingCustomer(customer)}
-                            disabled={!customer.lineUserId}
-                            title={customer.lineUserId ? "LINEチャット" : "LINE未連携"}
-                          >
-                            <Icon name="chat" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                            onClick={() => setViewingBookingHistory(customer)}
-                            title="予約履歴を見る"
-                          >
-                            <Icon name="history" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                            onClick={() => handleEdit(customer)}
-                          >
-                            <Icon name="edit" size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
-                            onClick={() => setDeletingCustomer(customer)}
-                          >
-                            <Icon name="delete" size={16} />
-                          </Button>
+                        <div className="text-right ml-3 shrink-0">
+                          <p className="font-bold text-foreground tabular-nums">¥{customer.totalSpend?.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">{customer.bookingCount}回利用</p>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-9"
+                          onClick={() => setViewingBookingHistory(customer)}
+                        >
+                          <Icon name="history" size={14} className="mr-1" />
+                          履歴
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-9"
+                          onClick={() => handleEdit(customer)}
+                        >
+                          <Icon name="edit" size={14} className="mr-1" />
+                          編集
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-9 w-9 p-0 ${
+                            customer.lineUserId 
+                              ? "text-[#06C755] border-[#06C755]/30 hover:bg-[#06C755]/10" 
+                              : "text-muted-foreground/40"
+                          }`}
+                          onClick={() => customer.lineUserId && setChattingCustomer(customer)}
+                          disabled={!customer.lineUserId}
+                        >
+                          <Icon name="chat" size={14} />
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="hover:bg-transparent border-b border-border">
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell">住所</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px]">アクション</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCustomers.map((customer) => (
+                        <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-16">
+                          <TableCell className="font-bold text-foreground px-6">
+                            {customer.name || "-"}
+                          </TableCell>
+                          <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
+                          <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
+                          <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px]" title={`${customer.address || ""}${customer.addressBuilding ? ` ${customer.addressBuilding}` : ""}`}>
+                            <div className="truncate">
+                              {customer.postalCode && `〒${customer.postalCode} `}
+                              {customer.address || "-"}
+                            </div>
+                            {customer.addressBuilding && (
+                              <div className="truncate text-xs">{customer.addressBuilding}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right px-6 font-medium">
+                            {customer.bookingCount}回
+                          </TableCell>
+                          <TableCell className="text-right px-6">
+                            <span className="font-bold text-foreground tabular-nums text-lg">
+                              ¥{customer.totalSpend?.toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right px-6">
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-9 w-9 p-0 rounded-full ${
+                                  customer.lineUserId 
+                                    ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10" 
+                                    : "text-muted-foreground/40 cursor-not-allowed"
+                                }`}
+                                onClick={() => customer.lineUserId && setChattingCustomer(customer)}
+                                disabled={!customer.lineUserId}
+                                title={customer.lineUserId ? "LINEチャット" : "LINE未連携"}
+                              >
+                                <Icon name="chat" size={16} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                                onClick={() => setViewingBookingHistory(customer)}
+                                title="予約履歴を見る"
+                              >
+                                <Icon name="history" size={16} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                                onClick={() => handleEdit(customer)}
+                              >
+                                <Icon name="edit" size={16} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                                onClick={() => setDeletingCustomer(customer)}
+                              >
+                                <Icon name="delete" size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
-          </div>
         </div>
       </div>
 

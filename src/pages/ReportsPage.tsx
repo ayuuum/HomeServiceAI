@@ -124,13 +124,13 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background">
       <AdminHeader />
       <div className="container max-w-6xl mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold">経営ダッシュボード</h1>
-            <p className="text-muted-foreground mt-1">売上と予約の統計情報</p>
+            <h1 className="text-xl md:text-2xl font-bold">経営ダッシュボード</h1>
+            <p className="text-muted-foreground text-sm mt-1">売上と予約の統計情報</p>
           </div>
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -176,15 +176,16 @@ export default function ReportsPage() {
                   </Button>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height={250} className="md:!h-[350px]">
+                    <LineChart data={salesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.4} />
                       <XAxis
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                         dy={10}
+                        interval="preserveStartEnd"
                       />
                       <YAxis
                         axisLine={false}
@@ -221,18 +222,18 @@ export default function ReportsPage() {
                   <CardDescription>人気のサービス</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={serviceData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height={220} className="md:!h-[300px]">
+                    <BarChart data={serviceData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.4} />
                       <XAxis
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                        interval={0}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                        interval="preserveStartEnd"
                         angle={-15}
                         textAnchor="end"
-                        height={60}
+                        height={50}
                       />
                       <YAxis axisLine={false} tickLine={false} />
                       <Tooltip
@@ -256,7 +257,7 @@ export default function ReportsPage() {
                   <CardDescription>ステータス別の予約数</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={220} className="md:!h-[300px]">
                     <PieChart>
                       <Pie
                         data={statusData}

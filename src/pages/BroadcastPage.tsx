@@ -316,7 +316,7 @@ export default function BroadcastPage() {
             {/* Booking Count Filter */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">予約回数</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
                   min="0"
@@ -326,9 +326,9 @@ export default function BroadcastPage() {
                     ...f,
                     minBookingCount: e.target.value ? Number(e.target.value) : null,
                   }))}
-                  className="w-28"
+                  className="w-full md:w-28"
                 />
-                <span className="text-muted-foreground">〜</span>
+                <span className="text-muted-foreground hidden md:inline">〜</span>
                 <Input
                   type="number"
                   min="0"
@@ -338,7 +338,7 @@ export default function BroadcastPage() {
                     ...f,
                     maxBookingCount: e.target.value ? Number(e.target.value) : null,
                   }))}
-                  className="w-28"
+                  className="w-full md:w-28"
                 />
                 <span className="text-sm text-muted-foreground">回</span>
               </div>
@@ -347,7 +347,7 @@ export default function BroadcastPage() {
             {/* Last Booking Date Filter */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">最終予約日</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   type="date"
                   value={filters.lastBookingAfter ?? ''}
@@ -355,9 +355,9 @@ export default function BroadcastPage() {
                     ...f,
                     lastBookingAfter: e.target.value || null,
                   }))}
-                  className="w-44"
+                  className="w-full md:w-44"
                 />
-                <span className="text-muted-foreground">〜</span>
+                <span className="text-muted-foreground hidden md:inline">〜</span>
                 <Input
                   type="date"
                   value={filters.lastBookingBefore ?? ''}
@@ -365,7 +365,7 @@ export default function BroadcastPage() {
                     ...f,
                     lastBookingBefore: e.target.value || null,
                   }))}
-                  className="w-44"
+                  className="w-full md:w-44"
                 />
               </div>
             </div>
@@ -373,7 +373,7 @@ export default function BroadcastPage() {
             {/* Total Spend Filter */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">利用総額</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
                   min="0"
@@ -383,9 +383,9 @@ export default function BroadcastPage() {
                     ...f,
                     minTotalSpend: e.target.value ? Number(e.target.value) : null,
                   }))}
-                  className="w-32"
+                  className="w-full md:w-32"
                 />
-                <span className="text-muted-foreground">〜</span>
+                <span className="text-muted-foreground hidden md:inline">〜</span>
                 <Input
                   type="number"
                   min="0"
@@ -395,7 +395,7 @@ export default function BroadcastPage() {
                     ...f,
                     maxTotalSpend: e.target.value ? Number(e.target.value) : null,
                   }))}
-                  className="w-32"
+                  className="w-full md:w-32"
                 />
                 <span className="text-sm text-muted-foreground">円</span>
               </div>
@@ -519,22 +519,22 @@ export default function BroadcastPage() {
                 {broadcasts.map((broadcast) => (
                   <div
                     key={broadcast.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors gap-2 md:gap-4"
                   >
                     <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">{broadcast.title}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium truncate text-sm md:text-base">{broadcast.title}</p>
                         <BroadcastStatusBadge status={broadcast.status} />
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{broadcast.message}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">{broadcast.message}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(broadcast.created_at), 'yyyy/MM/dd HH:mm', { locale: ja })}
                       </p>
                     </div>
-                    <div className="text-right ml-4 shrink-0">
+                    <div className="text-left md:text-right shrink-0 flex md:block items-center gap-2">
                       <p className="text-sm font-medium">
                         <span className="text-[#06C755]">{broadcast.sent_count}</span>
-                        <span className="text-muted-foreground">/{broadcast.recipient_count}</span>
+                        <span className="text-muted-foreground">/{broadcast.recipient_count}名</span>
                       </p>
                       {broadcast.failed_count > 0 && (
                         <p className="text-xs text-destructive">{broadcast.failed_count}件失敗</p>
