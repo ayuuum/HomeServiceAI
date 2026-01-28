@@ -281,6 +281,7 @@ const BookingPage = () => {
         open={showConfirmation}
         onOpenChange={setShowConfirmation}
         bookingData={bookingData}
+        brandColor={organization?.brand_color}
       />
 
       <div className="min-h-screen bg-background flex flex-col">
@@ -330,7 +331,11 @@ const BookingPage = () => {
 
         {/* Step Indicator */}
         <div className="sticky top-[57px] sm:top-[65px] z-30 bg-background/95 backdrop-blur-sm border-b border-border">
-          <BookingStepIndicator currentStep={currentStep} onStepClick={handleStepClick} />
+          <BookingStepIndicator 
+            currentStep={currentStep} 
+            onStepClick={handleStepClick} 
+            brandColor={organization.brand_color}
+          />
         </div>
 
         {/* Main Content - Grows to fill space */}
@@ -405,14 +410,24 @@ const BookingPage = () => {
           {currentStep === 4 && (
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center gap-2">
-                <Icon name="fact_check" size={20} className="text-primary" />
+                <Icon 
+                  name="fact_check" 
+                  size={20} 
+                  className={!organization.brand_color ? "text-primary" : undefined}
+                  style={organization.brand_color ? { color: organization.brand_color } : undefined}
+                />
                 <h2 className="text-lg sm:text-xl font-bold">予約内容の確認</h2>
               </div>
 
               {/* Service Summary */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Icon name="auto_awesome" size={18} className="text-primary" />
+                  <Icon 
+                    name="auto_awesome" 
+                    size={18} 
+                    className={!organization.brand_color ? "text-primary" : undefined}
+                    style={organization.brand_color ? { color: organization.brand_color } : undefined}
+                  />
                   <h3 className="text-base sm:text-lg font-bold">選択サービス</h3>
                 </div>
                 <Separator className="mb-3" />
@@ -443,7 +458,12 @@ const BookingPage = () => {
               {/* Date/Time Summary */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Icon name="calendar_today" size={18} className="text-primary" />
+                  <Icon 
+                    name="calendar_today" 
+                    size={18} 
+                    className={!organization.brand_color ? "text-primary" : undefined}
+                    style={organization.brand_color ? { color: organization.brand_color } : undefined}
+                  />
                   <h3 className="text-base sm:text-lg font-bold">予約日時</h3>
                 </div>
                 <Separator className="mb-3" />
@@ -465,7 +485,12 @@ const BookingPage = () => {
               {/* Customer Summary */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Icon name="person" size={18} className="text-primary" />
+                  <Icon 
+                    name="person" 
+                    size={18} 
+                    className={!organization.brand_color ? "text-primary" : undefined}
+                    style={organization.brand_color ? { color: organization.brand_color } : undefined}
+                  />
                   <h3 className="text-base sm:text-lg font-bold">お客様情報</h3>
                 </div>
                 <Separator className="mb-3" />
@@ -480,14 +505,28 @@ const BookingPage = () => {
               </section>
 
               {/* Price Summary */}
-              <div className="bg-primary/10 rounded-lg border-2 border-primary/30 p-4 sm:p-5">
+              <div 
+                className="rounded-lg border-2 p-4 sm:p-5"
+                style={organization.brand_color ? {
+                  backgroundColor: `${organization.brand_color}10`,
+                  borderColor: `${organization.brand_color}30`
+                } : undefined}
+              >
                 <div className="flex justify-between items-center">
                   <span className="text-base sm:text-lg font-bold text-foreground">合計金額（税込）</span>
                   <div className="text-right">
                     {totalDiscount > 0 && (
-                      <p className="text-sm text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
+                      <p 
+                        className="text-sm font-medium"
+                        style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+                      >
+                        -¥{totalDiscount.toLocaleString()} 割引
+                      </p>
                     )}
-                    <p className="text-2xl sm:text-3xl font-bold text-primary">
+                    <p 
+                      className="text-2xl sm:text-3xl font-bold"
+                      style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+                    >
                       ¥{totalPrice.toLocaleString()}
                     </p>
                   </div>
@@ -501,7 +540,12 @@ const BookingPage = () => {
         <div className="sticky bottom-0 bg-background border-t border-border safe-area-pb z-50">
           {/* Floating summary for Step 1 */}
           {currentStep === 1 && selectedServices.length > 0 && (
-            <div className="px-3 py-2 border-b border-border bg-primary/5">
+            <div 
+              className="px-3 py-2 border-b border-border"
+              style={organization.brand_color ? {
+                backgroundColor: `${organization.brand_color}08`
+              } : { backgroundColor: 'hsl(var(--primary) / 0.05)' }}
+            >
               <div className="container max-w-4xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground">選択中</span>
@@ -509,9 +553,19 @@ const BookingPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {totalDiscount > 0 && (
-                    <span className="text-xs text-primary font-medium">-¥{totalDiscount.toLocaleString()}</span>
+                    <span 
+                      className="text-xs font-medium"
+                      style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+                    >
+                      -¥{totalDiscount.toLocaleString()}
+                    </span>
                   )}
-                  <span className="text-lg font-bold text-primary">¥{totalPrice.toLocaleString()}</span>
+                  <span 
+                    className="text-lg font-bold"
+                    style={{ color: organization.brand_color || 'hsl(var(--primary))' }}
+                  >
+                    ¥{totalPrice.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -536,6 +590,10 @@ const BookingPage = () => {
                   onClick={handleNext}
                   disabled={nextButtonState.disabled}
                   className="flex-1 h-10 text-sm font-semibold touch-manipulation"
+                  style={organization.brand_color ? {
+                    backgroundColor: organization.brand_color,
+                    borderColor: organization.brand_color
+                  } : undefined}
                 >
                   {nextButtonState.label}
                   <ChevronRight className="w-4 h-4 ml-0.5" />
@@ -545,6 +603,10 @@ const BookingPage = () => {
                   onClick={handleSubmit}
                   disabled={!canSubmit}
                   className="flex-1 h-10 text-sm font-semibold touch-manipulation"
+                  style={organization.brand_color ? {
+                    backgroundColor: organization.brand_color,
+                    borderColor: organization.brand_color
+                  } : undefined}
                 >
                   予約を確定する
                 </Button>
