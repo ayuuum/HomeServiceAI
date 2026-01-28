@@ -1,95 +1,39 @@
 
+# メールアドレス変更機能の追加
 
-# 顧客詳細モーダルの追加
+## 機能概要
 
-## 現状の構造
+Supabase Authの`updateUser`メソッドを使用して、ユーザーがメールアドレスを変更できる機能を追加します。
 
-現在、顧客管理画面では以下のアクションボタンが分離しています：
-
-```text
-【現状】デスクトップ
-┌──────┬──────┬──────┬──────┬──────┬──────┬─────────────────────┐
-│ 名前 │ 電話 │メール│ 住所 │回数  │総額  │ [💬][📜][✏️][🗑️]   │
-└──────┴──────┴──────┴──────┴──────┴──────┴─────────────────────┘
-                                           ↑ 個別ボタン4つ
-
-【現状】モバイル
-┌────────────────────────────────┐
-│ 名前          ¥50,000         │
-│ 電話            5回利用       │
-├───────────┬───────────┬───────┤
-│   履歴   │   編集    │  💬  │  ← 3つのボタン
-└───────────┴───────────┴───────┘
-```
-
-## 問題点
-- 住所は一覧では省略表示され、詳細を確認しづらい
-- 履歴と編集が別々のモーダルで、顧客の全体像が掴みにくい
-- アクションボタンが多く、UIが煩雑
-
-## 解決策
-
-**「詳細を見る」ボタン**を追加し、顧客の総合情報を1つのモーダルで確認できるようにします。
+## 変更フロー
 
 ```text
-【改善後】デスクトップ
-┌──────┬──────┬──────┬──────┬──────┬──────┬─────────────────────────────┐
-│ 名前 │ 電話 │メール│ 住所 │回数  │総額  │ [詳細][💬][✏️][🗑️]          │
-└──────┴──────┴──────┴──────┴──────┴──────┴─────────────────────────────┘
-                                           ↑ 「詳細」がメインアクション
+【メールアドレス変更フロー】
 
-【改善後】モバイル - 行タップで詳細表示
-┌────────────────────────────────┐
-│ 名前          ¥50,000    [>] │  ← 行タップで詳細モーダル
-│ 電話            5回利用       │
-└────────────────────────────────┘
-```
+1. ユーザーがプロフィール画面で新しいメールアドレスを入力
+2. 「メールアドレスを変更」ボタンをクリック
+3. Supabase Authが確認メールを新しいアドレスに送信
+4. ユーザーがメール内のリンクをクリックして確認
+5. メールアドレスが更新される
 
-## 新規コンポーネント
-
-### CustomerDetailModal
-顧客の総合情報を表示する新しいモーダル
-
-```text
 ┌─────────────────────────────────────────┐
-│ 顧客詳細                           [×] │
+│  アカウント設定                         │
 ├─────────────────────────────────────────┤
 │                                         │
-│  ◯ 山田太郎                            │
-│                                         │
-│  ────────────────────────────────────   │
-│                                         │
-│  📧 連絡先                             │
+│  📧 メールアドレス                      │
 │  ┌─────────────────────────────────┐   │
-│  │ 電話: 090-1234-5678             │   │
-│  │ メール: yamada@example.com      │   │
+│  │ 現在: user@example.com          │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  📍 住所                               │
+│  新しいメールアドレス                   │
 │  ┌─────────────────────────────────┐   │
-│  │ 〒100-0001                      │   │
-│  │ 東京都渋谷区渋谷1-1-1          │   │
-│  │ ○○マンション 101号室           │   │
+│  │ newuser@example.com             │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  📊 利用状況                           │
-│  ┌─────────────────────────────────┐   │
-│  │ 利用回数: 5回                   │   │
-│  │ 利用総額: ¥50,000              │   │
-│  └─────────────────────────────────┘   │
+│         [メールアドレスを変更]          │
 │                                         │
-│  ────────────────────────────────────   │
+│  ⚠️ 確認メールが送信されます           │
 │                                         │
-│  📜 予約履歴（直近5件）               │
-│  ┌─────────────────────────────────┐   │
-│  │ 2024/01/15 エアコン清掃 ¥15,000│   │
-│  │ 2023/12/20 キッチン清掃 ¥12,000│   │
-│  │ ...                             │   │
-│  │        [すべての履歴を見る]     │   │
-│  └─────────────────────────────────┘   │
-│                                         │
-├─────────────────────────────────────────┤
-│  [💬 LINEチャット]  [✏️ 編集]  [🗑️]   │
 └─────────────────────────────────────────┘
 ```
 
@@ -97,91 +41,109 @@
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/components/CustomerDetailModal.tsx` | **新規作成** - 顧客詳細モーダルコンポーネント |
-| `src/pages/CustomerManagement.tsx` | 詳細モーダルの統合、UI構造の変更 |
+| `src/pages/ProfilePage.tsx` | メールアドレス変更セクションの追加 |
 
 ## 変更詳細
 
-### 1. CustomerDetailModal.tsx（新規作成）
+### ProfilePage.tsx の変更
 
+**新しい状態変数:**
 ```tsx
-// 主な機能
-- 顧客基本情報（名前、電話、メール）
-- 住所情報（郵便番号、住所、建物名）
-- 利用統計（利用回数、利用総額）
-- 直近の予約履歴（5件）
-- アクションボタン（LINE、編集、削除）
+const [newEmail, setNewEmail] = useState('');
+const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 ```
 
-**Props:**
+**新しいスキーマ:**
 ```tsx
-interface CustomerDetailModalProps {
-  customer: Customer | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onEdit: (customer: Customer) => void;
-  onDelete: (customer: Customer) => void;
-  onChat: (customer: Customer) => void;
-  onViewAllHistory: (customer: Customer) => void;
-}
+const emailChangeSchema = z.object({
+  newEmail: z.string().email({ message: "有効なメールアドレスを入力してください" }),
+});
 ```
 
-### 2. CustomerManagement.tsx の変更
-
-**状態追加:**
+**メールアドレス変更ハンドラー:**
 ```tsx
-const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
+const handleEmailChange = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  try {
+    emailChangeSchema.parse({ newEmail });
+    setIsLoadingEmail(true);
+    
+    // Supabase Auth の updateUser を使用
+    const { error } = await supabase.auth.updateUser({
+      email: newEmail,
+    });
+    
+    if (error) throw error;
+    
+    setNewEmail('');
+    toast({
+      title: "確認メール送信",
+      description: "新しいメールアドレスに確認メールを送信しました。メール内のリンクをクリックして変更を完了してください。",
+    });
+  } catch (error) {
+    // エラーハンドリング
+  } finally {
+    setIsLoadingEmail(false);
+  }
+};
 ```
 
-**モバイルカードレイアウト変更:**
-- カード全体をタップ可能に
-- ボタンを削除し、シンプルな矢印アイコンに
-
+**新しいUIセクション（プロフィール設定カード内）:**
 ```tsx
-// Before
-<div className="p-4 space-y-3">
-  <div>...</div>
-  <div className="flex gap-2">
-    <Button>履歴</Button>
-    <Button>編集</Button>
-    <Button>💬</Button>
-  </div>
-</div>
-
-// After
-<div 
-  className="p-4 cursor-pointer hover:bg-muted/50"
-  onClick={() => setViewingCustomer(customer)}
->
-  <div className="flex items-center justify-between">
-    <div>...</div>
-    <Icon name="chevron_right" />
-  </div>
-</div>
+<Card>
+  <CardHeader>
+    <CardTitle>メールアドレス変更</CardTitle>
+    <CardDescription>
+      ログインに使用するメールアドレスを変更します
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <form onSubmit={handleEmailChange} className="space-y-4">
+      {/* 現在のメールアドレス表示 */}
+      <div className="space-y-2">
+        <Label>現在のメールアドレス</Label>
+        <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
+          {user?.email}
+        </div>
+      </div>
+      
+      {/* 新しいメールアドレス入力 */}
+      <div className="space-y-2">
+        <Label htmlFor="newEmail">新しいメールアドレス</Label>
+        <Input
+          id="newEmail"
+          type="email"
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
+          placeholder="new@example.com"
+        />
+      </div>
+      
+      {/* 注意書き */}
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
+        <Icon name="info" size={16} />
+        確認メールが新しいアドレスに送信されます
+      </div>
+      
+      <Button type="submit" disabled={isLoadingEmail || !newEmail}>
+        {isLoadingEmail ? "送信中..." : "メールアドレスを変更"}
+      </Button>
+    </form>
+  </CardContent>
+</Card>
 ```
 
-**デスクトップテーブル変更:**
-- 「詳細」ボタンを追加
+## 注意事項
 
-```tsx
-<Button onClick={() => setViewingCustomer(customer)}>
-  <Icon name="visibility" /> 詳細
-</Button>
-```
+1. **確認プロセス**: Supabase Authは新しいメールアドレスに確認メールを送信します。ユーザーがリンクをクリックするまで変更は反映されません。
 
-## UI/UXの改善点
+2. **profiles テーブル同期**: メールアドレス変更後、`profiles`テーブルの`email`カラムも更新が必要な場合があります。これはSupabase Authのトリガーで自動化するか、確認完了後に手動で同期することを検討します。
 
-| 項目 | 変更前 | 変更後 |
-|------|--------|--------|
-| 住所確認 | テーブルで切り詰め表示 | モーダルで完全表示 |
-| 履歴確認 | 別モーダルを開く | 詳細モーダル内で確認可能 |
-| モバイル操作 | 3つのボタンをタップ | カードタップで詳細表示 |
-| 情報の一覧性 | 分散した情報 | 1画面で全体像把握 |
+3. **リダイレクトURL**: 確認メールのリダイレクト先がLovable Cloudの設定で正しく設定されている必要があります。
 
 ## メリット
 
-1. **情報の集約**: 顧客の全情報を1つのモーダルで確認
-2. **操作の簡素化**: モバイルではタップ1回で詳細表示
-3. **直近履歴の表示**: 別モーダルを開かずに履歴を確認可能
-4. **一貫したUX**: BookingDetailModalと同様の設計パターン
-
+- **セキュリティ**: 確認メールによる二段階認証でなりすましを防止
+- **シンプルなUI**: 現在のアドレスを表示し、新しいアドレスのみ入力
+- **明確なフィードバック**: 確認メール送信後のステップを案内
