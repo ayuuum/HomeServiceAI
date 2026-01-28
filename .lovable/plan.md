@@ -1,70 +1,60 @@
 
-# カレンダーのモバイル最適化
+# 予約詳細モーダルのモバイル最適化
 
-## 現状の問題
+## 問題点
 
-| 項目 | 問題点 |
-|------|--------|
-| セル幅 | 375px ÷ 7 = 約53px（テキストが収まらない） |
-| 予約カード | 時刻＋名前を1行に入れようとして潰れる |
-| 件数バッジ | スペースを圧迫している |
+1. **予約ID表示**: UUIDが36文字で長すぎ、実用性が低い
+2. **全体的なサイズ**: フォントサイズ、padding、ボタンがモバイルには大きすぎる
 
 ## 改善内容
 
-### 1. レスポンシブ対応の追加
+### 1. 予約IDの非表示
 
-**モバイル（〜767px）**
-- 時刻のみ表示（名前は省略）
-- 件数バッジを非表示
-- セル高さを `min-h-[80px]` に削減
-
-**タブレット以上（768px〜）**
-- 現状維持（時刻＋名前表示）
-
-### 2. 予約カードの改善
+予約IDは管理者が日常的に参照するものではなく、技術的な識別子。削除してUIをスッキリさせる。
 
 ```text
-【モバイル表示】         【デスクトップ表示】
-┌─────────┐            ┌────────────────┐
-│ 15      │            │ 15        3件   │
-│ 10:00   │            │ 10:00 山田     │
-│ 13:00   │            │ 13:00 鈴木     │
-│ +1      │            │ +1件           │
-└─────────┘            └────────────────┘
-  約53px                   約100px以上
+【Before】                     【After】
+┌─────────────────────┐       ┌─────────────────────┐
+│ 予約詳細            │       │ 予約詳細            │
+│ 予約ID: a1b2c3d4-...│       │                     │
+│                     │       │ ステータス: 確定済み │
+└─────────────────────┘       └─────────────────────┘
 ```
 
-### 3. コード変更
+### 2. レスポンシブ対応
 
-**セル高さ（レスポンシブ）**
-```typescript
-// 変更前
-className={`min-h-[100px] p-1.5 ...`}
+**モバイル（〜767px）向け最適化:**
+- タイトル: `text-2xl` → `text-lg md:text-2xl`
+- セクションpadding: `p-4` → `p-3 md:p-4`
+- 料金表示: `text-3xl` → `text-2xl md:text-3xl`
+- ボタン高さ: `h-12` → `h-10 md:h-12`
+- ラベル幅: `w-24` → `w-20 md:w-24`
 
-// 変更後
-className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 ...`}
-```
+### 3. コンパクトレイアウト
 
-**件数バッジ（モバイルで非表示）**
-```typescript
-// 変更前
-<Badge variant="secondary" className="text-[10px] ...">
-
-// 変更後
-<Badge variant="secondary" className="hidden md:inline-flex text-[10px] ...">
-```
-
-**予約カード（時刻のみモバイル表示）**
-```typescript
-// 変更前
-<span className="font-medium text-xs truncate">
-  {booking.customerName}
-</span>
-
-// 変更後
-<span className="font-medium text-xs truncate hidden md:inline">
-  {booking.customerName}
-</span>
+```text
+【モバイル Before】          【モバイル After】
+┌────────────────────┐      ┌────────────────────┐
+│ 予約詳細           │      │ 予約詳細           │
+│ 予約ID: a1b2c3... │      │                    │
+│                    │      │ ステータス: 確定   │
+│ ステータス:        │      ├────────────────────┤
+│   ┌─────────────┐  │      │ 📋 サービス内容    │
+│   │ ✓ 確定済み  │  │      │ ┌────────────────┐ │
+│   └─────────────┘  │      │ │エアコンクリーニング│
+├────────────────────┤      │ │・室外機         │
+│ 📋 サービス内容    │      │ └────────────────┘ │
+│ ┌────────────────┐ │      ├────────────────────┤
+│ │                │ │      │ 👤 お客様情報      │
+│ │  エアコン      │ │      │ ┌────────────────┐ │
+│ │  クリーニング  │ │      │ │名前: 山田太郎  │ │
+│ │                │ │      │ │電話: 090-xxx   │ │
+│ │ 選択オプション: │ │      │ └────────────────┘ │
+│ │ ・室外機       │ │      ├────────────────────┤
+│ └────────────────┘ │      │ 合計: ¥15,000    │
+│                    │      └────────────────────┘
+│（以下続く...）     │        約30%コンパクト化
+└────────────────────┘
 ```
 
 ---
@@ -73,47 +63,84 @@ className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 ...`}
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/pages/CalendarPage.tsx` | レスポンシブクラスの追加（セル高さ、バッジ表示、名前表示） |
-
----
-
-## ビフォー・アフター
-
-```text
-【モバイル Before】           【モバイル After】
-┌────┬────┬────┐            ┌────┬────┬────┐
-│15  │16  │17  │            │15  │16  │17  │
-│3件 │    │1件 │            │    │    │    │
-│10:0│    │14:0│            │10: │    │14: │
-│山田│    │鈴木│  ←潰れる    │13: │    │    │
-│...  │    │...  │            │+1  │    │    │
-└────┴────┴────┘            └────┴────┴────┘
-  文字がはみ出し               スッキリ表示
-```
+| `src/components/BookingDetailModal.tsx` | 予約ID削除、レスポンシブクラス追加 |
 
 ---
 
 ## 技術詳細
 
-### 変更箇所（CalendarPage.tsx）
-
-**Line 270: セル高さのレスポンシブ化**
+### Line 98: DialogContentのレスポンシブ化
 ```typescript
-className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 bg-card ...`}
+// 変更前
+<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+
+// 変更後
+<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
 ```
 
-**Line 283: 件数バッジをモバイルで非表示**
+### Lines 99-104: タイトル・予約ID削除
 ```typescript
-<Badge variant="secondary" className="hidden md:inline-flex text-[10px] h-4 px-1 ...">
+// 変更前
+<DialogHeader>
+  <DialogTitle className="text-2xl">予約詳細</DialogTitle>
+  <DialogDescription>
+    予約ID: {booking.id}
+  </DialogDescription>
+</DialogHeader>
+
+// 変更後
+<DialogHeader>
+  <DialogTitle className="text-lg md:text-2xl">予約詳細</DialogTitle>
+</DialogHeader>
 ```
 
-**Line 305-306: 名前をモバイルで非表示**
+### Lines 134-138: セクションpadding削減
 ```typescript
-<span className={`font-medium text-xs truncate hidden md:inline ...`}>
-  {booking.customerName}
-</span>
+// 変更前
+<div className="bg-muted/50 p-4 rounded-lg space-y-2">
+
+// 変更後
+<div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
 ```
 
-**Line 302-303: 時刻の短縮表示（オプション）**
-モバイルでは `10:00` → `10:` のように分を省略することも可能
+### Lines 164-166: ラベル幅のレスポンシブ化
+```typescript
+// 変更前
+<span className="text-sm text-muted-foreground w-24">
 
+// 変更後
+<span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">
+```
+
+### Lines 281-289: 料金表示のコンパクト化
+```typescript
+// 変更前
+<p className="text-3xl font-bold text-primary">
+
+// 変更後
+<p className="text-2xl md:text-3xl font-bold text-primary">
+```
+
+### Lines 304-329: ボタンのレスポンシブ化
+```typescript
+// 変更前
+<Button className="flex-1 btn-primary h-12">
+<Button className="flex-1 h-11">
+
+// 変更後
+<Button className="flex-1 btn-primary h-10 md:h-12 text-sm md:text-base">
+<Button className="flex-1 h-9 md:h-11 text-xs md:text-sm">
+```
+
+---
+
+## 期待される改善
+
+| 指標 | Before | After | 改善 |
+|------|--------|-------|------|
+| ヘッダー高さ | 約80px | 約48px | 40%削減 |
+| セクションpadding | 16px | 12px (モバイル) | 25%削減 |
+| ボタン高さ | 48px | 40px (モバイル) | 17%削減 |
+| 予約ID表示 | あり | なし | 完全削除 |
+
+これにより、モバイルでの予約詳細表示がコンパクトになり、スクロール量が減って見やすくなります。
