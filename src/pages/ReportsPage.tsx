@@ -123,7 +123,7 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
-      <div className="container max-w-6xl mx-auto px-4 py-6">
+      <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-bold">経営ダッシュボード</h1>

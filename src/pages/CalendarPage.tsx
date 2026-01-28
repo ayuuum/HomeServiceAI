@@ -127,7 +127,7 @@ export default function CalendarPage() {
     return (
         <div className="min-h-screen bg-background">
             <AdminHeader />
-            <div className="container max-w-6xl mx-auto px-4 py-6">
+            <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
             <div className="flex flex-col gap-4 mb-6">
                     <div className="flex items-center justify-between">
                         <div>
