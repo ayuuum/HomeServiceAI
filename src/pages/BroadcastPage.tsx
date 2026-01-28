@@ -266,7 +266,7 @@ export default function BroadcastPage() {
       {/* Page Header */}
       <div className="border-b bg-card">
         <div className="container max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
             <Icon name="campaign" size={28} className="text-[#06C755]" />
             一斉配信
           </h1>
