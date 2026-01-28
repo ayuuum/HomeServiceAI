@@ -75,4 +75,5 @@ export interface Customer {
   postalCode?: string;
   bookingCount?: number;
   totalSpend?: number;
+  notes?: string;
 }

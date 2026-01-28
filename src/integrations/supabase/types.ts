@@ -296,6 +296,7 @@ export type Database = {
           id: string
           line_user_id: string | null
           name: string | null
+          notes: string | null
           organization_id: string | null
           phone: string | null
           postal_code: string | null
@@ -310,6 +311,7 @@ export type Database = {
           id?: string
           line_user_id?: string | null
           name?: string | null
+          notes?: string | null
           organization_id?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -324,6 +326,7 @@ export type Database = {
           id?: string
           line_user_id?: string | null
           name?: string | null
+          notes?: string | null
           organization_id?: string | null
           phone?: string | null
           postal_code?: string | null

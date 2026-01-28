@@ -73,6 +73,7 @@ export default function CustomerManagement() {
           bookingCount,
           totalSpend,
           bookingNames,
+          notes: c.notes || undefined,
         };
       });
     },
