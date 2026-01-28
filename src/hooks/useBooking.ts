@@ -607,6 +607,27 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     }
                 }
 
+                // Send admin notification email for new booking
+                try {
+                    console.log('[useBooking] Sending admin notification email for new booking:', newBookingId);
+                    const { error: adminEmailError } = await supabase.functions.invoke('send-booking-email', {
+                        body: {
+                            bookingId: newBookingId,
+                            emailType: 'admin_notification',
+                            adminNotificationType: 'new_booking'
+                        }
+                    });
+
+                    if (adminEmailError) {
+                        console.error('[useBooking] Admin notification email error:', adminEmailError);
+                    } else {
+                        console.log('[useBooking] Admin notification email sent successfully');
+                    }
+                } catch (adminEmailErr) {
+                    console.error('[useBooking] Admin email function error:', adminEmailErr);
+                    // Don't fail the booking if admin email fails
+                }
+
                 // Reset form and clear storage
                 clearBookingData();
                 setSelectedServices([]);
