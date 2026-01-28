@@ -267,12 +267,12 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={day.toString()}
-                                        className={`min-h-[140px] p-2 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
+                                        className={`min-h-[100px] p-1.5 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
                                             } ${isToday ? "ring-2 ring-inset ring-primary/50 bg-primary/5" : ""}`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
+                                        <div className="flex justify-between items-start mb-1">
                                             <span
-                                                className={`text-lg font-bold w-8 h-8 flex items-center justify-center rounded-full ${isToday
+                                                className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday
                                                     ? "bg-primary text-primary-foreground shadow-sm"
                                                     : "text-foreground/80"
                                                     }`}
@@ -280,40 +280,48 @@ export default function CalendarPage() {
                                                 {format(day, "d")}
                                             </span>
                                             {dayBookings.length > 0 && (
-                                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-muted text-muted-foreground font-normal">
+                                                <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-muted-foreground font-normal">
                                                     {dayBookings.length}件
                                                 </Badge>
                                             )}
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            {dayBookings.map((booking) => (
+                                        <div className="space-y-0.5">
+                                            {dayBookings.slice(0, 2).map((booking) => (
                                                 <button
                                                     key={booking.id}
                                                     onClick={() => handleBookingClick(booking)}
-                                                    className={`w-full text-left p-2 rounded-[6px] border shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group ${booking.status === "confirmed"
-                                                        ? "bg-success/10 text-success-foreground border-success/20 hover:bg-success/20"
+                                                    className={`w-full text-left px-1.5 py-1 rounded border transition-all hover:shadow-sm ${booking.status === "confirmed"
+                                                        ? "bg-success/10 border-success/20 hover:bg-success/20"
                                                         : booking.status === "cancelled"
-                                                            ? "bg-muted text-muted-foreground border-border opacity-60"
-                                                            : "bg-warning/10 text-warning-foreground border-warning/20 hover:bg-warning/20"
+                                                            ? "bg-muted border-border opacity-60"
+                                                            : "bg-warning/10 border-warning/20 hover:bg-warning/20"
                                                         }`}
                                                 >
-                                                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                                                        <span className={`font-bold text-xs tabular-nums opacity-90 ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : ""}`}>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className={`font-bold text-xs tabular-nums ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
                                                             {booking.selectedTime}
                                                         </span>
+                                                        <span className={`font-medium text-xs truncate ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
+                                                            {booking.customerName}
+                                                        </span>
                                                         {booking.status === "pending" && (
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse flex-shrink-0" />
                                                         )}
-                                                    </div>
-                                                    <div className={`font-bold text-xs truncate leading-tight mb-0.5 ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : ""}`}>
-                                                        {booking.customerName}
-                                                    </div>
-                                                    <div className={`truncate text-[10px] opacity-80 leading-tight ${booking.status === "confirmed" ? "text-success/80" : booking.status === "pending" ? "text-warning/80" : ""}`}>
-                                                        {booking.serviceName}
                                                     </div>
                                                 </button>
                                             ))}
+                                            {dayBookings.length > 2 && (
+                                                <button
+                                                    onClick={() => {
+                                                        // Click first hidden booking to open modal
+                                                        handleBookingClick(dayBookings[2]);
+                                                    }}
+                                                    className="w-full text-center text-[10px] text-muted-foreground hover:text-foreground py-0.5"
+                                                >
+                                                    +{dayBookings.length - 2}件
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );
