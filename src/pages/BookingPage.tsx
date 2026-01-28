@@ -134,6 +134,8 @@ const BookingPage = () => {
     customerPostalCode?: string;
     customerAddress?: string;
     customerAddressBuilding?: string;
+    hasParking?: string;
+    notes?: string;
   } | null>(null);
 
   // Validation for each step
