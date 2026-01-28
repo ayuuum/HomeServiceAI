@@ -267,12 +267,12 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={day.toString()}
-                                        className={`min-h-[100px] p-1.5 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
+                                        className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
                                             } ${isToday ? "ring-2 ring-inset ring-primary/50 bg-primary/5" : ""}`}
                                     >
                                         <div className="flex justify-between items-start mb-1">
                                             <span
-                                                className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday
+                                                className={`text-xs md:text-sm font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full ${isToday
                                                     ? "bg-primary text-primary-foreground shadow-sm"
                                                     : "text-foreground/80"
                                                     }`}
@@ -280,7 +280,7 @@ export default function CalendarPage() {
                                                 {format(day, "d")}
                                             </span>
                                             {dayBookings.length > 0 && (
-                                                <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-muted-foreground font-normal">
+                                                <Badge variant="secondary" className="hidden md:inline-flex text-[10px] h-4 px-1 bg-muted text-muted-foreground font-normal">
                                                     {dayBookings.length}件
                                                 </Badge>
                                             )}
@@ -299,10 +299,10 @@ export default function CalendarPage() {
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-1">
-                                                        <span className={`font-bold text-xs tabular-nums ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
+                                                        <span className={`font-bold text-[10px] md:text-xs tabular-nums ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
                                                             {booking.selectedTime}
                                                         </span>
-                                                        <span className={`font-medium text-xs truncate ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
+                                                        <span className={`hidden md:inline font-medium text-xs truncate ${booking.status === "confirmed" ? "text-success" : booking.status === "pending" ? "text-warning" : "text-muted-foreground"}`}>
                                                             {booking.customerName}
                                                         </span>
                                                         {booking.status === "pending" && (
