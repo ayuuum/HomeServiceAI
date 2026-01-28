@@ -48,7 +48,7 @@ export function LineSettingsForm() {
 
     const { data, error } = await supabase
       .from('organizations')
-      .select('line_channel_token, line_channel_secret, line_bot_user_id, line_liff_id, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords, line_reminder_hours_before')
+      .select('*')
       .eq('id', organization.id)
       .single();
 
