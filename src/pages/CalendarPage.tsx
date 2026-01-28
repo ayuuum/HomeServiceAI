@@ -141,10 +141,12 @@ export default function CalendarPage() {
                                 setInitialBookingDate(undefined);
                                 setNewBookingModalOpen(true);
                             }}
-                            className="shrink-0"
+                            size="sm"
+                            className="shrink-0 h-8 md:h-9 text-xs md:text-sm px-2.5 md:px-3"
                         >
-                            <Icon name="add" size={18} className="mr-1" />
-                            新規予約
+                            <Icon name="add" size={16} className="md:mr-1" />
+                            <span className="hidden md:inline">新規予約</span>
+                            <span className="md:hidden">予約</span>
                         </Button>
                     </div>
                     <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border w-full md:w-auto md:self-end">
