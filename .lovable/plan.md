@@ -1,140 +1,114 @@
 
 
-# キャンセル時の管理者メール通知機能
+# 「〇〇で簡単予約」テキストの編集機能
 
-## 背景
+## 現状
 
-現在、顧客が予約をキャンセルした場合：
-- 顧客へのLINE通知：`send-booking-notification` で送信
-- 管理者へのLINE通知：`admin_line_user_id` カラムが未実装のため未対応
-- **管理者へのメール通知：未実装**
+### プレビュー表示（ProfilePage.tsx:860-865）
+```typescript
+<p className="text-lg font-bold" style={{ color: brandColor }}>
+  {organization?.name || '店舗名'}で簡単予約
+</p>
+```
 
-プロフィールページでは、管理者のメールアドレスは `profiles.email` に保存されているが、キャンセル通知には使用されていない。
+### データベース（organizations テーブル）
+現在ブランディング関連カラム:
+- `logo_url` - ロゴ画像URL
+- `brand_color` - ブランドカラー
+- `welcome_message` - ウェルカムメッセージ
+- `header_layout` - ヘッダーレイアウト
+
+**「〇〇で簡単予約」部分を編集するカラムが存在しない**
 
 ---
 
-## 実装方針
+## 実装内容
 
-### データの取得元
+### 1. データベースマイグレーション
 
-管理者のメールアドレスを取得する方法：
-- `profiles` テーブルに `organization_id` と `email` が格納されている
-- 予約の `organization_id` から該当組織の管理者プロファイルを検索
+`organizations` テーブルに新しいカラムを追加：
 
-### 実装箇所
+| カラム名 | 型 | デフォルト値 | 説明 |
+|---------|-----|-------------|------|
+| `booking_headline` | text | NULL | 予約ページの見出しテキスト |
+
+デフォルト動作：NULLの場合は従来通り「{店舗名}で簡単予約」を表示
+
+### 2. 管理画面の更新（ProfilePage.tsx）
+
+ウェルカムメッセージの上に入力フィールドを追加：
+
+```text
+┌─────────────────────────────────────┐
+│ 見出しテキスト                        │
+│ ┌─────────────────────────────────┐ │
+│ │ ○○で簡単予約                    │ │
+│ └─────────────────────────────────┘ │
+│ 空欄の場合「{店舗名}で簡単予約」が表示 │
+└─────────────────────────────────────┘
+```
+
+### 3. プレビュー表示の更新
+
+```typescript
+// 変更前
+{organization?.name || '店舗名'}で簡単予約
+
+// 変更後
+{bookingHeadline || `${organization?.name || '店舗名'}で簡単予約`}
+```
+
+### 4. 予約ページへの反映（BookingPage.tsx）
+
+`get_organization_public` RPCで取得するデータに `booking_headline` を含め、予約ページのヘッダー部分にも反映（現在は予約ページにこの見出しは表示されていないが、必要に応じて追加）
+
+### 5. 保存処理の更新
+
+`handleBrandingUpdate` 関数で `booking_headline` も保存対象に追加
+
+---
+
+## 変更ファイル一覧
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `send-booking-email/index.ts` | `admin_notification` タイプを追加し、管理者向けメールテンプレートを実装 |
-| `CancelBookingPage.tsx` | キャンセル成功後に管理者メール通知を呼び出す |
-
----
-
-## 変更内容
-
-### 1. Edge Function の拡張 (`send-booking-email/index.ts`)
-
-#### 新しいメールタイプの追加
-
-```typescript
-interface EmailRequest {
-  bookingId: string;
-  emailType: 'confirmation' | 'cancellation' | 'reminder' | 'admin_notification';
-  adminNotificationType?: 'new_booking' | 'cancelled';
-}
-```
-
-#### 管理者メールアドレスの取得
-
-```typescript
-// organization_idから管理者のプロファイルを取得
-const { data: adminProfile } = await supabase
-  .from('profiles')
-  .select('email')
-  .eq('organization_id', booking.organization_id)
-  .not('email', 'is', null)
-  .limit(1)
-  .single();
-```
-
-#### 管理者向けメールテンプレート
-
-新しいキャンセル通知用のHTMLテンプレートを追加：
-
-```text
-件名: 【キャンセル通知】○○様 - ○月○日 ○時〜
-
-内容:
-- 顧客名
-- 予約日時
-- サービス内容
-- 合計金額
-- キャンセル理由（顧客によるキャンセル）
-```
-
-### 2. フロントエンドの更新 (`CancelBookingPage.tsx`)
-
-キャンセル成功後に管理者通知を追加：
-
-```typescript
-// 既存: 顧客へのLINE通知
-supabase.functions.invoke('send-booking-notification', {
-  body: { bookingId: booking.id, notificationType: 'cancelled' }
-});
-
-// 新規: 管理者へのメール通知
-supabase.functions.invoke('send-booking-email', {
-  body: { 
-    bookingId: booking.id, 
-    emailType: 'admin_notification',
-    adminNotificationType: 'cancelled'
-  }
-});
-```
+| マイグレーションSQL | `booking_headline` カラム追加 |
+| `src/pages/ProfilePage.tsx` | 入力フィールド追加、state管理、保存処理更新 |
+| `src/integrations/supabase/types.ts` | 型定義の自動更新 |
 
 ---
 
 ## 技術詳細
 
-### キャンセル通知フロー
+### RPC関数の確認
+
+`get_organization_public` がパブリックデータを返すため、新カラムも含めるか確認が必要。ブランディング情報は公開しても問題ないため、SELECTに追加。
+
+### UIフロー
 
 ```text
-顧客がキャンセルボタンをクリック
+管理者がプロフィールページを開く
          │
          ▼
-  cancel_booking_by_token RPC
-  (DBでステータス更新)
+「ブランディング設定」セクション
          │
-         ├──────────────────────┐
-         ▼                      ▼
-send-booking-notification   send-booking-email
-  (顧客LINE通知)              (管理者メール通知)
-         │                      │
-         ▼                      ▼
-   LINE Push API            Resend API
-         │                      │
-         ▼                      ▼
- line_messagesに記録      管理者にメール送信
+         ├── ロゴアップロード
+         ├── ブランドカラー選択
+         ├── ヘッダーレイアウト選択
+         ├── 【新規】見出しテキスト入力  ←追加
+         ├── ウェルカムメッセージ
+         └── プレビュー表示
+         │
+         ▼
+「保存」ボタンでDBに反映
 ```
-
-### 管理者メールテンプレートのデザイン
-
-- ヘッダー: 赤色背景（キャンセル警告色）
-- 内容: 
-  - キャンセルされた予約の詳細
-  - 顧客の連絡先（電話番号・メール）
-  - キャンセル日時
-- フッター: 組織名
-
-### 送信元アドレス
-
-現在は `onboarding@resend.dev` を使用（本番環境では独自ドメインの設定が必要）
 
 ---
 
 ## 期待される結果
 
-1. 顧客がキャンセルすると、管理者にメールで即時通知が届く
-2. メールには予約詳細と顧客連絡先が含まれる
-3. 管理者は迅速に対応（空き枠の再公開など）が可能になる
+1. 管理者が「〇〇で簡単予約」の部分を自由に編集可能
+2. 空欄の場合は従来通り「{店舗名}で簡単予約」が表示される
+3. プレビューでリアルタイムに確認可能
+4. 設定は予約ページにも反映される
 
