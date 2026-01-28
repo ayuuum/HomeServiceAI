@@ -1,112 +1,112 @@
 
+# カレンダーページへの手動予約登録機能追加
 
-# 「今日の予約」ヘッダーのモバイル最適化
+## 概要
+カレンダーページ（/admin/calendar）からも新規予約を手動で登録できるようにします。さらに、カレンダーの日付をクリックした際に、その日付が自動的に選択された状態で予約モーダルを開けるようにすることで、ワークフローを効率化します。
 
-## 現状の問題
+## 実装内容
 
-```text
-【現在の問題 - モバイルで潰れる】
-┌─────────────────────────────┐
-│ 📅今日の   │ カレンダー   │
-│ 予約 1件   │  で見る      │  ← 要素が潰れて縦や2列に
-└─────────────────────────────┘
-```
+### 1. カレンダーページにNewBookingModalを追加
+- 「＋ 新規予約」ボタンをページヘッダーに追加
+- 既存の `NewBookingModal` コンポーネントを再利用
 
-## 改善後のデザイン
+### 2. 日付クリックで予約作成機能（オプション強化）
+- カレンダーの日付セルをクリックした際に、その日付で新規予約モーダルを開く
+- 選択された日付が自動的にフォームにセットされる
 
-```text
-【改善後 - モバイル】
-┌─────────────────────────────┐
-│ 📅 今日の予約  1件          │
-│              カレンダーで見る│
-└─────────────────────────────┘
-
-【改善後 - デスクトップ】
-┌───────────────────────────────────────┐
-│ 📅 今日の予約  1件    カレンダーで見る│
-└───────────────────────────────────────┘
-```
-
----
-
-## 変更内容
-
-### 1. ヘッダーレイアウトをレスポンシブ化
-
-**問題箇所**: Lines 155-177
-
-```typescript
-// 変更前
-<div className="flex items-center justify-between">
-  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-    <Icon name="today" size={20} className="text-primary" />
-    今日の予約
-    <Badge variant="secondary" className="ml-2">
-      {todayBookings.length}件
-    </Badge>
-  </CardTitle>
-  <Button ... >カレンダーで見る</Button>
-</div>
-
-// 変更後
-<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-  <CardTitle className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
-    <Icon name="today" size={18} className="text-primary shrink-0" />
-    <span className="whitespace-nowrap">今日の予約</span>
-    <Badge variant="secondary" className="text-xs">
-      {todayBookings.length}件
-    </Badge>
-  </CardTitle>
-  <Button ... className="text-xs md:text-sm self-start md:self-auto">
-    カレンダーで見る
-  </Button>
-</div>
-```
-
-### 2. 主な修正ポイント
-
-| 要素 | Before | After | 効果 |
-|------|--------|-------|------|
-| ヘッダーコンテナ | `flex items-center justify-between` | `flex flex-col gap-2 md:flex-row md:items-center md:justify-between` | モバイルで縦積み |
-| タイトル | `text-lg` | `text-base md:text-lg` | フォントサイズ縮小 |
-| タイトル内 | `flex items-center gap-2` | `flex items-center gap-2 flex-wrap` | 折り返し許可 |
-| テキスト | なし | `whitespace-nowrap` | 文字の途中折れ防止 |
-| アイコン | `size={20}` | `size={18} shrink-0` | 縮小防止 |
-| バッジ | `ml-2` | `text-xs` | コンパクト化 |
-| ボタン | なし | `self-start md:self-auto` | モバイルで左寄せ |
-
----
+### 3. NewBookingModal の拡張
+- オプションで初期日付（`initialDate`）を受け取れるように修正
+- 日付がプリセットされた状態でモーダルが開く
 
 ## 変更ファイル
 
 | ファイル | 変更内容 |
-|----------|----------|
-| `src/pages/CalendarPage.tsx` | 今日の予約ヘッダーのレスポンシブ化 |
+|---------|---------|
+| `src/pages/CalendarPage.tsx` | 新規予約ボタン追加、日付クリックハンドラー |
+| `src/components/NewBookingModal.tsx` | `initialDate` prop のサポート追加 |
 
----
-
-## ビフォー・アフター
+## ユーザー体験
 
 ```text
-【Before - モバイル320px】        【After - モバイル320px】
-┌──────────────────────┐        ┌──────────────────────┐
-│ 📅今  │カ   │        │        │ 📅 今日の予約  1件   │
-│ 日の  │レ   │        │        │ カレンダーで見る     │
-│ 予約  │ン   │        │        └──────────────────────┘
-│  1件  │ダ   │        │          スッキリ整理
-└──────────────────────┘        
-  潰れて読めない
+現在のフロー:
+┌─────────────────┐    ┌─────────────────┐
+│ カレンダーページ │ → │ ダッシュボードへ │ → 新規予約
+└─────────────────┘    └─────────────────┘
+
+改善後のフロー:
+┌─────────────────┐    ┌─────────────────┐
+│ カレンダーページ │ → │ 新規予約モーダル │（日付自動セット）
+└─────────────────┘    └─────────────────┘
 ```
+
+## UIイメージ
+
+### ヘッダー部分
+```
+予約管理                               [＋ 新規予約]
+予約の確認・承認・管理ができます        [<] 2026年 1月 [>] [今日]
+```
+
+### カレンダーセル
+- 日付をクリック → その日付で新規予約モーダルが開く
+- 既存の予約をクリック → 予約詳細モーダルが開く（現状維持）
 
 ---
 
-## 期待される改善
+## 技術詳細
 
-| 指標 | Before | After |
-|------|--------|-------|
-| 文字の視認性 | 潰れて縦表示 | 明瞭に横並び |
-| レイアウト | 要素が重なる | 縦積みで整理 |
-| タップ領域 | 不明確 | ボタン明確 |
+### CalendarPage.tsx の変更
 
-これにより、モバイルでも「今日の予約」セクションのヘッダーが読みやすく、ボタンも押しやすくなります。
+```typescript
+// インポート追加
+import { NewBookingModal } from "@/components/NewBookingModal";
 
+// State追加
+const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
+const [initialBookingDate, setInitialBookingDate] = useState<Date | undefined>();
+
+// 日付クリックハンドラー
+const handleDayClick = (day: Date) => {
+  setInitialBookingDate(day);
+  setNewBookingModalOpen(true);
+};
+
+// ヘッダーに新規予約ボタン追加
+<Button onClick={() => {
+  setInitialBookingDate(undefined);
+  setNewBookingModalOpen(true);
+}}>
+  ＋ 新規予約
+</Button>
+
+// モーダル追加
+<NewBookingModal
+  open={newBookingModalOpen}
+  onOpenChange={setNewBookingModalOpen}
+  onBookingCreated={fetchBookings}
+  initialDate={initialBookingDate}
+/>
+```
+
+### NewBookingModal.tsx の変更
+
+```typescript
+interface NewBookingModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onBookingCreated: () => void;
+  initialDate?: Date;  // 新規追加
+}
+
+// useEffect で初期日付をセット
+useEffect(() => {
+  if (open && initialDate) {
+    setSelectedDate(initialDate);
+  }
+}, [open, initialDate]);
+```
+
+## 実装の安全性
+- 既存の `NewBookingModal` コンポーネントをそのまま活用するため、予約作成ロジックは変更なし
+- `initialDate` は後方互換性のあるオプショナルなpropとして追加
+- RLSポリシーや認証フローへの影響なし
