@@ -337,11 +337,12 @@ const AdminDashboard = () => {
 
             {/* Recent Bookings */}
             <Card className="shadow-subtle border-none">
-              <CardHeader className="border-b border-border/50 bg-muted/30 py-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-foreground">最近の予約</CardTitle>
+              <CardHeader className="border-b border-border/50 bg-muted/30 py-3 md:py-4 flex flex-row items-center justify-between">
+                <CardTitle className="text-base md:text-lg font-semibold text-foreground">最近の予約</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8 text-xs md:text-sm"
                   onClick={() => {
                     const columns: ColumnConfig[] = [
                       { key: 'id', header: '予約ID' },
@@ -364,8 +365,8 @@ const AdminDashboard = () => {
                   }}
                   disabled={bookings.length === 0}
                 >
-                  <Icon name="download" size={14} className="mr-1.5" />
-                  CSVエクスポート
+                  <Icon name="download" size={14} className="mr-1" />
+                  <span className="hidden sm:inline">CSV</span>エクスポート
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
@@ -376,44 +377,95 @@ const AdminDashboard = () => {
                 ) : (
                   <div className="divide-y divide-border/50">
                     {bookings.map((booking) => (
-                      <div key={booking.id} className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1.5">
-                            <span className="font-bold text-base text-foreground truncate">
-                              {booking.customerName}
-                            </span>
-                            {getStatusBadge(booking.status)}
+                      <div 
+                        key={booking.id} 
+                        className="p-3 md:p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => handleViewDetails(booking)}
+                      >
+                        {/* Mobile Card Layout */}
+                        <div className="md:hidden">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-sm text-foreground truncate">
+                                  {booking.customerName}
+                                </span>
+                                {getStatusBadge(booking.status)}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {booking.serviceName}
+                              </p>
+                            </div>
+                            <div className="text-right ml-2 flex-shrink-0">
+                              <p className="text-base font-bold text-primary tabular-nums">
+                                ¥{booking.totalPrice.toLocaleString()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
-                              <Icon name="calendar_today" size={14} />
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Icon name="calendar_today" size={12} />
                               {new Date(booking.selectedDate).toLocaleDateString("ja-JP", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
+                                month: "numeric",
+                                day: "numeric",
                               })}
                             </span>
-                            <span className="flex items-center gap-1.5">
-                              <Icon name="schedule" size={14} />
+                            <span className="flex items-center gap-1">
+                              <Icon name="schedule" size={12} />
                               {booking.selectedTime}
                             </span>
+                            {booking.customerPhone && (
+                              <span className="flex items-center gap-1 truncate">
+                                <Icon name="phone" size={12} />
+                                {booking.customerPhone}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-foreground tabular-nums">
-                              ¥{booking.totalPrice.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-muted-foreground">税込</p>
+
+                        {/* Desktop Row Layout */}
+                        <div className="hidden md:flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-1.5">
+                              <span className="font-bold text-base text-foreground truncate">
+                                {booking.customerName}
+                              </span>
+                              {getStatusBadge(booking.status)}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <Icon name="calendar_today" size={14} />
+                                {new Date(booking.selectedDate).toLocaleDateString("ja-JP", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                })}
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <Icon name="schedule" size={14} />
+                                {booking.selectedTime}
+                              </span>
+                            </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                            onClick={() => handleViewDetails(booking)}
-                          >
-                            <Icon name="visibility" size={16} />
-                          </Button>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-foreground tabular-nums">
+                                ¥{booking.totalPrice.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-muted-foreground">税込</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetails(booking);
+                              }}
+                            >
+                              <Icon name="visibility" size={16} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
