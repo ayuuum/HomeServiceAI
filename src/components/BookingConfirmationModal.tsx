@@ -28,6 +28,7 @@ interface BookingConfirmationModalProps {
     customerAddress?: string;
     customerAddressBuilding?: string;
   } | null;
+  brandColor?: string;
 }
 
 // 簡易的な予約番号を生成（日時ベース）
@@ -41,6 +42,7 @@ export const BookingConfirmationModal = ({
   open,
   onOpenChange,
   bookingData,
+  brandColor,
 }: BookingConfirmationModalProps) => {
   if (!bookingData) return null;
 
@@ -113,10 +115,19 @@ export const BookingConfirmationModal = ({
 
         <div className="space-y-2 py-2">
           {/* 予約番号カード */}
-          <Card className="bg-primary/10 border-primary/30 border p-3">
+          <Card 
+            className="border p-3"
+            style={brandColor ? {
+              backgroundColor: `${brandColor}10`,
+              borderColor: `${brandColor}30`
+            } : undefined}
+          >
             <div className="text-center">
               <span className="text-xs text-muted-foreground">予約番号</span>
-              <p className="text-xl font-bold text-primary tracking-wider">
+              <p 
+                className="text-xl font-bold tracking-wider"
+                style={{ color: brandColor || 'hsl(var(--primary))' }}
+              >
                 #{bookingNumber}
               </p>
             </div>
@@ -127,7 +138,10 @@ export const BookingConfirmationModal = ({
             <div className="space-y-2">
               {/* 予約日時 */}
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                <Calendar 
+                  className="w-4 h-4 flex-shrink-0" 
+                  style={{ color: brandColor || 'hsl(var(--primary))' }}
+                />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs text-muted-foreground">予約日時</span>
                   <p className="text-sm font-bold truncate">
@@ -138,7 +152,10 @@ export const BookingConfirmationModal = ({
 
               {/* サービス */}
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+                <Sparkles 
+                  className="w-4 h-4 flex-shrink-0" 
+                  style={{ color: brandColor || 'hsl(var(--primary))' }}
+                />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs text-muted-foreground">サービス</span>
                   <p className="text-sm font-bold truncate">{bookingData.serviceName}</p>
@@ -148,7 +165,10 @@ export const BookingConfirmationModal = ({
               {/* 住所（ある場合） */}
               {location && (
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                  <MapPin 
+                    className="w-4 h-4 flex-shrink-0" 
+                    style={{ color: brandColor || 'hsl(var(--primary))' }}
+                  />
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-muted-foreground">お伺い先</span>
                     <p className="text-xs font-medium truncate">{location}</p>
@@ -159,7 +179,10 @@ export const BookingConfirmationModal = ({
               {/* お客様情報（ある場合） */}
               {(bookingData.customerName || bookingData.customerPhone) && (
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary flex-shrink-0" />
+                  <User 
+                    className="w-4 h-4 flex-shrink-0" 
+                    style={{ color: brandColor || 'hsl(var(--primary))' }}
+                  />
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-muted-foreground">お客様</span>
                     <div className="flex items-center gap-2">
@@ -180,10 +203,19 @@ export const BookingConfirmationModal = ({
           </Card>
 
           {/* 合計金額カード */}
-          <Card className="bg-primary/10 border-primary/30 border p-3">
+          <Card 
+            className="border p-3"
+            style={brandColor ? {
+              backgroundColor: `${brandColor}10`,
+              borderColor: `${brandColor}30`
+            } : undefined}
+          >
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold">合計（税込）</span>
-              <span className="text-lg font-bold text-primary">
+              <span 
+                className="text-lg font-bold"
+                style={{ color: brandColor || 'hsl(var(--primary))' }}
+              >
                 ¥{bookingData.totalPrice.toLocaleString()}
               </span>
             </div>
@@ -199,7 +231,11 @@ export const BookingConfirmationModal = ({
           <Button
             onClick={() => window.open(googleCalendarUrl, '_blank')}
             variant="outline"
-            className="w-full h-10 text-sm font-semibold border-primary/20 hover:bg-primary/5 hover:text-primary"
+            className="w-full h-10 text-sm font-semibold"
+            style={brandColor ? {
+              borderColor: `${brandColor}30`,
+              color: brandColor
+            } : undefined}
           >
             <Icon name="calendar_today" size={18} className="mr-2" />
             Googleカレンダーに追加
@@ -207,6 +243,10 @@ export const BookingConfirmationModal = ({
           <Button
             onClick={() => onOpenChange(false)}
             className="w-full h-10 text-sm font-semibold"
+            style={brandColor ? {
+              backgroundColor: brandColor,
+              borderColor: brandColor
+            } : undefined}
           >
             閉じる
           </Button>
