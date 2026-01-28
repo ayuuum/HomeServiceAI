@@ -260,10 +260,10 @@ export default function CustomerManagement() {
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
-      <div className="container max-w-6xl mx-auto px-4 py-6">
+      <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
         <div className="mb-6">
           <h1 className="text-lg md:text-xl font-bold text-foreground">顧客管理</h1>
-          <p className="text-muted-foreground mt-1">顧客情報を一覧で管理できます</p>
+          <p className="text-sm text-muted-foreground mt-1">顧客情報を一覧で管理できます</p>
         </div>
 
         <div className="bg-card rounded-[10px] shadow-medium border-none">

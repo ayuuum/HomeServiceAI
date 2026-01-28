@@ -270,7 +270,7 @@ export default function BroadcastPage() {
             <Icon name="campaign" size={28} className="text-[#06C755]" />
             一斉配信
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             セグメントを指定してLINE連携済みの顧客にメッセージを一斉送信します
           </p>
         </div>
