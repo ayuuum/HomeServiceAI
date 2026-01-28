@@ -1,60 +1,52 @@
 
-# 予約詳細モーダルのモバイル最適化
+# 今日の予約セクションのモバイル最適化
 
-## 問題点
-
-1. **予約ID表示**: UUIDが36文字で長すぎ、実用性が低い
-2. **全体的なサイズ**: フォントサイズ、padding、ボタンがモバイルには大きすぎる
-
-## 改善内容
-
-### 1. 予約IDの非表示
-
-予約IDは管理者が日常的に参照するものではなく、技術的な識別子。削除してUIをスッキリさせる。
+## 現状の問題
 
 ```text
-【Before】                     【After】
-┌─────────────────────┐       ┌─────────────────────┐
-│ 予約詳細            │       │ 予約詳細            │
-│ 予約ID: a1b2c3d4-...│       │                     │
-│                     │       │ ステータス: 確定済み │
-└─────────────────────┘       └─────────────────────┘
+【モバイル現状 - 潰れている】
+┌─────────────────────────────┐
+│ 10:00 山田太郎  ¥15,000 確定 > │  ← 1行に詰め込みすぎ
+│      エアコンクリーニング        │
+└─────────────────────────────┘
 ```
 
-### 2. レスポンシブ対応
-
-**モバイル（〜767px）向け最適化:**
-- タイトル: `text-2xl` → `text-lg md:text-2xl`
-- セクションpadding: `p-4` → `p-3 md:p-4`
-- 料金表示: `text-3xl` → `text-2xl md:text-3xl`
-- ボタン高さ: `h-12` → `h-10 md:h-12`
-- ラベル幅: `w-24` → `w-20 md:w-24`
-
-### 3. コンパクトレイアウト
+## 改善後のデザイン
 
 ```text
-【モバイル Before】          【モバイル After】
-┌────────────────────┐      ┌────────────────────┐
-│ 予約詳細           │      │ 予約詳細           │
-│ 予約ID: a1b2c3... │      │                    │
-│                    │      │ ステータス: 確定   │
-│ ステータス:        │      ├────────────────────┤
-│   ┌─────────────┐  │      │ 📋 サービス内容    │
-│   │ ✓ 確定済み  │  │      │ ┌────────────────┐ │
-│   └─────────────┘  │      │ │エアコンクリーニング│
-├────────────────────┤      │ │・室外機         │
-│ 📋 サービス内容    │      │ └────────────────┘ │
-│ ┌────────────────┐ │      ├────────────────────┤
-│ │                │ │      │ 👤 お客様情報      │
-│ │  エアコン      │ │      │ ┌────────────────┐ │
-│ │  クリーニング  │ │      │ │名前: 山田太郎  │ │
-│ │                │ │      │ │電話: 090-xxx   │ │
-│ │ 選択オプション: │ │      │ └────────────────┘ │
-│ │ ・室外機       │ │      ├────────────────────┤
-│ └────────────────┘ │      │ 合計: ¥15,000    │
-│                    │      └────────────────────┘
-│（以下続く...）     │        約30%コンパクト化
-└────────────────────┘
+【モバイル最適化後】
+┌─────────────────────────────┐
+│ 10:00        確定  ¥15,000  │
+│ 山田太郎                  >  │
+│ エアコンクリーニング           │
+└─────────────────────────────┘
+```
+
+## 変更内容
+
+### 1. レスポンシブレイアウト
+
+**モバイル（〜767px）**
+- 2段構成: 上段に時刻・ステータス・金額、下段に顧客名・サービス名
+- padding を `p-4` → `p-3` に削減
+- 時刻サイズを `text-lg` → `text-base` に削減
+
+**デスクトップ（768px〜）**
+- 現状維持（横並びレイアウト）
+
+### 2. コンポーネント構造
+
+```text
+【モバイルレイアウト】
+┌────────────────────────────────────┐
+│ ┌──────┐  ┌──────┐  ┌──────────┐   │
+│ │時刻   │  │バッジ │  │   金額 > │   │  ← 上段
+│ └──────┘  └──────┘  └──────────┘   │
+│ ┌────────────────────────────────┐ │
+│ │ 顧客名                          │ │  ← 中段
+│ │ サービス名                      │ │
+│ └────────────────────────────────┘ │
+└────────────────────────────────────┘
 ```
 
 ---
@@ -63,73 +55,69 @@
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/components/BookingDetailModal.tsx` | 予約ID削除、レスポンシブクラス追加 |
+| `src/pages/CalendarPage.tsx` | 今日の予約リストのレスポンシブ化 |
 
 ---
 
 ## 技術詳細
 
-### Line 98: DialogContentのレスポンシブ化
-```typescript
-// 変更前
-<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+### Lines 192-238: 予約カードのレスポンシブ化
 
-// 変更後
-<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+```typescript
+// 変更前（横並び1行レイアウト）
+<button className="... flex items-center justify-between gap-4">
+  <div className="flex items-center gap-4">
+    <div className="text-lg font-bold">...</div>
+    <div className="flex flex-col">...</div>
+  </div>
+  <div className="flex items-center gap-3">
+    <span className="font-bold">¥{...}</span>
+    <Badge>...</Badge>
+    <Icon name="chevron_right" />
+  </div>
+</button>
+
+// 変更後（モバイルで縦積み）
+<button className="... p-3 md:p-4">
+  {/* モバイル: 上段 - 時刻・ステータス・金額 */}
+  <div className="flex md:hidden items-center justify-between mb-2">
+    <div className="flex items-center gap-2">
+      <span className="text-base font-bold tabular-nums">
+        {booking.selectedTime}
+      </span>
+      <Badge>...</Badge>
+    </div>
+    <div className="flex items-center gap-1">
+      <span className="font-bold text-sm">¥{...}</span>
+      <Icon name="chevron_right" size={18} />
+    </div>
+  </div>
+  
+  {/* モバイル: 下段 - 顧客名・サービス名 */}
+  <div className="md:hidden">
+    <p className="font-semibold text-sm">{booking.customerName}</p>
+    <p className="text-xs text-muted-foreground">{booking.serviceName}</p>
+  </div>
+  
+  {/* デスクトップ: 現状維持の横並び */}
+  <div className="hidden md:flex items-center justify-between gap-4">
+    ...既存のレイアウト...
+  </div>
+</button>
 ```
 
-### Lines 99-104: タイトル・予約ID削除
-```typescript
-// 変更前
-<DialogHeader>
-  <DialogTitle className="text-2xl">予約詳細</DialogTitle>
-  <DialogDescription>
-    予約ID: {booking.id}
-  </DialogDescription>
-</DialogHeader>
+---
 
-// 変更後
-<DialogHeader>
-  <DialogTitle className="text-lg md:text-2xl">予約詳細</DialogTitle>
-</DialogHeader>
-```
+## ビフォー・アフター
 
-### Lines 134-138: セクションpadding削減
-```typescript
-// 変更前
-<div className="bg-muted/50 p-4 rounded-lg space-y-2">
-
-// 変更後
-<div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
-```
-
-### Lines 164-166: ラベル幅のレスポンシブ化
-```typescript
-// 変更前
-<span className="text-sm text-muted-foreground w-24">
-
-// 変更後
-<span className="text-sm text-muted-foreground w-20 md:w-24 flex-shrink-0">
-```
-
-### Lines 281-289: 料金表示のコンパクト化
-```typescript
-// 変更前
-<p className="text-3xl font-bold text-primary">
-
-// 変更後
-<p className="text-2xl md:text-3xl font-bold text-primary">
-```
-
-### Lines 304-329: ボタンのレスポンシブ化
-```typescript
-// 変更前
-<Button className="flex-1 btn-primary h-12">
-<Button className="flex-1 h-11">
-
-// 変更後
-<Button className="flex-1 btn-primary h-10 md:h-12 text-sm md:text-base">
-<Button className="flex-1 h-9 md:h-11 text-xs md:text-sm">
+```text
+【Before - モバイル】              【After - モバイル】
+┌─────────────────────┐          ┌─────────────────────┐
+│ 10:00 山田太郎      │          │ 10:00  確定  ¥15,000 >│
+│ エアコン... ¥15,000 │ ← 潰れる  │ 山田太郎            │
+│           確定 >    │          │ エアコンクリーニング  │
+└─────────────────────┘          └─────────────────────┘
+  読みづらい                        スッキリ整理
 ```
 
 ---
@@ -138,9 +126,8 @@
 
 | 指標 | Before | After | 改善 |
 |------|--------|-------|------|
-| ヘッダー高さ | 約80px | 約48px | 40%削減 |
-| セクションpadding | 16px | 12px (モバイル) | 25%削減 |
-| ボタン高さ | 48px | 40px (モバイル) | 17%削減 |
-| 予約ID表示 | あり | なし | 完全削除 |
+| 情報の視認性 | 1行に詰め込み | 優先順位で整理 | 大幅改善 |
+| タップ領域 | 狭い | 広い | タップしやすい |
+| padding | 16px固定 | 12px (モバイル) | 15%コンパクト |
 
-これにより、モバイルでの予約詳細表示がコンパクトになり、スクロール量が減って見やすくなります。
+これにより、モバイルでも今日の予約が一目で確認でき、タップ操作もしやすくなります。
