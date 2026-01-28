@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
+import { CustomerDetailModal } from "@/components/CustomerDetailModal";
 import { LineChatModal } from "@/components/LineChatModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ export default function CustomerManagement() {
 
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
   const [chattingCustomer, setChattingCustomer] = useState<Customer | null>(null);
+  const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
@@ -321,11 +323,15 @@ export default function CustomerManagement() {
               </div>
             ) : (
               <>
-                {/* Mobile Card Layout */}
+                {/* Mobile Card Layout - Tap to open detail */}
                 <div className="md:hidden divide-y divide-border">
                   {filteredCustomers.map((customer) => (
-                    <div key={customer.id} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
+                    <div 
+                      key={customer.id} 
+                      className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted/70 transition-colors"
+                      onClick={() => setViewingCustomer(customer)}
+                    >
+                      <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-foreground truncate">{customer.name || "-"}</p>
                           <p className="text-sm text-muted-foreground truncate">{customer.phone || "-"}</p>
@@ -333,43 +339,13 @@ export default function CustomerManagement() {
                             <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
                           )}
                         </div>
-                        <div className="text-right ml-3 shrink-0">
-                          <p className="font-bold text-foreground tabular-nums">¥{customer.totalSpend?.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{customer.bookingCount}回利用</p>
+                        <div className="flex items-center gap-3 ml-3 shrink-0">
+                          <div className="text-right">
+                            <p className="font-bold text-foreground tabular-nums">¥{customer.totalSpend?.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{customer.bookingCount}回利用</p>
+                          </div>
+                          <Icon name="chevron_right" size={20} className="text-muted-foreground" />
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 h-9"
-                          onClick={() => setViewingBookingHistory(customer)}
-                        >
-                          <Icon name="history" size={14} className="mr-1" />
-                          履歴
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 h-9"
-                          onClick={() => handleEdit(customer)}
-                        >
-                          <Icon name="edit" size={14} className="mr-1" />
-                          編集
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={`h-9 w-9 p-0 ${
-                            customer.lineUserId 
-                              ? "text-[#06C755] border-[#06C755]/30 hover:bg-[#06C755]/10" 
-                              : "text-muted-foreground/40"
-                          }`}
-                          onClick={() => customer.lineUserId && setChattingCustomer(customer)}
-                          disabled={!customer.lineUserId}
-                        >
-                          <Icon name="chat" size={14} />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -386,7 +362,7 @@ export default function CustomerManagement() {
                         <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell whitespace-nowrap">住所</TableHead>
                         <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用回数</TableHead>
                         <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用総額</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px] whitespace-nowrap">アクション</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[200px] whitespace-nowrap">アクション</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -419,6 +395,16 @@ export default function CustomerManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-9 px-3 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => setViewingCustomer(customer)}
+                                title="詳細を見る"
+                              >
+                                <Icon name="visibility" size={16} className="mr-1" />
+                                詳細
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className={`h-9 w-9 p-0 rounded-full ${
                                   customer.lineUserId 
                                     ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10" 
@@ -434,16 +420,8 @@ export default function CustomerManagement() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                                onClick={() => setViewingBookingHistory(customer)}
-                                title="予約履歴を見る"
-                              >
-                                <Icon name="history" size={16} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                                 onClick={() => handleEdit(customer)}
+                                title="編集"
                               >
                                 <Icon name="edit" size={16} />
                               </Button>
@@ -452,6 +430,7 @@ export default function CustomerManagement() {
                                 size="sm"
                                 className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
                                 onClick={() => setDeletingCustomer(customer)}
+                                title="削除"
                               >
                                 <Icon name="delete" size={16} />
                               </Button>
@@ -509,6 +488,24 @@ export default function CustomerManagement() {
         customerId={chattingCustomer?.id || ''}
         lineUserId={chattingCustomer?.lineUserId}
         customerName={chattingCustomer?.name || ''}
+      />
+
+      <CustomerDetailModal
+        customer={viewingCustomer}
+        open={!!viewingCustomer}
+        onOpenChange={(open) => !open && setViewingCustomer(null)}
+        onEdit={(customer) => {
+          handleEdit(customer);
+        }}
+        onDelete={(customer) => {
+          setDeletingCustomer(customer);
+        }}
+        onChat={(customer) => {
+          setChattingCustomer(customer);
+        }}
+        onViewAllHistory={(customer) => {
+          setViewingBookingHistory(customer);
+        }}
       />
     </div>
   );
