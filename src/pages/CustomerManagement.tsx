@@ -375,26 +375,26 @@ export default function CustomerManagement() {
 
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-[800px]">
                     <TableHeader className="bg-muted/30">
                       <TableRow className="hover:bg-transparent border-b border-border">
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell">住所</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px]">アクション</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">名前</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">電話番号</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">メール</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell whitespace-nowrap">住所</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用回数</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用総額</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[160px] whitespace-nowrap">アクション</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredCustomers.map((customer) => (
                         <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-16">
-                          <TableCell className="font-bold text-foreground px-6">
+                          <TableCell className="font-bold text-foreground px-6 whitespace-nowrap">
                             {customer.name || "-"}
                           </TableCell>
-                          <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
-                          <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
+                          <TableCell className="px-6 text-muted-foreground whitespace-nowrap">{customer.phone || "-"}</TableCell>
+                          <TableCell className="px-6 text-muted-foreground whitespace-nowrap">{customer.email || "-"}</TableCell>
                           <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px]" title={`${customer.address || ""}${customer.addressBuilding ? ` ${customer.addressBuilding}` : ""}`}>
                             <div className="truncate">
                               {customer.postalCode && `〒${customer.postalCode} `}
@@ -404,10 +404,10 @@ export default function CustomerManagement() {
                               <div className="truncate text-xs">{customer.addressBuilding}</div>
                             )}
                           </TableCell>
-                          <TableCell className="text-right px-6 font-medium">
+                          <TableCell className="text-right px-6 font-medium whitespace-nowrap">
                             {customer.bookingCount}回
                           </TableCell>
-                          <TableCell className="text-right px-6">
+                          <TableCell className="text-right px-6 whitespace-nowrap">
                             <span className="font-bold text-foreground tabular-nums text-lg">
                               ¥{customer.totalSpend?.toLocaleString()}
                             </span>
