@@ -267,8 +267,8 @@ export default function CustomerManagement() {
         </div>
 
         <div className="bg-card rounded-[10px] shadow-medium border-none">
-          <div className="p-6 border-b border-border flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="relative flex-1 w-full sm:max-w-md">
+          <div className="p-4 sm:p-6 border-b border-border flex flex-col gap-4">
+            <div className="relative w-full sm:max-w-md">
               <Icon name="search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="名前または電話番号で検索..."
@@ -277,36 +277,38 @@ export default function CustomerManagement() {
                 className="pl-10 h-12 text-lg shadow-subtle border-primary/20 focus-visible:ring-primary"
               />
             </div>
-            <Button onClick={handleAdd} className="w-full sm:w-auto btn-primary shadow-subtle h-12 px-6">
-              <Icon name="add" size={20} className="mr-2" />
-              新規顧客登録
-            </Button>
-            <Button onClick={fixMissingCustomers} variant="outline" className="w-full sm:w-auto h-12 px-6" disabled={isFixing}>
-              <Icon name="sync" size={16} className={`mr-2 ${isFixing ? "animate-spin" : ""}`} />
-              データ同期
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto h-12 px-6"
-              onClick={() => {
-                const columns: ColumnConfig[] = [
-                  { key: 'name', header: '顧客名' },
-                  { key: 'phone', header: '電話番号' },
-                  { key: 'email', header: 'メールアドレス' },
-                  { key: 'postalCode', header: '郵便番号' },
-                  { key: 'address', header: '住所' },
-                  { key: 'addressBuilding', header: '建物名' },
-                  { key: 'bookingCount', header: '利用回数' },
-                  { key: 'totalSpend', header: '利用総額', formatter: formatCurrencyForExport },
-                ];
-                exportToCSV(filteredCustomers, columns, 'customers');
-                toast.success('顧客データをエクスポートしました');
-              }}
-              disabled={filteredCustomers.length === 0}
-            >
-              <Icon name="download" size={16} className="mr-2" />
-              CSVエクスポート
-            </Button>
+            <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
+              <Button onClick={handleAdd} className="col-span-1 sm:col-span-1 w-full sm:w-auto btn-primary shadow-subtle h-10 sm:h-12 px-4 sm:px-6 text-sm">
+                <Icon name="add" size={18} className="mr-1.5" />
+                新規顧客登録
+              </Button>
+              <Button onClick={fixMissingCustomers} variant="outline" className="col-span-1 sm:col-span-1 w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm" disabled={isFixing}>
+                <Icon name="sync" size={14} className={`mr-1.5 ${isFixing ? "animate-spin" : ""}`} />
+                データ同期
+              </Button>
+              <Button
+                variant="outline"
+                className="col-span-2 sm:col-span-1 w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm"
+                onClick={() => {
+                  const columns: ColumnConfig[] = [
+                    { key: 'name', header: '顧客名' },
+                    { key: 'phone', header: '電話番号' },
+                    { key: 'email', header: 'メールアドレス' },
+                    { key: 'postalCode', header: '郵便番号' },
+                    { key: 'address', header: '住所' },
+                    { key: 'addressBuilding', header: '建物名' },
+                    { key: 'bookingCount', header: '利用回数' },
+                    { key: 'totalSpend', header: '利用総額', formatter: formatCurrencyForExport },
+                  ];
+                  exportToCSV(filteredCustomers, columns, 'customers');
+                  toast.success('顧客データをエクスポートしました');
+                }}
+                disabled={filteredCustomers.length === 0}
+              >
+                <Icon name="download" size={14} className="mr-1.5" />
+                CSVエクスポート
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
