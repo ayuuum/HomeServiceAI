@@ -83,10 +83,10 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full md:max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
         <DialogHeader>
-          <DialogTitle>予約編集</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">予約編集</DialogTitle>
+          <DialogDescription className="text-sm">
             予約情報を編集できます
           </DialogDescription>
         </DialogHeader>
@@ -152,16 +152,17 @@ export default function BookingEditModal({ open, onOpenChange, booking, onSucces
             onAddressBuildingChange={setCustomerAddressBuilding}
           />
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex flex-col md:flex-row gap-2 md:justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="w-full md:w-auto"
             >
               キャンセル
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
               {isLoading ? (
                 <>
                   <Icon name="sync" size={16} className="mr-2 animate-spin" />

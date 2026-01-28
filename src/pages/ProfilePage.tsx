@@ -598,53 +598,59 @@ export default function ProfilePage() {
               </CardTitle>
               <CardDescription>店舗に掲示してお客様に予約ページを案内できます</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-6 items-center">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6 md:items-start">
                 <div 
                   ref={qrRef}
-                  className="bg-white p-4 rounded-lg border shadow-sm"
+                  className="bg-white p-3 md:p-4 rounded-lg border shadow-sm shrink-0"
                 >
                   {bookingPageUrl ? (
                     <QRCodeSVG
                       value={bookingPageUrl}
-                      size={200}
+                      size={160}
                       level="H"
                       includeMargin={true}
+                      className="md:w-[200px] md:h-[200px]"
                     />
                   ) : (
-                    <div className="w-[200px] h-[200px] flex items-center justify-center bg-muted rounded">
-                      <p className="text-sm text-muted-foreground text-center p-4">
+                    <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] flex items-center justify-center bg-muted rounded">
+                      <p className="text-xs md:text-sm text-muted-foreground text-center p-4">
                         組織設定を完了するとQRコードが表示されます
                       </p>
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-3 md:space-y-4 w-full">
                   <div>
-                    <Label className="text-sm text-muted-foreground">予約ページURL</Label>
-                    <p className="text-sm font-mono bg-muted px-3 py-2 rounded mt-1 break-all">
+                    <Label className="text-xs md:text-sm text-muted-foreground">予約ページURL</Label>
+                    <p className="text-xs md:text-sm font-mono bg-muted px-2 md:px-3 py-2 rounded mt-1 break-all">
                       {bookingPageUrl || '未設定'}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col md:flex-row gap-2">
                     <Button 
                       variant="outline" 
+                      size="sm"
                       onClick={handleDownloadQR}
                       disabled={!bookingPageUrl}
+                      className="w-full md:w-auto"
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      画像をダウンロード
+                      ダウンロード
                     </Button>
                     <Button 
                       variant="outline" 
+                      size="sm"
                       onClick={handlePrintQR}
                       disabled={!bookingPageUrl}
+                      className="w-full md:w-auto"
                     >
                       <Printer className="h-4 w-4 mr-2" />
-                      印刷する
+                      印刷
                     </Button>
                     <Button 
                       variant="outline" 
+                      size="sm"
                       onClick={() => {
                         navigator.clipboard.writeText(bookingPageUrl);
                         toast({
@@ -653,12 +659,13 @@ export default function ProfilePage() {
                         });
                       }}
                       disabled={!bookingPageUrl}
+                      className="w-full md:w-auto"
                     >
                       <Icon name="content_copy" size={16} className="mr-2" />
-                      URLをコピー
+                      コピー
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     ダウンロードした画像を印刷して店舗のカウンターや入口に掲示してください
                   </p>
                 </div>

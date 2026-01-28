@@ -221,65 +221,65 @@ const AdminServiceManagement = () => {
           {services.map((service) => (
             <motion.div key={service.id} variants={item} whileHover={{ y: -5 }}>
               <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 rounded-[10px] shadow-medium border-none group">
-                <div className="h-48 relative overflow-hidden bg-muted">
+                <div className="h-32 md:h-48 relative overflow-hidden bg-muted">
                   <img
                     src={service.imageUrl}
                     alt={service.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3">
                     {getCategoryBadge(service.category)}
                   </div>
                 </div>
-                <CardHeader className="pb-3 pt-4">
-                  <CardTitle className="text-xl font-bold line-clamp-1">{service.title}</CardTitle>
+                <CardHeader className="pb-2 md:pb-3 pt-3 md:pt-4 px-3 md:px-6">
+                  <CardTitle className="text-base md:text-xl font-bold line-clamp-1">{service.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+                <CardContent className="space-y-3 md:space-y-4 px-3 md:px-6 pb-3 md:pb-6">
+                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 min-h-[32px] md:min-h-[40px]">
                     {service.description}
                   </p>
 
                   <div className="flex items-end justify-between">
-                    <div className="flex items-center gap-1.5 text-muted-foreground bg-muted/30 px-2 py-1 rounded">
-                      <Icon name="schedule" size={16} />
-                      <span className="text-sm font-medium">{service.duration}分</span>
+                    <div className="flex items-center gap-1 md:gap-1.5 text-muted-foreground bg-muted/30 px-1.5 md:px-2 py-0.5 md:py-1 rounded">
+                      <Icon name="schedule" size={14} />
+                      <span className="text-xs md:text-sm font-medium">{service.duration}分</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground mb-0.5">基本料金</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground mb-0.5">基本料金</p>
                       <div className="flex items-center gap-0.5 font-bold text-primary leading-none">
-                        <span className="text-lg">¥</span>
-                        <span className="text-2xl tabular-nums">{service.basePrice.toLocaleString()}</span>
+                        <span className="text-sm md:text-lg">¥</span>
+                        <span className="text-lg md:text-2xl tabular-nums">{service.basePrice.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border/50">
+                  <div className="grid grid-cols-4 gap-1.5 md:gap-2 pt-2 border-t border-border/50">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="col-span-2 h-9 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                      className="col-span-2 h-8 md:h-9 text-xs md:text-sm border-primary/20 hover:bg-primary/5 hover:text-primary"
                       onClick={() => handleEditService(service)}
                     >
-                      <Icon name="edit" size={16} className="mr-1.5" />
+                      <Icon name="edit" size={14} className="mr-1" />
                       編集
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="col-span-1 h-9 px-0"
+                      className="col-span-1 h-8 md:h-9 px-0"
                       onClick={() => handleManageOptions(service)}
                       title="オプション管理"
                     >
-                      <Icon name="playlist_add" size={16} />
+                      <Icon name="playlist_add" size={14} />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="col-span-1 h-9 px-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      className="col-span-1 h-8 md:h-9 px-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                       onClick={() => handleDeleteClick(service.id)}
                       title="削除"
                     >
-                      <Icon name="delete" size={16} />
+                      <Icon name="delete" size={14} />
                     </Button>
                   </div>
                 </CardContent>

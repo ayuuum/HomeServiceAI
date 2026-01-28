@@ -125,25 +125,25 @@ export default function CalendarPage() {
         <div className="min-h-screen bg-background">
             <AdminHeader />
             <div className="container max-w-6xl mx-auto px-4 py-6">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div className="flex flex-col gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">予約管理</h1>
-                        <p className="text-muted-foreground mt-1">
+                        <h1 className="text-xl md:text-2xl font-bold text-foreground">予約管理</h1>
+                        <p className="text-muted-foreground text-sm mt-1">
                             予約の確認・承認・管理ができます
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
-                        <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted">
-                            <Icon name="chevron_left" size={20} />
+                    <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border w-full md:w-auto md:self-end">
+                        <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
+                            <Icon name="chevron_left" size={18} />
                         </Button>
-                        <h2 className="text-xl font-bold min-w-[160px] text-center tabular-nums">
+                        <h2 className="text-base md:text-xl font-bold min-w-[140px] md:min-w-[160px] text-center tabular-nums">
                             {format(currentDate, "yyyy年 M月", { locale: ja })}
                         </h2>
-                        <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted">
-                            <Icon name="chevron_right" size={20} />
+                        <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
+                            <Icon name="chevron_right" size={18} />
                         </Button>
-                        <div className="w-px h-6 bg-border mx-1" />
-                        <Button variant="ghost" onClick={goToToday} className="text-sm font-medium hover:bg-muted px-3">
+                        <div className="w-px h-5 bg-border mx-0.5" />
+                        <Button variant="ghost" onClick={goToToday} className="text-xs md:text-sm font-medium hover:bg-muted px-2 md:px-3 h-8 md:h-9">
                             今日
                         </Button>
                     </div>

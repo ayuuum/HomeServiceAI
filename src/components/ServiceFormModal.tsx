@@ -205,10 +205,10 @@ export const ServiceFormModal = ({ open, onOpenChange, service, onSubmit }: Serv
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full md:max-w-2xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
         <DialogHeader>
-          <DialogTitle>{service ? "サービスを編集" : "新規サービスを追加"}</DialogTitle>
-          <DialogDescription>サービスの詳細情報を入力してください</DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">{service ? "サービスを編集" : "新規サービスを追加"}</DialogTitle>
+          <DialogDescription className="text-sm">サービスの詳細情報を入力してください</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -430,11 +430,11 @@ export const ServiceFormModal = ({ open, onOpenChange, service, onSubmit }: Serv
               )}
             />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="flex-col md:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full md:w-auto">
                 キャンセル
               </Button>
-              <Button type="submit" className="btn-primary" disabled={isUploading}>
+              <Button type="submit" className="btn-primary w-full md:w-auto" disabled={isUploading}>
                 {service ? "更新" : "追加"}
               </Button>
             </DialogFooter>

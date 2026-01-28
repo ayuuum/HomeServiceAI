@@ -282,15 +282,15 @@ const AdminDashboard = () => {
             >
               <motion.div variants={item} whileHover={{ y: -5 }}>
                 <Card className="shadow-subtle border-none h-full">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                      <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1 md:mb-2">
                         今月の売上
                       </p>
-                      <p className="text-4xl font-bold text-primary tracking-tight tabular-nums">
+                      <p className="text-2xl md:text-4xl font-bold text-primary tracking-tight tabular-nums">
                         ¥{totalRevenue.toLocaleString()}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-xs text-muted-foreground mt-1 md:mt-2">
                         前月比 <span className="text-success font-medium">+12%</span>
                       </p>
                     </div>
@@ -300,15 +300,15 @@ const AdminDashboard = () => {
 
               <motion.div variants={item} whileHover={{ y: -5 }}>
                 <Card className="shadow-subtle border-none h-full">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                      <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1 md:mb-2">
                         承認待ちの予約
                       </p>
-                      <p className="text-4xl font-bold text-warning tracking-tight tabular-nums">
+                      <p className="text-2xl md:text-4xl font-bold text-warning tracking-tight tabular-nums">
                         {pendingCount}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-xs text-muted-foreground mt-1 md:mt-2">
                         要対応の予約
                       </p>
                     </div>
@@ -318,15 +318,15 @@ const AdminDashboard = () => {
 
               <motion.div variants={item} whileHover={{ y: -5 }}>
                 <Card className="shadow-subtle border-none h-full">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-4 md:pt-6 p-4 md:p-6">
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                      <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1 md:mb-2">
                         確定済みの予約
                       </p>
-                      <p className="text-4xl font-bold text-success tracking-tight tabular-nums">
+                      <p className="text-2xl md:text-4xl font-bold text-success tracking-tight tabular-nums">
                         {confirmedCount}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-xs text-muted-foreground mt-1 md:mt-2">
                         確定済みの予約数
                       </p>
                     </div>
