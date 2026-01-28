@@ -34,6 +34,7 @@ interface NewBookingModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onBookingCreated: () => void;
+    initialDate?: Date;
 }
 
 type Step = "customer" | "service" | "datetime" | "confirm";
@@ -54,6 +55,7 @@ export const NewBookingModal = ({
     open,
     onOpenChange,
     onBookingCreated,
+    initialDate,
 }: NewBookingModalProps) => {
     const { organizationId } = useAuth();
     const [step, setStep] = useState<Step>("customer");
@@ -90,8 +92,11 @@ export const NewBookingModal = ({
         if (open) {
             fetchServices();
             resetForm();
+            if (initialDate) {
+                setSelectedDate(initialDate);
+            }
         }
-    }, [open]);
+    }, [open, initialDate]);
 
     // Fetch options when selected services change
     useEffect(() => {

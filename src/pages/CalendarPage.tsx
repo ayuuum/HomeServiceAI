@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
 import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { NewBookingModal } from "@/components/NewBookingModal";
 import { toast } from "sonner";
 
 export default function CalendarPage() {
@@ -30,6 +31,8 @@ export default function CalendarPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
+    const [initialBookingDate, setInitialBookingDate] = useState<Date | undefined>();
 
     useEffect(() => {
         fetchBookings();
@@ -126,11 +129,23 @@ export default function CalendarPage() {
             <AdminHeader />
             <div className="container max-w-6xl mx-auto px-4 py-6">
             <div className="flex flex-col gap-4 mb-6">
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-foreground">予約管理</h1>
-                        <p className="text-muted-foreground text-sm mt-1">
-                            予約の確認・承認・管理ができます
-                        </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-bold text-foreground">予約管理</h1>
+                            <p className="text-muted-foreground text-sm mt-1">
+                                予約の確認・承認・管理ができます
+                            </p>
+                        </div>
+                        <Button 
+                            onClick={() => {
+                                setInitialBookingDate(undefined);
+                                setNewBookingModalOpen(true);
+                            }}
+                            className="shrink-0"
+                        >
+                            <Icon name="add" size={18} className="mr-1" />
+                            新規予約
+                        </Button>
                     </div>
                     <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border w-full md:w-auto md:self-end">
                         <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
@@ -307,7 +322,15 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={day.toString()}
-                                        className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 bg-card relative transition-colors hover:bg-muted/5 ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
+                                        onClick={(e) => {
+                                            // Only trigger if clicking on the cell itself, not on a booking
+                                            if (e.target === e.currentTarget || (e.target as HTMLElement).closest('[data-day-cell]')) {
+                                                setInitialBookingDate(day);
+                                                setNewBookingModalOpen(true);
+                                            }
+                                        }}
+                                        data-day-cell
+                                        className={`min-h-[80px] md:min-h-[100px] p-1 md:p-1.5 bg-card relative transition-colors hover:bg-muted/5 cursor-pointer ${!isCurrentMonth ? "bg-muted/5 text-muted-foreground" : ""
                                             } ${isToday ? "ring-2 ring-inset ring-primary/50 bg-primary/5" : ""}`}
                                     >
                                         <div className="flex justify-between items-start mb-1">
@@ -378,6 +401,13 @@ export default function CalendarPage() {
                 onApprove={handleApprove}
                 onReject={handleReject}
                 onSuccess={fetchBookings}
+            />
+
+            <NewBookingModal
+                open={newBookingModalOpen}
+                onOpenChange={setNewBookingModalOpen}
+                onBookingCreated={fetchBookings}
+                initialDate={initialBookingDate}
             />
         </div>
     );
