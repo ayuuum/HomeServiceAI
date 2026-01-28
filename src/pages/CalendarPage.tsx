@@ -38,7 +38,7 @@ export default function CalendarPage() {
     const [initialBookingDate, setInitialBookingDate] = useState<Date | undefined>();
     const [viewMode, setViewMode] = useState<"month" | "week">(() => {
         const saved = localStorage.getItem("calendar-view-mode");
-        return (saved === "week" || saved === "month") ? saved : "month";
+        return (saved === "week" || saved === "month") ? saved : "week";
     });
     const [weekStart, setWeekStart] = useState(() => {
         const today = new Date();
