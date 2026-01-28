@@ -1,114 +1,117 @@
 
-# ページタイトルのサイズ統一・最適化
+# 管理画面パディング・マージン最適化 & サブタイトル統一
 
-## 現状分析
-各管理ページのタイトル（h1）のフォントサイズが不統一で、特にモバイルでは大きすぎる印象があります。
+## 概要
+管理画面全体のパディング・マージンをモバイル向けに最適化し、サブタイトル（説明文）のフォントサイズを全ページで統一します。
 
-| ページ | タイトル | 現在のスタイル |
-|--------|----------|----------------|
-| CalendarPage | 予約管理 | `text-xl md:text-2xl` |
-| AdminDashboard | 管理ダッシュボード | `text-2xl`（固定） |
-| ReportsPage | 経営ダッシュボード | `text-xl md:text-2xl` |
-| CustomerManagement | 顧客管理 | `text-2xl`（固定） |
-| InboxPage | 受信トレイ | `text-2xl`（固定） |
-| BroadcastPage | 一斉配信 | `text-2xl`（固定） |
+## 現状の問題点
+
+### パディング・マージンの不統一
+- `py-8`（AdminDashboard）、`py-6`（Calendar/Reports/Customer）、`py-4`（Inbox/Broadcast）とバラバラ
+- モバイルではpy-8は余白が大きすぎる
+
+### サブタイトルサイズの不統一
+- 一部は `text-sm`、一部は指定なし（デフォルトのtext-base）
+- mt-1 の間隔は統一されている
 
 ## 改善方針
-全ページのタイトルをレスポンシブ対応に統一し、モバイルではよりコンパクトに表示します。
 
-### 推奨サイズ
-- **モバイル**: `text-lg`（18px）- コンパクトで読みやすい
-- **デスクトップ**: `text-xl`（20px）- 適度な存在感
+### 1. パディングの統一
+- **モバイル**: `py-4`（コンパクト）
+- **デスクトップ**: `py-6`（適度な余白）
+- 形式: `py-4 md:py-6`
 
-### 変更対象ファイル
+### 2. サブタイトルの統一
+- **統一スタイル**: `text-sm text-muted-foreground mt-1`
+- 全ページでtext-smを適用してコンパクトに
+
+## 変更対象ファイル
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/pages/AdminDashboard.tsx` | `text-2xl` → `text-lg md:text-xl` |
-| `src/pages/CalendarPage.tsx` | `text-xl md:text-2xl` → `text-lg md:text-xl` |
-| `src/pages/ReportsPage.tsx` | `text-xl md:text-2xl` → `text-lg md:text-xl` |
-| `src/pages/CustomerManagement.tsx` | `text-2xl` → `text-lg md:text-xl` |
-| `src/pages/InboxPage.tsx` | `text-2xl` → `text-lg md:text-xl` |
-| `src/pages/BroadcastPage.tsx` | `text-2xl` → `text-lg md:text-xl` |
+| `src/pages/AdminDashboard.tsx` | `py-8` → `py-4 md:py-6` |
+| `src/pages/CalendarPage.tsx` | `py-6` → `py-4 md:py-6`（変更小） |
+| `src/pages/ReportsPage.tsx` | `py-6` → `py-4 md:py-6`（変更小） |
+| `src/pages/CustomerManagement.tsx` | `py-6` → `py-4 md:py-6`、サブタイトルに`text-sm`追加 |
+| `src/pages/InboxPage.tsx` | サブタイトルに`text-sm`追加 |
+| `src/pages/BroadcastPage.tsx` | サブタイトルに`text-sm`追加 |
+
+## 変更詳細
+
+### AdminDashboard.tsx
+```tsx
+// Line 185: py-8 → py-4 md:py-6
+<section className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+```
+
+### CalendarPage.tsx
+```tsx
+// Line 130: py-6 → py-4 md:py-6
+<div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+```
+
+### ReportsPage.tsx
+```tsx
+// Line 126: py-6 → py-4 md:py-6
+<div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+```
+
+### CustomerManagement.tsx
+```tsx
+// Line 263: py-6 → py-4 md:py-6
+<div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+
+// Line 266: サブタイトルにtext-sm追加
+<p className="text-sm text-muted-foreground mt-1">顧客情報を一覧で管理できます</p>
+```
+
+### InboxPage.tsx
+```tsx
+// Line 55: サブタイトルにtext-sm追加
+<p className="text-sm text-muted-foreground mt-1">LINEメッセージの確認・返信ができます</p>
+```
+
+### BroadcastPage.tsx
+```tsx
+// Line 274: サブタイトルにtext-sm追加
+<p className="text-sm text-muted-foreground mt-1">
+    セグメントを指定してLINE連携済みの顧客にメッセージを一斉送信します
+</p>
+```
 
 ## 視覚的な比較
 
 ```text
 【現在】モバイル
 ┌─────────────────────────────────┐
-│ 管理ダッシュボード              │  ← text-2xl（24px）大きい
-│ 予約とサービスを一元管理        │
+│                                 │ ← py-8 (32px) 余白大きい
+│ 管理ダッシュボード              │
+│ 予約とサービスを一元管理        │ ← text-base (16px)
+│                                 │
 └─────────────────────────────────┘
 
 【改善後】モバイル
 ┌─────────────────────────────────┐
-│ 管理ダッシュボード              │  ← text-lg（18px）コンパクト
-│ 予約とサービスを一元管理        │
+│ 管理ダッシュボード              │ ← py-4 (16px) コンパクト
+│ 予約とサービスを一元管理        │ ← text-sm (14px) 統一
+│                                 │
 └─────────────────────────────────┘
 ```
 
-## 技術詳細
+## 統一後の基準スタイル
 
-### 各ファイルの変更箇所
-
-**AdminDashboard.tsx（188行目）**
 ```tsx
-// Before
-<h1 className="text-2xl font-bold">管理ダッシュボード</h1>
-
-// After
-<h1 className="text-lg md:text-xl font-bold">管理ダッシュボード</h1>
-```
-
-**CalendarPage.tsx（134行目）**
-```tsx
-// Before
-<h1 className="text-xl md:text-2xl font-bold text-foreground">予約管理</h1>
-
-// After
-<h1 className="text-lg md:text-xl font-bold text-foreground">予約管理</h1>
-```
-
-**ReportsPage.tsx（129行目）**
-```tsx
-// Before
-<h1 className="text-xl md:text-2xl font-bold">経営ダッシュボード</h1>
-
-// After
-<h1 className="text-lg md:text-xl font-bold">経営ダッシュボード</h1>
-```
-
-**CustomerManagement.tsx（265行目）**
-```tsx
-// Before
-<h1 className="text-2xl font-bold text-foreground">顧客管理</h1>
-
-// After
-<h1 className="text-lg md:text-xl font-bold text-foreground">顧客管理</h1>
-```
-
-**InboxPage.tsx（54行目）**
-```tsx
-// Before
-<h1 className="text-2xl font-bold">受信トレイ</h1>
-
-// After
-<h1 className="text-lg md:text-xl font-bold">受信トレイ</h1>
-```
-
-**BroadcastPage.tsx（269行目）**
-```tsx
-// Before
-<h1 className="text-2xl font-bold flex items-center gap-2">
-
-// After
-<h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
+// ページヘッダー部分の統一パターン
+<div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+  <h1 className="text-lg md:text-xl font-bold">ページタイトル</h1>
+  <p className="text-sm text-muted-foreground mt-1">サブタイトル説明文</p>
+</div>
 ```
 
 ## メリット
-1. **統一感**: 全ページで同じサイズ感になり、デザインの一貫性が向上
-2. **モバイル最適化**: 小さな画面でもバランスの良い表示
-3. **視認性維持**: デスクトップでは`text-xl`で十分な存在感を保持
+1. **統一感**: 全ページで同じ余白・フォントサイズ
+2. **モバイル最適化**: 画面スペースを効率的に使用
+3. **視認性維持**: デスクトップでは適度な余白を確保
 4. **メンテナンス性**: 統一ルールにより将来の変更が容易
 
 ## 実装の安全性
