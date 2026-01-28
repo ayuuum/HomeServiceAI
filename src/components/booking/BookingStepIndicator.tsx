@@ -10,7 +10,6 @@ interface Step {
 interface BookingStepIndicatorProps {
   currentStep: number;
   onStepClick?: (step: number) => void;
-  brandColor?: string;
 }
 
 const steps: Step[] = [
@@ -23,7 +22,6 @@ const steps: Step[] = [
 export const BookingStepIndicator = ({
   currentStep,
   onStepClick,
-  brandColor,
 }: BookingStepIndicatorProps) => {
   return (
     <div className="w-full py-2 sm:py-3">
@@ -49,19 +47,10 @@ export const BookingStepIndicator = ({
                   <div
                     className={cn(
                       "w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300",
-                      !brandColor && isCompleted && "bg-primary text-primary-foreground",
-                      !brandColor && isCurrent && "bg-primary text-primary-foreground ring-2 ring-primary/30",
+                      isCompleted && "bg-primary text-primary-foreground",
+                      isCurrent && "bg-primary text-primary-foreground ring-2 ring-primary/30",
                       !isCompleted && !isCurrent && "bg-white border-2 border-gray-300 text-gray-400"
                     )}
-                    style={
-                      (isCompleted || isCurrent) && brandColor
-                        ? {
-                            backgroundColor: brandColor,
-                            color: 'white',
-                            ...(isCurrent ? { boxShadow: `0 0 0 3px ${brandColor}30` } : {})
-                          }
-                        : undefined
-                    }
                   >
                     {isCompleted ? (
                       <Check className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={3} />
@@ -77,14 +66,8 @@ export const BookingStepIndicator = ({
                     <div
                       className={cn(
                         "h-0.5 sm:h-1 rounded-full transition-colors duration-300",
-                        !brandColor && currentStep > step.id && "bg-primary",
-                        currentStep <= step.id && "bg-gray-200"
+                        currentStep > step.id ? "bg-primary" : "bg-gray-200"
                       )}
-                      style={
-                        currentStep > step.id && brandColor
-                          ? { backgroundColor: brandColor }
-                          : undefined
-                      }
                     />
                   </div>
                 )}
@@ -105,14 +88,10 @@ export const BookingStepIndicator = ({
                   <span
                     className={cn(
                       "text-[10px] sm:text-xs font-semibold whitespace-nowrap transition-colors",
-                      !brandColor && (isCurrent || isCompleted) && "text-primary",
+                      isCurrent && "text-primary",
+                      isCompleted && "text-primary",
                       !isCompleted && !isCurrent && "text-gray-400"
                     )}
-                    style={
-                      (isCurrent || isCompleted) && brandColor
-                        ? { color: brandColor }
-                        : undefined
-                    }
                   >
                     {step.shortLabel}
                   </span>
