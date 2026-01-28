@@ -269,12 +269,12 @@ export default function CustomerManagement() {
         <div className="bg-card rounded-[10px] shadow-medium border-none">
           <div className="p-4 sm:p-6 border-b border-border flex flex-col gap-4">
             <div className="relative w-full sm:max-w-md">
-              <Icon name="search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Icon name="search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground sm:w-5 sm:h-5" />
               <Input
                 placeholder="名前または電話番号で検索..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-lg shadow-subtle border-primary/20 focus-visible:ring-primary"
+                className="pl-10 h-10 sm:h-12 text-base sm:text-lg shadow-subtle border-primary/20 focus-visible:ring-primary"
               />
             </div>
             <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
