@@ -4,8 +4,11 @@ const STORAGE_EXPIRY_HOURS = 24;
 export interface StoredBookingData {
   selectedServices: { serviceId: string; quantity: number }[];
   selectedOptions: { optionId: string; quantity: number }[];
-  selectedDate: string | null;
-  selectedTime: string | null;
+  // 希望日時（3つ）
+  preferences?: { date: string | null; time: string | null }[];
+  // 後方互換性のため残す
+  selectedDate?: string | null;
+  selectedTime?: string | null;
   hasParking: string;
   customerLastName: string;
   customerFirstName: string;
@@ -51,8 +54,7 @@ export const useBookingStorage = (organizationId: string) => {
       const updated: StoredBookingData = {
         selectedServices: data.selectedServices ?? existing?.selectedServices ?? [],
         selectedOptions: data.selectedOptions ?? existing?.selectedOptions ?? [],
-        selectedDate: data.selectedDate ?? existing?.selectedDate ?? null,
-        selectedTime: data.selectedTime ?? existing?.selectedTime ?? null,
+        preferences: data.preferences ?? existing?.preferences ?? [],
         hasParking: data.hasParking ?? existing?.hasParking ?? "",
         customerLastName: data.customerLastName ?? existing?.customerLastName ?? "",
         customerFirstName: data.customerFirstName ?? existing?.customerFirstName ?? "",

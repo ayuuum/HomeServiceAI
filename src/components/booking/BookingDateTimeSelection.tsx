@@ -8,14 +8,17 @@ import { format, addDays, startOfWeek, isSameDay, isBefore, startOfDay } from "d
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DayAvailability, TimeSlotAvailability, WeekTimeSlotAvailability } from "@/hooks/useAvailability";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
+export interface DateTimePreference {
+    date: Date | undefined;
+    time: string | undefined;
+}
+
 interface BookingDateTimeSelectionProps {
-    selectedDate: Date | undefined;
-    onDateSelect: (date: Date | undefined) => void;
-    selectedTime: string | undefined;
-    onTimeSelect: (time: string) => void;
+    preferences: DateTimePreference[];
+    onPreferencesChange: (preferences: DateTimePreference[]) => void;
     hasParking: string;
     onParkingChange: (value: string) => void;
     timeSlots: string[];
@@ -34,11 +37,11 @@ interface BookingDateTimeSelectionProps {
 // 曜日の日本語表記
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
+const PREFERENCE_LABELS = ["第1希望", "第2希望", "第3希望"];
+
 export const BookingDateTimeSelection = ({
-    selectedDate,
-    onDateSelect,
-    selectedTime,
-    onTimeSelect,
+    preferences,
+    onPreferencesChange,
     hasParking,
     onParkingChange,
     timeSlots,
@@ -53,6 +56,9 @@ export const BookingDateTimeSelection = ({
     prefetchAdjacentWeeks,
     organizationId,
 }: BookingDateTimeSelectionProps) => {
+    // 現在編集中の希望番号 (0, 1, 2)
+    const [editingPreference, setEditingPreference] = useState<number>(0);
+
     // 週の開始日（月曜始まり）
     const [weekStart, setWeekStart] = useState(() => {
         const today = new Date();
@@ -83,8 +89,37 @@ export const BookingDateTimeSelection = ({
         
         if (isPast || slotInfo?.isBooked) return;
 
-        onDateSelect(day);
-        onTimeSelect(time);
+        // 同じ日時が既に他の希望で選択されていないかチェック
+        const isDuplicate = preferences.some((pref, idx) => 
+            idx !== editingPreference && 
+            pref.date && 
+            isSameDay(pref.date, day) && 
+            pref.time === time
+        );
+
+        if (isDuplicate) {
+            return; // 重複する日時は選択不可
+        }
+
+        const newPreferences = [...preferences];
+        newPreferences[editingPreference] = { date: day, time };
+        onPreferencesChange(newPreferences);
+
+        // 次の未選択の希望に自動移動
+        if (editingPreference < 2) {
+            const nextEmpty = newPreferences.findIndex((p, idx) => idx > editingPreference && (!p.date || !p.time));
+            if (nextEmpty !== -1) {
+                setEditingPreference(nextEmpty);
+            }
+        }
+    };
+
+    // 希望を削除
+    const handleRemovePreference = (index: number) => {
+        const newPreferences = [...preferences];
+        newPreferences[index] = { date: undefined, time: undefined };
+        onPreferencesChange(newPreferences);
+        setEditingPreference(index);
     };
 
     // 週が変わったとき、または組織IDが取得されたときに空き状況を取得
@@ -103,22 +138,36 @@ export const BookingDateTimeSelection = ({
     }, [weekTimeSlots, weekStart, organizationId, prefetchAdjacentWeeks]);
 
     // 時間スロットの状態を取得
-    const getSlotStatus = (day: Date, time: string): { available: boolean; isSelected: boolean; isBooked: boolean } => {
+    const getSlotStatus = (day: Date, time: string): { 
+        available: boolean; 
+        isSelected: boolean; 
+        isBooked: boolean;
+        selectedByOther: boolean;
+    } => {
         const isPast = isBefore(day, startOfDay(new Date()));
         const dateStr = format(day, "yyyy-MM-dd");
         
         if (isPast) {
-            return { available: false, isSelected: false, isBooked: false };
+            return { available: false, isSelected: false, isBooked: false, selectedByOther: false };
         }
 
         // weekTimeSlotsから予約状況を取得
         const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
         const isBooked = slotInfo?.isBooked ?? false;
         
-        // 選択中かどうか
-        const isSelected = selectedDate && isSameDay(selectedDate, day) && selectedTime === time;
+        // 現在編集中の希望で選択中かどうか
+        const currentPref = preferences[editingPreference];
+        const isSelected = currentPref?.date && isSameDay(currentPref.date, day) && currentPref.time === time;
+
+        // 他の希望で選択済みかどうか
+        const selectedByOther = preferences.some((pref, idx) => 
+            idx !== editingPreference && 
+            pref.date && 
+            isSameDay(pref.date, day) && 
+            pref.time === time
+        );
         
-        return { available: !isBooked, isSelected: !!isSelected, isBooked };
+        return { available: !isBooked && !selectedByOther, isSelected: !!isSelected, isBooked, selectedByOther };
     };
 
     // 週の範囲表示
@@ -127,16 +176,89 @@ export const BookingDateTimeSelection = ({
     // 過去の週には戻れないようにする
     const canGoBack = !isBefore(addDays(weekStart, -1), startOfDay(new Date()));
 
+    // 第1希望が設定されているかどうか
+    const hasFirstPreference = preferences[0]?.date && preferences[0]?.time;
+
     return (
-        <div className="space-y-3">
-            {/* 週間グリッドカレンダー */}
-            <section>
+        <div className="space-y-4">
+            {/* 希望日時の選択状態表示 */}
+            <section className="space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                     <Icon name="calendar_today" size={18} className="text-primary" />
-                    <h3 className="text-base font-bold">日時を選択</h3>
-                    <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-1.5 py-0">
-                        必須
-                    </Badge>
+                    <h3 className="text-base font-bold">希望日時を選択（3つまで）</h3>
+                </div>
+                
+                <div className="grid gap-2">
+                    {preferences.map((pref, index) => {
+                        const isSelected = pref.date && pref.time;
+                        const isEditing = editingPreference === index;
+                        const isRequired = index === 0;
+                        
+                        return (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer",
+                                    isEditing ? "border-primary bg-primary/5" : "border-border",
+                                    isSelected && !isEditing && "bg-muted/50"
+                                )}
+                                onClick={() => setEditingPreference(index)}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                        "text-sm font-bold",
+                                        isEditing ? "text-primary" : "text-muted-foreground"
+                                    )}>
+                                        {PREFERENCE_LABELS[index]}
+                                    </span>
+                                    {isRequired && (
+                                        <Badge className="bg-destructive text-white hover:bg-destructive text-[10px] px-1 py-0">
+                                            必須
+                                        </Badge>
+                                    )}
+                                    {!isRequired && !isSelected && (
+                                        <span className="text-xs text-muted-foreground">任意</span>
+                                    )}
+                                </div>
+                                
+                                {isSelected ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">
+                                            {format(pref.date!, "M/d(E)", { locale: ja })} {pref.time}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 hover:bg-destructive/10"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemovePreference(index);
+                                            }}
+                                        >
+                                            <X className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                        {isEditing ? "↓ 下のカレンダーから選択" : "タップして選択"}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                    💡 複数の候補を登録すると、予約が取りやすくなります
+                </p>
+            </section>
+
+            {/* 週間グリッドカレンダー */}
+            <section>
+                <div className="bg-primary/5 rounded-lg p-2 mb-2 text-center">
+                    <span className="text-sm font-bold text-primary">
+                        {PREFERENCE_LABELS[editingPreference]}を選択中
+                    </span>
                 </div>
 
                 {/* 週ナビゲーション */}
@@ -210,23 +332,33 @@ export const BookingDateTimeSelection = ({
                                 {weekDays.map((day, dayIdx) => {
                                     const dateStr = format(day, "yyyy-MM-dd");
                                     const hasData = weekTimeSlots[dateStr] !== undefined;
-                                    const { available, isSelected, isBooked } = getSlotStatus(day, time);
+                                    const { available, isSelected, isBooked, selectedByOther } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
                                     const isSaturday = day.getDay() === 6;
                                     const isSunday = day.getDay() === 0;
+                                    
+                                    // 他の希望で選択されているかどうかをチェック
+                                    const otherPreferenceIndex = preferences.findIndex((pref, idx) => 
+                                        idx !== editingPreference && 
+                                        pref.date && 
+                                        isSameDay(pref.date, day) && 
+                                        pref.time === time
+                                    );
                                     
                                     return (
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isBooked || (loadingWeek && !hasData)}
+                                            disabled={isPast || isBooked || selectedByOther || (loadingWeek && !hasData)}
                                             className={cn(
                                                 "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
                                                 // 土日の背景色
-                                                isSaturday && !isSelected && "bg-blue-50/50",
-                                                isSunday && !isSelected && "bg-pink-50/50",
+                                                isSaturday && !isSelected && !selectedByOther && "bg-blue-50/50",
+                                                isSunday && !isSelected && !selectedByOther && "bg-pink-50/50",
                                                 // 選択中
                                                 isSelected && "bg-primary text-primary-foreground",
+                                                // 他の希望で選択済み
+                                                selectedByOther && "bg-accent/50",
                                                 // 過去
                                                 isPast && "bg-muted/30 cursor-not-allowed"
                                             )}
@@ -238,7 +370,13 @@ export const BookingDateTimeSelection = ({
                                             {isSelected && (
                                                 <Icon name="check" size={14} />
                                             )}
-                                            {hasData && isBooked && !isPast && !isSelected && (
+                                            {/* 他の希望で選択済みの場合、希望番号を表示 */}
+                                            {otherPreferenceIndex !== -1 && (
+                                                <span className="text-[10px] font-bold text-primary">
+                                                    {otherPreferenceIndex + 1}
+                                                </span>
+                                            )}
+                                            {hasData && isBooked && !isPast && !isSelected && !selectedByOther && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
                                             )}
                                             {hasData && available && !isPast && !isSelected && (
@@ -263,6 +401,10 @@ export const BookingDateTimeSelection = ({
                         <span>選択中</span>
                     </div>
                     <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 border rounded bg-accent/50 flex items-center justify-center text-[8px] font-bold text-primary">1</div>
+                        <span>他の希望</span>
+                    </div>
+                    <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">×</span>
                         <span>予約済</span>
                     </div>
@@ -274,7 +416,7 @@ export const BookingDateTimeSelection = ({
             </section>
 
             {/* Parking Selection */}
-            {selectedDate && selectedTime && (
+            {hasFirstPreference && (
                 <section>
                     <Separator className="mb-3" />
                     <div className="flex items-center gap-2 mb-2">

@@ -103,6 +103,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          approved_preference: number | null
           cancel_token: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -119,6 +120,12 @@ export type Database = {
           id: string
           line_reminder_sent_at: string | null
           organization_id: string | null
+          preference1_date: string | null
+          preference1_time: string | null
+          preference2_date: string | null
+          preference2_time: string | null
+          preference3_date: string | null
+          preference3_time: string | null
           selected_date: string
           selected_time: string
           status: string
@@ -126,6 +133,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approved_preference?: number | null
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -142,6 +150,12 @@ export type Database = {
           id?: string
           line_reminder_sent_at?: string | null
           organization_id?: string | null
+          preference1_date?: string | null
+          preference1_time?: string | null
+          preference2_date?: string | null
+          preference2_time?: string | null
+          preference3_date?: string | null
+          preference3_time?: string | null
           selected_date: string
           selected_time: string
           status?: string
@@ -149,6 +163,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approved_preference?: number | null
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -165,6 +180,12 @@ export type Database = {
           id?: string
           line_reminder_sent_at?: string | null
           organization_id?: string | null
+          preference1_date?: string | null
+          preference1_time?: string | null
+          preference2_date?: string | null
+          preference2_time?: string | null
+          preference3_date?: string | null
+          preference3_time?: string | null
           selected_date?: string
           selected_time?: string
           status?: string

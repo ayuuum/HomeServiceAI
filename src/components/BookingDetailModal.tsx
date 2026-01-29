@@ -54,12 +54,51 @@ export const BookingDetailModal = ({
     }
   };
 
-  const handleApprove = async () => {
+  const handleApproveWithPreference = async (preferenceNum: 1 | 2 | 3) => {
+    const dateField = `preference${preferenceNum}Date` as keyof Booking;
+    const timeField = `preference${preferenceNum}Time` as keyof Booking;
+    const prefDate = booking[dateField] as string | undefined;
+    const prefTime = booking[timeField] as string | undefined;
+
+    if (!prefDate || !prefTime) return;
+
     setIsApproving(true);
-    onApprove(booking.id);
-    await sendNotification(booking.id, 'confirmed');
-    setIsApproving(false);
-    onOpenChange(false);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: 'confirmed',
+          approved_preference: preferenceNum,
+          selected_date: prefDate,
+          selected_time: prefTime,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+
+      if (error) throw error;
+      await sendNotification(booking.id, 'confirmed');
+      toast.success(`第${preferenceNum}希望で予約を承認しました`);
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("予約の承認に失敗しました");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    // 希望日時がある場合は第1希望で承認
+    if (booking.preference1Date && booking.preference1Time) {
+      await handleApproveWithPreference(1);
+    } else {
+      // 従来の予約（希望日時なし）
+      setIsApproving(true);
+      onApprove(booking.id);
+      await sendNotification(booking.id, 'confirmed');
+      setIsApproving(false);
+      onOpenChange(false);
+    }
   };
 
   const handleReject = async () => {
@@ -229,23 +268,63 @@ export const BookingDetailModal = ({
 
           <Separator />
 
-          {/* Date & Time */}
+          {/* Date & Time - 希望日時がある場合は複数表示 */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Icon name="calendar_today" size={20} className="text-primary" />
-              予約日時
+              {booking.preference1Date ? "希望日時" : "予約日時"}
             </h3>
             <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-3">
-              <div className="flex items-center gap-3">
-                <Icon name="calendar_today" size={20} className="text-muted-foreground" />
-                <span className="font-medium">
-                  {format(new Date(booking.selectedDate), "yyyy年M月d日(E)", { locale: ja })}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Icon name="schedule" size={20} className="text-muted-foreground" />
-                <span className="font-medium">{booking.selectedTime}〜</span>
-              </div>
+              {/* 希望日時がある場合（新システム） */}
+              {booking.preference1Date && booking.status === "pending" ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((num) => {
+                    const prefDate = booking[`preference${num}Date` as keyof Booking] as string | undefined;
+                    const prefTime = booking[`preference${num}Time` as keyof Booking] as string | undefined;
+                    if (!prefDate || !prefTime) return null;
+                    
+                    return (
+                      <div key={num} className="flex items-center justify-between p-2 rounded-lg border bg-background">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-primary">第{num}希望</span>
+                          <span className="font-medium">
+                            {format(new Date(prefDate), "M/d(E)", { locale: ja })} {prefTime}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveWithPreference(num as 1 | 2 | 3)}
+                          disabled={isApproving}
+                          className="h-8"
+                        >
+                          {isApproving ? (
+                            <Icon name="sync" size={14} className="animate-spin" />
+                          ) : (
+                            <>この日時で承認</>
+                          )}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <>
+                  {/* 確定済み or 従来の予約 */}
+                  <div className="flex items-center gap-3">
+                    <Icon name="calendar_today" size={20} className="text-muted-foreground" />
+                    <span className="font-medium">
+                      {format(new Date(booking.selectedDate), "yyyy年M月d日(E)", { locale: ja })}
+                    </span>
+                    {booking.approvedPreference && (
+                      <Badge variant="outline" className="text-xs">第{booking.approvedPreference}希望</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Icon name="schedule" size={20} className="text-muted-foreground" />
+                    <span className="font-medium">{booking.selectedTime}〜</span>
+                  </div>
+                </>
+              )}
               <Button
                 variant="outline"
                 size="sm"

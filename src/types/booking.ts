@@ -62,6 +62,15 @@ export interface Booking {
   optionsSummary: string[];
   createdAt: string;
   customerId?: string;
+  // 希望日時（3つ）
+  preference1Date?: string;
+  preference1Time?: string;
+  preference2Date?: string;
+  preference2Time?: string;
+  preference3Date?: string;
+  preference3Time?: string;
+  // 承認された希望番号（1, 2, or 3）
+  approvedPreference?: number;
 }
 
 export interface Customer {
