@@ -56,11 +56,26 @@ serve(async (req) => {
 
     const organizationId = profile.organization_id;
 
-    // Parse request body
-    const { lineUserId, customerId, message } = await req.json();
+    // Parse request body - now supports both text and image messages
+    const { lineUserId, customerId, message, messageType = 'text', imageUrl } = await req.json();
 
-    if (!lineUserId || !message) {
-      return new Response(JSON.stringify({ error: "lineUserIdとmessageは必須です" }), {
+    // Validate required fields based on message type
+    if (!lineUserId) {
+      return new Response(JSON.stringify({ error: "lineUserIdは必須です" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (messageType === 'text' && !message) {
+      return new Response(JSON.stringify({ error: "テキストメッセージにはmessageが必須です" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (messageType === 'image' && !imageUrl) {
+      return new Response(JSON.stringify({ error: "画像メッセージにはimageUrlが必須です" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -146,8 +161,29 @@ serve(async (req) => {
       });
     }
 
+    // Prepare LINE message based on type
+    let lineMessage;
+    let contentForDb: string;
+
+    if (messageType === 'image') {
+      // LINE requires both originalContentUrl and previewImageUrl for image messages
+      lineMessage = {
+        type: "image",
+        originalContentUrl: imageUrl,
+        previewImageUrl: imageUrl, // Use same URL for preview (LINE will resize it)
+      };
+      contentForDb = imageUrl;
+      console.log(`Sending LINE image message to ${lineUserId}: ${imageUrl}`);
+    } else {
+      lineMessage = {
+        type: "text",
+        text: message,
+      };
+      contentForDb = message;
+      console.log(`Sending LINE text message to ${lineUserId}`);
+    }
+
     // Send message via LINE API
-    console.log(`Sending LINE message to ${lineUserId}`);
     const response = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
       headers: {
@@ -156,14 +192,14 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         to: lineUserId,
-        messages: [{ type: "text", text: message }],
+        messages: [lineMessage],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("LINE API error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: `LINE APIエラー: ${response.status}` }), {
+      return new Response(JSON.stringify({ error: `LINE APIエラー: ${response.status}`, details: errorText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -177,8 +213,8 @@ serve(async (req) => {
         customer_id: customerId || null,
         line_user_id: lineUserId,
         direction: "outbound",
-        message_type: "text",
-        content: message,
+        message_type: messageType,
+        content: contentForDb,
         sent_at: new Date().toISOString(),
       });
 
@@ -187,8 +223,8 @@ serve(async (req) => {
       // Don't return error - message was sent successfully
     }
 
-    console.log(`LINE message sent successfully to ${lineUserId}`);
-    return new Response(JSON.stringify({ success: true }), {
+    console.log(`LINE ${messageType} message sent successfully to ${lineUserId}`);
+    return new Response(JSON.stringify({ success: true, messageType }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
