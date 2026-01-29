@@ -93,7 +93,7 @@ export function useLineMessages({ customerId, lineUserId }: UseLineMessagesOptio
     };
   }, [customerId, lineUserId, queryClient]);
 
-  // Send message mutation
+  // Send text message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async ({ lineUserId, message }: { lineUserId: string; message: string }) => {
       const { data, error } = await supabase.functions.invoke('send-line-message', {
@@ -101,6 +101,7 @@ export function useLineMessages({ customerId, lineUserId }: UseLineMessagesOptio
           lineUserId,
           customerId,
           message,
+          messageType: 'text',
         },
       });
 
@@ -116,11 +117,42 @@ export function useLineMessages({ customerId, lineUserId }: UseLineMessagesOptio
     },
   });
 
+  // Send image message mutation
+  const sendImageMutation = useMutation({
+    mutationFn: async ({ lineUserId, imageUrl }: { lineUserId: string; imageUrl: string }) => {
+      const { data, error } = await supabase.functions.invoke('send-line-message', {
+        body: {
+          lineUserId,
+          customerId,
+          messageType: 'image',
+          imageUrl,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['line-messages', customerId, lineUserId] });
+    },
+    onError: (error) => {
+      console.error('Send image error:', error);
+      toast.error('画像の送信に失敗しました');
+    },
+  });
+
   const sendMessage = useCallback(
     async (targetLineUserId: string, message: string) => {
       return sendMessageMutation.mutateAsync({ lineUserId: targetLineUserId, message });
     },
     [sendMessageMutation]
+  );
+
+  const sendImage = useCallback(
+    async (targetLineUserId: string, imageUrl: string) => {
+      return sendImageMutation.mutateAsync({ lineUserId: targetLineUserId, imageUrl });
+    },
+    [sendImageMutation]
   );
 
   return {
@@ -129,6 +161,8 @@ export function useLineMessages({ customerId, lineUserId }: UseLineMessagesOptio
     error,
     realtimeEnabled,
     sendMessage,
+    sendImage,
     isSending: sendMessageMutation.isPending,
+    isSendingImage: sendImageMutation.isPending,
   };
 }

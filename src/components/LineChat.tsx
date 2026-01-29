@@ -1,12 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useLineMessages } from '@/hooks/useLineMessages';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface LineChatProps {
   customerId: string;
@@ -15,12 +18,17 @@ interface LineChatProps {
 }
 
 export function LineChat({ customerId, lineUserId, customerName }: LineChatProps) {
-  const { messages, isLoading, sendMessage, isSending, realtimeEnabled } = useLineMessages({
+  const { organizationId } = useAuth();
+  const { messages, isLoading, sendMessage, sendImage, isSending, isSendingImage, realtimeEnabled } = useLineMessages({
     customerId,
     lineUserId,
   });
   const [inputMessage, setInputMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -47,6 +55,82 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
     }
   };
 
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('画像ファイルのみアップロード可能です');
+      return;
+    }
+
+    // Validate file size (max 10MB for LINE)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('ファイルサイズは10MB以下にしてください');
+      return;
+    }
+
+    setSelectedImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCancelImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSendImage = async () => {
+    if (!selectedImage || !organizationId || isSendingImage || isUploading) return;
+
+    try {
+      setIsUploading(true);
+
+      // Upload image to Supabase Storage
+      const fileName = `${organizationId}/${customerId}/${Date.now()}-${selectedImage.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(fileName, selectedImage, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('画像のアップロードに失敗しました');
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(uploadData.path);
+
+      const imageUrl = urlData.publicUrl;
+
+      // Send via LINE
+      await sendImage(lineUserId, imageUrl);
+
+      // Clear selection
+      handleCancelImage();
+      toast.success('画像を送信しました');
+    } catch (error) {
+      console.error('Send image error:', error);
+      toast.error('画像の送信に失敗しました');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -54,6 +138,8 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
       </div>
     );
   }
+
+  const isProcessing = isSending || isSendingImage || isUploading;
 
   return (
     <div className="flex flex-col h-full">
@@ -108,12 +194,9 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
                           <img
                             src={message.content}
                             alt="送信画像"
-                            className="max-w-full rounded-lg max-h-[300px] object-cover"
+                            className="max-w-full rounded-lg max-h-[300px] object-cover cursor-pointer"
+                            onClick={() => window.open(message.content, '_blank')}
                             onError={(e) => {
-                              // Fallback for broken images or legacy placeholders
-                              if (message.content.startsWith('[画像]')) return; // Already handled by UI text? no, we need to show content text.
-                              // Actually, if it's not a URL, it might be the old [画像] text. 
-                              // But here we trust messageType. If it fails to load, maybe show a broken icon or just the text.
                               e.currentTarget.style.display = 'none';
                               e.currentTarget.parentElement?.querySelector('.fallback')?.classList.remove('hidden');
                             }}
@@ -148,9 +231,78 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
         )}
       </ScrollArea>
 
+      {/* Image preview area */}
+      {imagePreview && (
+        <div className="border-t p-3 bg-muted/50">
+          <div className="relative inline-block">
+            <img
+              src={imagePreview}
+              alt="送信する画像"
+              className="max-h-32 rounded-lg object-cover"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+              onClick={handleCancelImage}
+              disabled={isProcessing}
+            >
+              <Icon name="close" size={14} />
+            </Button>
+          </div>
+          <div className="mt-2 flex gap-2">
+            <Button
+              onClick={handleSendImage}
+              disabled={isProcessing}
+              className="bg-[#06C755] hover:bg-[#06C755]/90 text-white"
+            >
+              {isProcessing ? (
+                <>
+                  <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                  送信中...
+                </>
+              ) : (
+                <>
+                  <Icon name="send" size={16} className="mr-2" />
+                  画像を送信
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCancelImage}
+              disabled={isProcessing}
+            >
+              キャンセル
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="border-t p-4 bg-background">
         <div className="flex gap-2">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          
+          {/* Image upload button */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-[44px] w-[44px] shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing || !!imagePreview}
+            title="画像を送信"
+          >
+            <Icon name="image" size={20} />
+          </Button>
+
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
@@ -158,10 +310,11 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
             placeholder="メッセージを入力..."
             className="resize-none min-h-[44px] max-h-[120px]"
             rows={1}
+            disabled={isProcessing}
           />
           <Button
             onClick={handleSend}
-            disabled={!inputMessage.trim() || isSending}
+            disabled={!inputMessage.trim() || isProcessing}
             className="bg-[#06C755] hover:bg-[#06C755]/90 text-white h-[44px] w-[44px] p-0"
           >
             {isSending ? (
@@ -172,7 +325,7 @@ export function LineChat({ customerId, lineUserId, customerName }: LineChatProps
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Enter で送信、Shift + Enter で改行
+          Enter で送信、Shift + Enter で改行 | 📷 画像も送信可能
         </p>
       </div>
     </div>
