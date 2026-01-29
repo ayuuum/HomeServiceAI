@@ -68,10 +68,10 @@ const BookingPage = () => {
     selectedServices,
     allOptions,
     selectedOptions,
+    preferences,
+    setPreferences,
     selectedDate,
-    setSelectedDate,
     selectedTime,
-    setSelectedTime,
     hasParking,
     setHasParking,
     photos,
@@ -127,6 +127,7 @@ const BookingPage = () => {
   const [bookingData, setBookingData] = useState<{
     date: Date;
     time: string;
+    preferences?: { date: Date; time: string }[];
     serviceName: string;
     totalPrice: number;
     customerName?: string;
@@ -354,10 +355,8 @@ const BookingPage = () => {
           {/* Step 2: Date/Time Selection */}
           {currentStep === 2 && (
             <BookingDateTimeSelection
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              selectedTime={selectedTime}
-              onTimeSelect={setSelectedTime}
+              preferences={preferences}
+              onPreferencesChange={setPreferences}
               hasParking={hasParking}
               onParkingChange={setHasParking}
               timeSlots={TIME_SLOTS}
@@ -448,18 +447,24 @@ const BookingPage = () => {
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <Icon name="calendar_today" size={18} className="text-primary" />
-                  <h3 className="text-base sm:text-lg font-bold">予約日時</h3>
+                  <h3 className="text-base sm:text-lg font-bold">希望日時</h3>
                 </div>
                 <Separator className="mb-3" />
-                <div className="space-y-1">
-                  <p className="text-sm text-foreground">
-                    {selectedDate?.toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      weekday: 'short'
-                    })} {selectedTime}
-                  </p>
+                <div className="space-y-2">
+                  {preferences.map((pref, idx) => (
+                    pref.date && pref.time && (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-primary">第{idx + 1}希望:</span>
+                        <span className="text-foreground">
+                          {pref.date.toLocaleDateString('ja-JP', {
+                            month: 'long',
+                            day: 'numeric',
+                            weekday: 'short'
+                          })} {pref.time}
+                        </span>
+                      </div>
+                    )
+                  ))}
                   <p className="text-sm text-muted-foreground">
                     駐車場: {hasParking === 'yes' ? 'あり' : 'なし'}
                   </p>

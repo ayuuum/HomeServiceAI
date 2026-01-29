@@ -34,6 +34,15 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
     ),
     createdAt: dbBooking.created_at,
     customerId: dbBooking.customer_id,
+    // 希望日時（3つ）
+    preference1Date: dbBooking.preference1_date,
+    preference1Time: dbBooking.preference1_time,
+    preference2Date: dbBooking.preference2_date,
+    preference2Time: dbBooking.preference2_time,
+    preference3Date: dbBooking.preference3_date,
+    preference3Time: dbBooking.preference3_time,
+    // 承認された希望番号
+    approvedPreference: dbBooking.approved_preference,
   };
 };
 

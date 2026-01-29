@@ -26,8 +26,15 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
     const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
     const [allOptions, setAllOptions] = useState<ServiceOption[]>([]);
     const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
-    const [selectedDate, setSelectedDate] = useState<Date>();
-    const [selectedTime, setSelectedTime] = useState<string>();
+    // 希望日時（3つ）
+    const [preferences, setPreferences] = useState<{ date: Date | undefined; time: string | undefined }[]>([
+        { date: undefined, time: undefined },
+        { date: undefined, time: undefined },
+        { date: undefined, time: undefined },
+    ]);
+    // 後方互換性のため selectedDate/selectedTime も維持（第1希望を参照）
+    const selectedDate = preferences[0]?.date;
+    const selectedTime = preferences[0]?.time;
     const [hasParking, setHasParking] = useState<string>("");
     const [photos, setPhotos] = useState<File[]>([]);
     const [notes, setNotes] = useState("");
@@ -126,10 +133,22 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
             }
         }
 
-        // Restore other fields
-        if (storedData.selectedDate) setSelectedDate(new Date(storedData.selectedDate));
-        if (storedData.selectedTime) setSelectedTime(storedData.selectedTime);
-        if (storedData.hasParking) setHasParking(storedData.hasParking);
+        // Restore preferences
+        if (storedData.preferences) {
+            setPreferences(storedData.preferences.map((p: any) => ({
+                date: p.date ? new Date(p.date) : undefined,
+                time: p.time || undefined
+            })));
+        } else {
+            // Legacy support: restore from selectedDate/selectedTime
+            if (storedData.selectedDate || storedData.selectedTime) {
+                setPreferences([
+                    { date: storedData.selectedDate ? new Date(storedData.selectedDate) : undefined, time: storedData.selectedTime || undefined },
+                    { date: undefined, time: undefined },
+                    { date: undefined, time: undefined },
+                ]);
+            }
+        }
         if (storedData.customerLastName) setCustomerLastName(storedData.customerLastName);
         if (storedData.customerFirstName) setCustomerFirstName(storedData.customerFirstName);
         if (storedData.customerEmail) setCustomerEmail(storedData.customerEmail);
@@ -179,8 +198,10 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     optionId: o.optionId,
                     quantity: o.quantity
                 })),
-                selectedDate: selectedDate?.toISOString() || null,
-                selectedTime: selectedTime || null,
+                preferences: preferences.map(p => ({
+                    date: p.date?.toISOString() || null,
+                    time: p.time || null
+                })),
                 hasParking,
                 customerLastName,
                 customerFirstName,
@@ -198,7 +219,7 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
         organizationId,
         selectedServices,
         selectedOptions,
-        selectedDate,
+        preferences,
         selectedTime,
         hasParking,
         customerLastName,
@@ -541,8 +562,16 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                         customer_address: customerAddress.trim() || null,
                         customer_address_building: customerAddressBuilding.trim() || null,
                         customer_postal_code: customerPostalCode.trim() || null,
-                        selected_date: format(selectedDate, 'yyyy-MM-dd'),
+                        // 第1希望をselected_date/timeに設定（後方互換性）
+                        selected_date: format(selectedDate!, 'yyyy-MM-dd'),
                         selected_time: selectedTime,
+                        // 3つの希望日時
+                        preference1_date: preferences[0]?.date ? format(preferences[0].date, 'yyyy-MM-dd') : null,
+                        preference1_time: preferences[0]?.time || null,
+                        preference2_date: preferences[1]?.date ? format(preferences[1].date, 'yyyy-MM-dd') : null,
+                        preference2_time: preferences[1]?.time || null,
+                        preference3_date: preferences[2]?.date ? format(preferences[2].date, 'yyyy-MM-dd') : null,
+                        preference3_time: preferences[2]?.time || null,
                         total_price: totalPrice,
                         status: 'pending',
                         diagnosis_has_parking: hasParking === "yes",
@@ -632,8 +661,11 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                 clearBookingData();
                 setSelectedServices([]);
                 setSelectedOptions([]);
-                setSelectedDate(undefined);
-                setSelectedTime(undefined);
+                setPreferences([
+                    { date: undefined, time: undefined },
+                    { date: undefined, time: undefined },
+                    { date: undefined, time: undefined },
+                ]);
                 setHasParking("");
                 setPhotos([]);
                 setNotes("");
@@ -648,6 +680,10 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                 return {
                     date: selectedDate,
                     time: selectedTime,
+                    preferences: preferences.filter(p => p.date && p.time).map(p => ({
+                        date: p.date!,
+                        time: p.time!
+                    })),
                     serviceName: selectedServices.map(s => s.service.title).join(", "),
                     totalPrice: totalPrice,
                     customerName: `${customerLastName} ${customerFirstName}`.trim(),
@@ -705,10 +741,12 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
         selectedServices,
         allOptions,
         selectedOptions,
+        // 新しい3候補のインターフェース
+        preferences,
+        setPreferences,
+        // 後方互換性のため残す（読み取り専用）
         selectedDate,
-        setSelectedDate,
         selectedTime,
-        setSelectedTime,
         hasParking,
         setHasParking,
         photos,
