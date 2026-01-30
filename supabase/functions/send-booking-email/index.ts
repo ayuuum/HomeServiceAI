@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Send email to admin
       const emailResponse = await resend.emails.send({
-        from: `${orgName} <onboarding@resend.dev>`,
+        from: `${orgName} <noreply@amber-inc.com>`,
         to: [adminProfile.email],
         subject,
         html: htmlContent,
@@ -220,7 +220,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: `${orgName} <onboarding@resend.dev>`,
+      from: `${orgName} <noreply@amber-inc.com>`,
       to: [booking.customer_email],
       subject,
       html: htmlContent,
