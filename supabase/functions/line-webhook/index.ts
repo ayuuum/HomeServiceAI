@@ -296,6 +296,41 @@ serve(async (req) => {
         } else {
           console.log("Message saved successfully");
 
+          // Create in-app notification for new LINE message
+          try {
+            // Get customer name for notification
+            let customerName = "LINE User";
+            if (customerId) {
+              const { data: customer } = await supabase
+                .from("customers")
+                .select("name")
+                .eq("id", customerId)
+                .single();
+              if (customer?.name) {
+                customerName = customer.name;
+              }
+            }
+
+            const { error: notifError } = await supabase
+              .from("notifications")
+              .insert({
+                organization_id: org.id,
+                type: "line_message",
+                title: `${customerName}からメッセージ`,
+                message: content.substring(0, 100),
+                resource_type: "line_message",
+                resource_id: customerId
+              });
+
+            if (notifError) {
+              console.error("Failed to create notification:", notifError);
+            } else {
+              console.log("In-app notification created for LINE message");
+            }
+          } catch (notifErr) {
+            console.error("Notification creation error:", notifErr);
+          }
+
           // Trigger AI agent if enabled
           if (org.line_ai_enabled && org.line_channel_token && message.type === "text") {
             console.log("AI auto-response enabled, triggering line-ai-agent");

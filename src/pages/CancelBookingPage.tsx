@@ -109,6 +109,21 @@ export default function CancelBookingPage() {
               adminNotificationType: 'cancelled'
             }
           }).catch(console.error);
+          
+          // In-app notification for admin
+          supabase
+            .from('notifications')
+            .insert({
+              organization_id: booking.organization_id,
+              type: 'booking_cancelled',
+              title: `${booking.customer_name}様が予約をキャンセル`,
+              message: `${format(new Date(booking.selected_date), "M/d", { locale: ja })} ${booking.selected_time}`,
+              resource_type: 'booking',
+              resource_id: booking.id
+            })
+            .then(({ error }) => {
+              if (error) console.error('Notification insert error:', error);
+            });
         }
       } else {
         toast.error("キャンセルに失敗しました");

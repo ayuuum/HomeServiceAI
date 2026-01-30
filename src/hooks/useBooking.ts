@@ -657,6 +657,30 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     // Don't fail the booking if admin email fails
                 }
 
+                // Create in-app notification for new booking request
+                try {
+                    console.log('[useBooking] Creating in-app notification for new booking:', newBookingId);
+                    const { error: notificationError } = await supabase
+                        .from('notifications')
+                        .insert({
+                            organization_id: organizationId,
+                            type: 'new_booking',
+                            title: `${customerLastName} ${customerFirstName}様から予約リクエスト`,
+                            message: `${selectedServices.map(s => s.service.title).join('、')} - ${format(selectedDate!, 'M/d')} ${selectedTime}`,
+                            resource_type: 'booking',
+                            resource_id: newBookingId
+                        });
+
+                    if (notificationError) {
+                        console.error('[useBooking] In-app notification error:', notificationError);
+                    } else {
+                        console.log('[useBooking] In-app notification created successfully');
+                    }
+                } catch (notifErr) {
+                    console.error('[useBooking] In-app notification error:', notifErr);
+                    // Don't fail the booking if notification fails
+                }
+
                 // Reset form and clear storage
                 clearBookingData();
                 setSelectedServices([]);
