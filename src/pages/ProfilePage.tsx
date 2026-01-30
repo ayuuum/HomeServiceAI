@@ -656,8 +656,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* QR Code Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon name="qr_code" size={24} />
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Icon name="qr_code" size={20} />
                   予約ページQRコード
                 </CardTitle>
                 <CardDescription>店舗に掲示してお客様に予約ページを案内できます</CardDescription>
@@ -740,8 +740,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* Branding Settings Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
                   ブランディング設定
                 </CardTitle>
                 <CardDescription>予約ページの見た目をカスタマイズできます</CardDescription>
@@ -979,7 +979,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* Organization Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>組織設定</CardTitle>
+                <CardTitle className="text-base">組織設定</CardTitle>
                 <CardDescription>予約ページのURLを管理します</CardDescription>
               </CardHeader>
               <CardContent>
@@ -1059,7 +1059,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* Profile Info */}
             <Card>
               <CardHeader>
-                <CardTitle>プロフィール情報</CardTitle>
+                <CardTitle className="text-base">プロフィール情報</CardTitle>
                 <CardDescription>名前とメールアドレスを管理します</CardDescription>
               </CardHeader>
               <CardContent>
@@ -1103,7 +1103,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* Password Change */}
             <Card>
               <CardHeader>
-                <CardTitle>パスワード変更</CardTitle>
+                <CardTitle className="text-base">パスワード変更</CardTitle>
                 <CardDescription>新しいパスワードを設定します</CardDescription>
               </CardHeader>
               <CardContent>
