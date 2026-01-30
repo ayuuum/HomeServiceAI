@@ -275,7 +275,7 @@ async function sendEmailNotification(
 
     // Send email via Resend with Reply-To header
     const emailResponse = await resend.emails.send({
-      from: `${orgName} <onboarding@resend.dev>`,
+      from: `${orgName} <noreply@amber-inc.com>`,
       reply_to: replyToEmail || undefined,  // 店舗のメールアドレスに返信が届く
       to: [booking.customer_email],
       subject,
