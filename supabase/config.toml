@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.send-broadcast]
 verify_jwt = true
+
+[functions.send-hybrid-notification]
+verify_jwt = false
