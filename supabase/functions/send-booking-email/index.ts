@@ -101,16 +101,31 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailType === 'admin_notification') {
       console.log("[send-booking-email] Processing admin notification");
       
-      // Fetch admin email from profiles table
-      const { data: adminProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('organization_id', booking.organization_id)
-        .not('email', 'is', null)
-        .limit(1)
-        .maybeSingle();
+      // First, try to get admin_email from organization
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('admin_email')
+        .eq('id', booking.organization_id)
+        .single();
+      
+      let adminEmail = org?.admin_email;
+      
+      // Fallback: get oldest profile's email if admin_email is not set
+      if (!adminEmail) {
+        console.log("[send-booking-email] No admin_email in organization, falling back to oldest profile");
+        const { data: adminProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('organization_id', booking.organization_id)
+          .not('email', 'is', null)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        adminEmail = adminProfile?.email;
+      }
 
-      if (profileError || !adminProfile?.email) {
+      if (!adminEmail) {
         console.log("[send-booking-email] No admin email found for organization:", booking.organization_id);
         return new Response(
           JSON.stringify({ message: "No admin email configured" }),
@@ -118,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("[send-booking-email] Sending admin notification to:", adminProfile.email);
+      console.log("[send-booking-email] Sending admin notification to:", adminEmail);
 
       let subject: string;
       let htmlContent: string;
@@ -157,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Send email to admin
       const emailResponse = await resend.emails.send({
         from: `${orgName} <noreply@amber-inc.com>`,
-        to: [adminProfile.email],
+        to: [adminEmail],
         subject,
         html: htmlContent,
       });

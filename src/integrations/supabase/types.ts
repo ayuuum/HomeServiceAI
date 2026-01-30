@@ -466,6 +466,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          admin_email: string | null
           booking_headline: string | null
           brand_color: string | null
           created_at: string | null
@@ -486,6 +487,7 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          admin_email?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           created_at?: string | null
@@ -506,6 +508,7 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          admin_email?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           created_at?: string | null
