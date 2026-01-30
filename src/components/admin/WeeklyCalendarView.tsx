@@ -15,6 +15,9 @@ import { Icon } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
 import { Booking } from "@/types/booking";
 import { cn } from "@/lib/utils";
+import { SlotActionPopover } from "./SlotActionPopover";
+import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
+import { TimeSlotAvailability } from "@/hooks/useAvailability";
 
 interface WeeklyCalendarViewProps {
   weekStart: Date;
@@ -22,6 +25,8 @@ interface WeeklyCalendarViewProps {
   onBookingClick: (booking: Booking) => void;
   onWeekChange: (newWeekStart: Date) => void;
   onDayClick: (day: Date, time?: string) => void;
+  weekTimeSlots?: Record<string, TimeSlotAvailability[]>;
+  onBlockChange?: () => void;
 }
 
 // 営業時間帯（9:00〜18:00）
@@ -36,8 +41,12 @@ export function WeeklyCalendarView({
   onBookingClick,
   onWeekChange,
   onDayClick,
+  weekTimeSlots,
+  onBlockChange,
 }: WeeklyCalendarViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const { createBlock, loading: blockLoading } = useScheduleBlocks();
 
   // 現在時刻の更新（1分ごと）
   useEffect(() => {
@@ -74,6 +83,13 @@ export function WeeklyCalendarView({
     return bookingsByDayAndTime.get(key) || [];
   };
 
+  const getSlotInfo = (day: Date, time: string): TimeSlotAvailability | undefined => {
+    if (!weekTimeSlots) return undefined;
+    const dateStr = format(day, "yyyy-MM-dd");
+    const daySlots = weekTimeSlots[dateStr];
+    return daySlots?.find(s => s.time === time);
+  };
+
   // 現在時刻のインジケーター位置を計算
   const getCurrentTimePosition = () => {
     const hours = currentTime.getHours();
@@ -86,6 +102,18 @@ export function WeeklyCalendarView({
     const percentage = (totalMinutes / (10 * 60)) * 100;
     
     return percentage;
+  };
+
+  const handleBlockSlot = async (day: Date, time: string) => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    await createBlock(dateStr, time);
+    onBlockChange?.();
+  };
+
+  const handleBlockAllDay = async (day: Date) => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    await createBlock(dateStr, null, "holiday");
+    onBlockChange?.();
   };
 
   const timePosition = getCurrentTimePosition();
@@ -220,58 +248,108 @@ export function WeeklyCalendarView({
                 const isSaturday = dayOfWeek === 6;
                 const isTodayDate = isToday(day);
                 const slotBookings = getBookingsForSlot(day, time);
+                const slotInfo = getSlotInfo(day, time);
+                const isBlocked = slotInfo?.isBlocked ?? false;
+                const popoverKey = `${format(day, "yyyy-MM-dd")}_${time}`;
+                const hasBookings = slotBookings.length > 0;
 
-                return (
-                  <div
-                    key={`${day.toString()}_${time}`}
-                    onClick={() => {
-                      if (slotBookings.length === 0) {
-                        onDayClick(day, time);
-                      }
-                    }}
-                    className={cn(
-                      "p-0.5 border-r last:border-r-0 transition-colors",
-                      isSunday && "bg-destructive/5",
-                      isSaturday && "bg-primary/5",
-                      isTodayDate && "bg-primary/10",
-                      slotBookings.length === 0 && "hover:bg-muted/50 cursor-pointer"
-                    )}
-                  >
-                    <div className="space-y-0.5">
-                      {slotBookings.map((booking) => (
-                        <button
-                          key={booking.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onBookingClick(booking);
-                          }}
-                          className={cn(
-                            "w-full text-left px-1 py-0.5 md:px-1.5 md:py-1 rounded border transition-all hover:shadow-sm",
-                            booking.status === "confirmed" && "bg-success/10 border-success/30 hover:bg-success/20",
-                            booking.status === "cancelled" && "bg-muted border-border opacity-60",
-                            booking.status === "pending" && "bg-warning/10 border-warning/30 hover:bg-warning/20"
-                          )}
-                        >
-                          <div className="flex items-center gap-0.5 md:gap-1">
-                            <span className={cn(
-                              "font-semibold text-[10px] md:text-xs truncate",
-                              booking.status === "confirmed" && "text-success",
-                              booking.status === "pending" && "text-warning",
-                              booking.status === "cancelled" && "text-muted-foreground"
-                            )}>
-                              {booking.customerName}
-                            </span>
-                            {booking.status === "pending" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse flex-shrink-0" />
-                            )}
-                          </div>
-                          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate hidden md:block">
-                            {booking.serviceName}
-                          </div>
-                        </button>
-                      ))}
+                // ブロック済みセルの表示
+                if (isBlocked && !hasBookings) {
+                  return (
+                    <div
+                      key={popoverKey}
+                      className={cn(
+                        "p-0.5 border-r last:border-r-0 relative",
+                        "bg-muted/60"
+                      )}
+                      style={{
+                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 4px, hsl(var(--muted-foreground) / 0.1) 4px, hsl(var(--muted-foreground) / 0.1) 8px)",
+                      }}
+                    >
+                      <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                          <Icon name="block" size={14} />
+                          <span className="hidden md:inline">
+                            {slotInfo?.blockInfo?.title || "ブロック"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  );
+                }
+
+                // 予約ありセル
+                if (hasBookings) {
+                  return (
+                    <div
+                      key={popoverKey}
+                      className={cn(
+                        "p-0.5 border-r last:border-r-0 transition-colors",
+                        isSunday && "bg-destructive/5",
+                        isSaturday && "bg-primary/5",
+                        isTodayDate && "bg-primary/10"
+                      )}
+                    >
+                      <div className="space-y-0.5">
+                        {slotBookings.map((booking) => (
+                          <button
+                            key={booking.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onBookingClick(booking);
+                            }}
+                            className={cn(
+                              "w-full text-left px-1 py-0.5 md:px-1.5 md:py-1 rounded border transition-all hover:shadow-sm",
+                              booking.status === "confirmed" && "bg-success/10 border-success/30 hover:bg-success/20",
+                              booking.status === "cancelled" && "bg-muted border-border opacity-60",
+                              booking.status === "pending" && "bg-warning/10 border-warning/30 hover:bg-warning/20"
+                            )}
+                          >
+                            <div className="flex items-center gap-0.5 md:gap-1">
+                              <span className={cn(
+                                "font-semibold text-[10px] md:text-xs truncate",
+                                booking.status === "confirmed" && "text-success",
+                                booking.status === "pending" && "text-warning",
+                                booking.status === "cancelled" && "text-muted-foreground"
+                              )}>
+                                {booking.customerName}
+                              </span>
+                              {booking.status === "pending" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse flex-shrink-0" />
+                              )}
+                            </div>
+                            <div className="text-[9px] md:text-[10px] text-muted-foreground truncate hidden md:block">
+                              {booking.serviceName}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 空きセル（ポップオーバー付き）
+                return (
+                  <SlotActionPopover
+                    key={popoverKey}
+                    day={day}
+                    time={time}
+                    isOpen={openPopover === popoverKey}
+                    onOpenChange={(open) => setOpenPopover(open ? popoverKey : null)}
+                    onAddBooking={() => onDayClick(day, time)}
+                    onBlockSlot={() => handleBlockSlot(day, time)}
+                    onBlockAllDay={() => handleBlockAllDay(day)}
+                  >
+                    <div
+                      className={cn(
+                        "p-0.5 border-r last:border-r-0 transition-colors h-full cursor-pointer",
+                        isSunday && "bg-destructive/5 hover:bg-destructive/10",
+                        isSaturday && "bg-primary/5 hover:bg-primary/10",
+                        isTodayDate && "bg-primary/10 hover:bg-primary/20",
+                        !isSunday && !isSaturday && !isTodayDate && "hover:bg-muted/50"
+                      )}
+                    />
+                  </SlotActionPopover>
                 );
               })}
             </div>

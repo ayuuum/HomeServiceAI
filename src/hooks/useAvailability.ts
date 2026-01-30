@@ -11,11 +11,29 @@ export interface DayAvailability {
 export interface TimeSlotAvailability {
   time: string;
   isBooked: boolean;
+  isBlocked: boolean;
+  blockInfo?: {
+    id: string;
+    type: string;
+    title: string | null;
+  };
 }
 
 // 週単位の時間スロット空き状況
 export interface WeekTimeSlotAvailability {
   [dateStr: string]: TimeSlotAvailability[];
+}
+
+// ブロック情報の型
+export interface BlockInfo {
+  id: string;
+  time: string | null;
+  type: string;
+  title: string | null;
+}
+
+export interface WeekBlocks {
+  [dateStr: string]: BlockInfo[];
 }
 
 const TIME_SLOTS = [
@@ -28,6 +46,7 @@ export const useAvailability = (organizationId?: string) => {
   const [monthAvailability, setMonthAvailability] = useState<DayAvailability[]>([]);
   const [dayTimeSlots, setDayTimeSlots] = useState<TimeSlotAvailability[]>([]);
   const [weekTimeSlots, setWeekTimeSlots] = useState<WeekTimeSlotAvailability>({});
+  const [weekBlocks, setWeekBlocks] = useState<WeekBlocks>({});
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
@@ -35,7 +54,7 @@ export const useAvailability = (organizationId?: string) => {
   
   // キャッシュ: 週データを保存して再利用
   const [weekAvailabilityCache, setWeekAvailabilityCache] = useState<
-    Record<string, WeekTimeSlotAvailability>
+    Record<string, { slots: WeekTimeSlotAvailability; blocks: WeekBlocks }>
   >({});
 
   // 月ごとの空き状況を取得
@@ -118,6 +137,7 @@ export const useAvailability = (organizationId?: string) => {
     const slots: TimeSlotAvailability[] = TIME_SLOTS.map((time) => ({
       time,
       isBooked: (bookingsByTime[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
+      isBlocked: false,
     }));
 
     setDayTimeSlots(slots);
@@ -132,7 +152,8 @@ export const useAvailability = (organizationId?: string) => {
     
     // キャッシュにあればそれを使用（即座に表示）
     if (weekAvailabilityCache[cacheKey]) {
-      setWeekTimeSlots(weekAvailabilityCache[cacheKey]);
+      setWeekTimeSlots(weekAvailabilityCache[cacheKey].slots);
+      setWeekBlocks(weekAvailabilityCache[cacheKey].blocks);
       return;
     }
 
@@ -160,6 +181,7 @@ export const useAvailability = (organizationId?: string) => {
       }
 
       const bookingsByDateTime: Record<string, Record<string, number>> = data?.availability || {};
+      const blocksData: Record<string, BlockInfo[]> = data?.blocks || {};
 
       // 週内の全日付に対してスロット情報を作成
       const weekSlots: WeekTimeSlotAvailability = {};
@@ -167,20 +189,38 @@ export const useAvailability = (organizationId?: string) => {
         const day = addDays(weekStart, i);
         const dateStr = format(day, "yyyy-MM-dd");
         const dayBookings = bookingsByDateTime[dateStr] || {};
+        const dayBlocks = blocksData[dateStr] || [];
         
-        weekSlots[dateStr] = TIME_SLOTS.map((time) => ({
-          time,
-          isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
-        }));
+        // Check for all-day block
+        const allDayBlock = dayBlocks.find(b => b.time === null);
+        
+        weekSlots[dateStr] = TIME_SLOTS.map((time) => {
+          // Check if this specific time is blocked
+          const timeBlock = dayBlocks.find(b => b.time === time);
+          const isBlocked = !!allDayBlock || !!timeBlock;
+          const blockInfo = timeBlock || allDayBlock;
+          
+          return {
+            time,
+            isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
+            isBlocked,
+            blockInfo: isBlocked && blockInfo ? {
+              id: blockInfo.id,
+              type: blockInfo.type,
+              title: blockInfo.title,
+            } : undefined,
+          };
+        });
       }
 
       // キャッシュに保存
       setWeekAvailabilityCache(prev => ({
         ...prev,
-        [cacheKey]: weekSlots
+        [cacheKey]: { slots: weekSlots, blocks: blocksData }
       }));
       
       setWeekTimeSlots(weekSlots);
+      setWeekBlocks(blocksData);
     } catch (err) {
       console.error("Error fetching week availability:", err);
     } finally {
@@ -268,7 +308,7 @@ export const useAvailability = (organizationId?: string) => {
   useEffect(() => {
     if (!organizationId) return;
 
-    const channel = supabase
+    const bookingsChannel = supabase
       .channel(`bookings-availability-${organizationId}`)
       .on(
         "postgres_changes",
@@ -286,8 +326,27 @@ export const useAvailability = (organizationId?: string) => {
       )
       .subscribe();
 
+    const blocksChannel = supabase
+      .channel(`blocks-availability-${organizationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "schedule_blocks",
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          // キャッシュをクリアして空き状況を再取得
+          clearWeekCache();
+          fetchMonthAvailability(currentMonth);
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(blocksChannel);
     };
   }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache]);
 
@@ -295,6 +354,7 @@ export const useAvailability = (organizationId?: string) => {
     monthAvailability,
     dayTimeSlots,
     weekTimeSlots,
+    weekBlocks,
     loadingMonth,
     loadingDay,
     loadingWeek,
