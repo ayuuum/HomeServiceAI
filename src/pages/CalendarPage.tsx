@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
     format,
@@ -27,9 +27,12 @@ import { mapDbBookingToBooking } from "@/lib/bookingMapper";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { NewBookingModal } from "@/components/NewBookingModal";
 import { WeeklyCalendarView } from "@/components/admin/WeeklyCalendarView";
+import { useAvailability } from "@/hooks/useAvailability";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function CalendarPage() {
+    const { organizationId } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -38,6 +41,7 @@ export default function CalendarPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
     const [initialBookingDate, setInitialBookingDate] = useState<Date | undefined>();
+    const [initialBookingTime, setInitialBookingTime] = useState<string | undefined>();
     const [viewMode, setViewMode] = useState<"month" | "week">(() => {
         const saved = localStorage.getItem("calendar-view-mode");
         return (saved === "week" || saved === "month") ? saved : "week";
@@ -48,6 +52,8 @@ export default function CalendarPage() {
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         return addDays(today, mondayOffset);
     });
+
+    const { weekTimeSlots, fetchWeekAvailability, clearWeekCache } = useAvailability(organizationId);
 
     // Auto-open booking detail from notification deep link
     useEffect(() => {
@@ -68,7 +74,17 @@ export default function CalendarPage() {
 
     useEffect(() => {
         fetchBookings();
-    }, [currentDate, weekStart, viewMode]);
+        if (viewMode === "week" && organizationId) {
+            fetchWeekAvailability(weekStart);
+        }
+    }, [currentDate, weekStart, viewMode, organizationId]);
+
+    const handleBlockChange = useCallback(() => {
+        clearWeekCache();
+        if (organizationId) {
+            fetchWeekAvailability(weekStart);
+        }
+    }, [clearWeekCache, fetchWeekAvailability, weekStart, organizationId]);
 
     const fetchBookings = async () => {
         try {
@@ -372,8 +388,11 @@ export default function CalendarPage() {
                         onWeekChange={setWeekStart}
                         onDayClick={(day, time) => {
                             setInitialBookingDate(day);
+                            setInitialBookingTime(time);
                             setNewBookingModalOpen(true);
                         }}
+                        weekTimeSlots={weekTimeSlots}
+                        onBlockChange={handleBlockChange}
                     />
                 ) : (
                     <Card id="calendar-section" className="shadow-medium border-none overflow-hidden">

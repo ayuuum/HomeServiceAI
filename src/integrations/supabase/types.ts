@@ -562,6 +562,50 @@ export type Database = {
           },
         ]
       }
+      schedule_blocks: {
+        Row: {
+          block_date: string
+          block_time: string | null
+          block_type: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          block_date: string
+          block_time?: string | null
+          block_type?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          block_date?: string
+          block_time?: string | null
+          block_type?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_blocks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_options: {
         Row: {
           created_at: string | null
