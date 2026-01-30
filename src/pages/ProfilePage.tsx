@@ -10,8 +10,9 @@ import { Icon } from '@/components/ui/icon';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
@@ -631,553 +632,582 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
           <p className="text-muted-foreground mt-2">アカウント情報・組織設定の管理</p>
         </div>
 
-        <div className="space-y-6">
-          {/* QR Code Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="qr_code" size={24} />
-                予約ページQRコード
-              </CardTitle>
-              <CardDescription>店舗に掲示してお客様に予約ページを案内できます</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6 md:items-start">
-                <div 
-                  ref={qrRef}
-                  className="bg-white p-3 md:p-4 rounded-lg border shadow-sm shrink-0"
-                >
-                  {bookingPageUrl ? (
-                    <QRCodeSVG
-                      value={bookingPageUrl}
-                      size={160}
-                      level="H"
-                      includeMargin={true}
-                      className="md:w-[200px] md:h-[200px]"
-                    />
-                  ) : (
-                    <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] flex items-center justify-center bg-muted rounded">
-                      <p className="text-xs md:text-sm text-muted-foreground text-center p-4">
-                        組織設定を完了するとQRコードが表示されます
+        <Tabs defaultValue="booking" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="booking" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">予約ページ</span>
+              <span className="sm:hidden">予約</span>
+            </TabsTrigger>
+            <TabsTrigger value="account" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">アカウント</span>
+              <span className="sm:hidden">設定</span>
+            </TabsTrigger>
+            <TabsTrigger value="line" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">LINE連携</span>
+              <span className="sm:hidden">LINE</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* 予約ページタブ */}
+          <TabsContent value="booking" className="space-y-6">
+            {/* QR Code Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="qr_code" size={24} />
+                  予約ページQRコード
+                </CardTitle>
+                <CardDescription>店舗に掲示してお客様に予約ページを案内できます</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6 md:items-start">
+                  <div 
+                    ref={qrRef}
+                    className="bg-white p-3 md:p-4 rounded-lg border shadow-sm shrink-0"
+                  >
+                    {bookingPageUrl ? (
+                      <QRCodeSVG
+                        value={bookingPageUrl}
+                        size={160}
+                        level="H"
+                        includeMargin={true}
+                        className="md:w-[200px] md:h-[200px]"
+                      />
+                    ) : (
+                      <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] flex items-center justify-center bg-muted rounded">
+                        <p className="text-xs md:text-sm text-muted-foreground text-center p-4">
+                          組織設定を完了するとQRコードが表示されます
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-3 md:space-y-4 w-full">
+                    <div>
+                      <Label className="text-xs md:text-sm text-muted-foreground">予約ページURL</Label>
+                      <p className="text-xs md:text-sm font-mono bg-muted px-2 md:px-3 py-2 rounded mt-1 break-all">
+                        {bookingPageUrl || '未設定'}
                       </p>
                     </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-3 md:space-y-4 w-full">
-                  <div>
-                    <Label className="text-xs md:text-sm text-muted-foreground">予約ページURL</Label>
-                    <p className="text-xs md:text-sm font-mono bg-muted px-2 md:px-3 py-2 rounded mt-1 break-all">
-                      {bookingPageUrl || '未設定'}
+                    <div className="flex flex-col md:flex-row gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleDownloadQR}
+                        disabled={!bookingPageUrl}
+                        className="w-full md:w-auto"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        ダウンロード
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handlePrintQR}
+                        disabled={!bookingPageUrl}
+                        className="w-full md:w-auto"
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        印刷
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(bookingPageUrl);
+                          toast({
+                            title: "コピーしました",
+                            description: "URLをクリップボードにコピーしました",
+                          });
+                        }}
+                        disabled={!bookingPageUrl}
+                        className="w-full md:w-auto"
+                      >
+                        <Icon name="content_copy" size={16} className="mr-2" />
+                        コピー
+                      </Button>
+                    </div>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      ダウンロードした画像を印刷して店舗のカウンターや入口に掲示してください
                     </p>
                   </div>
-                  <div className="flex flex-col md:flex-row gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleDownloadQR}
-                      disabled={!bookingPageUrl}
-                      className="w-full md:w-auto"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      ダウンロード
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handlePrintQR}
-                      disabled={!bookingPageUrl}
-                      className="w-full md:w-auto"
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      印刷
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(bookingPageUrl);
-                        toast({
-                          title: "コピーしました",
-                          description: "URLをクリップボードにコピーしました",
-                        });
-                      }}
-                      disabled={!bookingPageUrl}
-                      className="w-full md:w-auto"
-                    >
-                      <Icon name="content_copy" size={16} className="mr-2" />
-                      コピー
-                    </Button>
-                  </div>
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    ダウンロードした画像を印刷して店舗のカウンターや入口に掲示してください
-                  </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Branding Settings Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                ブランディング設定
-              </CardTitle>
-              <CardDescription>予約ページの見た目をカスタマイズできます</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Logo Upload */}
-              <div className="space-y-3">
-                <Label>ロゴ画像</Label>
-                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  <div className="w-48 h-20 bg-muted rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
-                    {logoUrl ? (
-                      <img 
-                        src={logoUrl} 
-                        alt="ロゴ" 
-                        className="max-w-full max-h-full object-contain p-2"
-                      />
-                    ) : (
-                      <span className="text-sm text-muted-foreground">未設定</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={isUploadingLogo}
-                    >
-                      {isUploadingLogo ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            {/* Branding Settings Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  ブランディング設定
+                </CardTitle>
+                <CardDescription>予約ページの見た目をカスタマイズできます</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Logo Upload */}
+                <div className="space-y-3">
+                  <Label>ロゴ画像</Label>
+                  <div className="flex flex-col sm:flex-row gap-4 items-start">
+                    <div className="w-48 h-20 bg-muted rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
+                      {logoUrl ? (
+                        <img 
+                          src={logoUrl} 
+                          alt="ロゴ" 
+                          className="max-w-full max-h-full object-contain p-2"
+                        />
                       ) : (
-                        <Upload className="h-4 w-4 mr-2" />
+                        <span className="text-sm text-muted-foreground">未設定</span>
                       )}
-                      画像をアップロード
-                    </Button>
-                    {logoUrl && (
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={handleDeleteLogo}
+                        onClick={() => logoInputRef.current?.click()}
                         disabled={isUploadingLogo}
-                        className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        削除
-                      </Button>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      推奨: 200x60px、2MB以下
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Brand Color */}
-              <div className="space-y-3">
-                <Label>ブランドカラー</Label>
-                <div className="flex flex-wrap gap-2">
-                  {COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setBrandColor(preset.value)}
-                      className={`w-10 h-10 rounded-full border-2 transition-all ${
-                        brandColor === preset.value 
-                          ? 'border-foreground ring-2 ring-foreground ring-offset-2' 
-                          : 'border-transparent hover:border-muted-foreground'
-                      }`}
-                      style={{ backgroundColor: preset.value }}
-                      title={preset.name}
-                    />
-                  ))}
-                  <div className="flex items-center gap-2 ml-2">
-                    <Label htmlFor="customColor" className="text-sm text-muted-foreground">カスタム:</Label>
-                    <Input
-                      id="customColor"
-                      type="text"
-                      value={brandColor}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                          setBrandColor(value);
-                        }
-                      }}
-                      className="w-24 font-mono text-sm"
-                      placeholder="#1E3A8A"
-                    />
-                    <div 
-                      className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: brandColor }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Header Layout */}
-              <div className="space-y-3">
-                <Label>ヘッダー表示形式</Label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'logo_only', label: 'ロゴのみ', description: 'ロゴ画像だけを表示' },
-                    { value: 'logo_and_name', label: 'ロゴ + 組織名', description: '推奨：ロゴと組織名を両方表示' },
-                    { value: 'name_only', label: '組織名のみ', description: '組織名をテキストで大きく表示' },
-                  ].map((option) => (
-                    <label
-                      key={option.value}
-                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        headerLayout === option.value 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-muted-foreground'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="headerLayout"
-                        value={option.value}
-                        checked={headerLayout === option.value}
-                        onChange={(e) => setHeaderLayout(e.target.value as 'logo_only' | 'logo_and_name' | 'name_only')}
-                        className="mt-1"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{option.label}</p>
-                        <p className="text-xs text-muted-foreground">{option.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Booking Headline */}
-              <div className="space-y-3">
-                <Label htmlFor="bookingHeadline">見出しテキスト</Label>
-                <Input
-                  id="bookingHeadline"
-                  value={bookingHeadline}
-                  onChange={(e) => setBookingHeadline(e.target.value)}
-                  placeholder={`${organization?.name || '店舗名'}で簡単予約`}
-                />
-                <p className="text-xs text-muted-foreground">
-                  空欄の場合「{organization?.name || '店舗名'}で簡単予約」が表示されます
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Welcome Message */}
-              <div className="space-y-3">
-                <Label htmlFor="welcomeMessage">ウェルカムメッセージ</Label>
-                <Textarea
-                  id="welcomeMessage"
-                  value={welcomeMessage}
-                  onChange={(e) => setWelcomeMessage(e.target.value)}
-                  placeholder="サービスを選んで、日時を選ぶだけ。見積もり不要、すぐに予約完了できます。"
-                  className="resize-none"
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  予約ページのヒーローセクションに表示されます
-                </p>
-              </div>
-
-              {/* Preview */}
-              <div className="p-4 rounded-lg border bg-muted/30">
-                <p className="text-sm font-medium mb-2">プレビュー</p>
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{ 
-                    background: `linear-gradient(to bottom, ${brandColor}15, transparent)` 
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {headerLayout === 'name_only' ? (
-                      <span 
-                        className="text-base font-bold"
-                        style={{ color: brandColor }}
-                      >
-                        {organization?.name || '店舗名'}
-                      </span>
-                    ) : (
-                      <>
-                        {logoUrl ? (
-                          <img src={logoUrl} alt="ロゴ" className="h-6 max-w-[100px] object-contain" />
+                        {isUploadingLogo ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                          <div className="h-6 w-20 bg-muted rounded" />
+                          <Upload className="h-4 w-4 mr-2" />
                         )}
-                        {headerLayout === 'logo_and_name' && (
-                          <span className="text-sm text-muted-foreground">| {organization?.name || '店舗名'}</span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <p 
-                    className="text-lg font-bold"
-                    style={{ color: brandColor }}
-                  >
-                    {bookingHeadline || `${organization?.name || '店舗名'}で簡単予約`}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {welcomeMessage || 'サービスを選んで、日時を選ぶだけ。'}
-                  </p>
-                </div>
-              </div>
-
-              <Button 
-                type="button"
-                onClick={handleBrandingUpdate}
-                disabled={isSavingBranding}
-              >
-                {isSavingBranding ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    保存中...
-                  </>
-                ) : (
-                  'ブランディング設定を保存'
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>プロフィール情報</CardTitle>
-              <CardDescription>名前とメールアドレスを管理します</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">名前</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={isLoadingProfile}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">メールアドレス</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoadingProfile}
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={isLoadingProfile}>
-                  {isLoadingProfile ? (
-                    <>
-                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                      更新中...
-                    </>
-                  ) : (
-                    'プロフィールを更新'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>組織設定</CardTitle>
-              <CardDescription>予約ページのURLを管理します</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleOrganizationUpdate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="organizationName">組織名</Label>
-                  <Input
-                    id="organizationName"
-                    type="text"
-                    value={organizationName}
-                    onChange={(e) => setOrganizationName(e.target.value)}
-                    disabled={isLoadingOrganization}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug">予約ページURL</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">/booking/</span>
-                    <div className="relative flex-1">
-                      <Input
-                        id="slug"
-                        type="text"
-                        value={slug}
-                        onChange={(e) => handleSlugChange(e.target.value)}
-                        disabled={isLoadingOrganization}
-                        className={`pr-10 ${
-                          slugStatus === 'taken' || slugStatus === 'invalid' 
-                            ? 'border-destructive focus-visible:ring-destructive' 
-                            : slugStatus === 'available' 
-                            ? 'border-green-500 focus-visible:ring-green-500' 
-                            : ''
-                        }`}
-                        required
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {slugStatus === 'checking' && (
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        )}
-                        {slugStatus === 'available' && (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        )}
-                        {(slugStatus === 'taken' || slugStatus === 'invalid') && (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
+                        画像をアップロード
+                      </Button>
+                      {logoUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDeleteLogo}
+                          disabled={isUploadingLogo}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          削除
+                        </Button>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        推奨: 200x60px、2MB以下
+                      </p>
                     </div>
                   </div>
-                  {slugError ? (
-                    <p className="text-sm text-destructive">{slugError}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      英小文字、数字、ハイフンのみ使用可能（例: tanaka-cleaning）
-                    </p>
-                  )}
                 </div>
-                <Button 
-                  type="submit" 
-                  disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
-                >
-                  {isLoadingOrganization ? (
-                    <>
-                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                      更新中...
-                    </>
-                  ) : (
-                    '組織設定を保存'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-          </Card>
 
-          {/* LINE Settings */}
-          <LineSettingsForm />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>パスワード変更</CardTitle>
-              <CardDescription>新しいパスワードを設定します</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">現在のパスワード</Label>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    disabled={isLoadingPassword}
-                    required
-                  />
-                </div>
                 <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">新しいパスワード</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    disabled={isLoadingPassword}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">パスワード（確認）</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isLoadingPassword}
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={isLoadingPassword}>
-                  {isLoadingPassword ? (
-                    <>
-                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                      変更中...
-                    </>
-                  ) : (
-                    'パスワードを変更'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
 
-          {/* Email Change Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="mail" size={20} />
-                メールアドレス変更
-              </CardTitle>
-              <CardDescription>ログインに使用するメールアドレスを変更します</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleEmailChange} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>現在のメールアドレス</Label>
-                  <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
-                    {user?.email || '未設定'}
+                {/* Brand Color */}
+                <div className="space-y-3">
+                  <Label>ブランドカラー</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOR_PRESETS.map((preset) => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => setBrandColor(preset.value)}
+                        className={`w-10 h-10 rounded-full border-2 transition-all ${
+                          brandColor === preset.value 
+                            ? 'border-foreground ring-2 ring-foreground ring-offset-2' 
+                            : 'border-transparent hover:border-muted-foreground'
+                        }`}
+                        style={{ backgroundColor: preset.value }}
+                        title={preset.name}
+                      />
+                    ))}
+                    <div className="flex items-center gap-2 ml-2">
+                      <Label htmlFor="customColor" className="text-sm text-muted-foreground">カスタム:</Label>
+                      <Input
+                        id="customColor"
+                        type="text"
+                        value={brandColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                            setBrandColor(value);
+                          }
+                        }}
+                        className="w-24 font-mono text-sm"
+                        placeholder="#1E3A8A"
+                      />
+                      <div 
+                        className="w-8 h-8 rounded border"
+                        style={{ backgroundColor: brandColor }}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newEmail">新しいメールアドレス</Label>
+
+                <Separator />
+
+                {/* Header Layout */}
+                <div className="space-y-3">
+                  <Label>ヘッダー表示形式</Label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'logo_only', label: 'ロゴのみ', description: 'ロゴ画像だけを表示' },
+                      { value: 'logo_and_name', label: 'ロゴ + 組織名', description: '推奨：ロゴと組織名を両方表示' },
+                      { value: 'name_only', label: '組織名のみ', description: '組織名をテキストで大きく表示' },
+                    ].map((option) => (
+                      <label
+                        key={option.value}
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          headerLayout === option.value 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-muted-foreground'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="headerLayout"
+                          value={option.value}
+                          checked={headerLayout === option.value}
+                          onChange={(e) => setHeaderLayout(e.target.value as 'logo_only' | 'logo_and_name' | 'name_only')}
+                          className="mt-1"
+                        />
+                        <div>
+                          <p className="font-medium text-sm">{option.label}</p>
+                          <p className="text-xs text-muted-foreground">{option.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Booking Headline */}
+                <div className="space-y-3">
+                  <Label htmlFor="bookingHeadline">見出しテキスト</Label>
                   <Input
-                    id="newEmail"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="new@example.com"
-                    disabled={isLoadingEmail}
+                    id="bookingHeadline"
+                    value={bookingHeadline}
+                    onChange={(e) => setBookingHeadline(e.target.value)}
+                    placeholder={`${organization?.name || '店舗名'}で簡単予約`}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    空欄の場合「{organization?.name || '店舗名'}で簡単予約」が表示されます
+                  </p>
                 </div>
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Icon name="info" size={16} />
-                  <span>確認メールが新しいアドレスに送信されます</span>
+
+                <Separator />
+
+                {/* Welcome Message */}
+                <div className="space-y-3">
+                  <Label htmlFor="welcomeMessage">ウェルカムメッセージ</Label>
+                  <Textarea
+                    id="welcomeMessage"
+                    value={welcomeMessage}
+                    onChange={(e) => setWelcomeMessage(e.target.value)}
+                    placeholder="サービスを選んで、日時を選ぶだけ。見積もり不要、すぐに予約完了できます。"
+                    className="resize-none"
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    予約ページのヒーローセクションに表示されます
+                  </p>
                 </div>
-                <Button type="submit" disabled={isLoadingEmail || !newEmail}>
-                  {isLoadingEmail ? (
+
+                {/* Preview */}
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-sm font-medium mb-2">プレビュー</p>
+                  <div 
+                    className="p-4 rounded-lg"
+                    style={{ 
+                      background: `linear-gradient(to bottom, ${brandColor}15, transparent)` 
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {headerLayout === 'name_only' ? (
+                        <span 
+                          className="text-base font-bold"
+                          style={{ color: brandColor }}
+                        >
+                          {organization?.name || '店舗名'}
+                        </span>
+                      ) : (
+                        <>
+                          {logoUrl ? (
+                            <img src={logoUrl} alt="ロゴ" className="h-6 max-w-[100px] object-contain" />
+                          ) : (
+                            <div className="h-6 w-20 bg-muted rounded" />
+                          )}
+                          {headerLayout === 'logo_and_name' && (
+                            <span className="text-sm text-muted-foreground">| {organization?.name || '店舗名'}</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <p 
+                      className="text-lg font-bold"
+                      style={{ color: brandColor }}
+                    >
+                      {bookingHeadline || `${organization?.name || '店舗名'}で簡単予約`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {welcomeMessage || 'サービスを選んで、日時を選ぶだけ。'}
+                    </p>
+                  </div>
+                </div>
+
+                <Button 
+                  type="button"
+                  onClick={handleBrandingUpdate}
+                  disabled={isSavingBranding}
+                >
+                  {isSavingBranding ? (
                     <>
-                      <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                      送信中...
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      保存中...
                     </>
                   ) : (
-                    'メールアドレスを変更'
+                    'ブランディング設定を保存'
                   )}
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Organization Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>組織設定</CardTitle>
+                <CardDescription>予約ページのURLを管理します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleOrganizationUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="organizationName">組織名</Label>
+                    <Input
+                      id="organizationName"
+                      type="text"
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      disabled={isLoadingOrganization}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">予約ページURL</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">/booking/</span>
+                      <div className="relative flex-1">
+                        <Input
+                          id="slug"
+                          type="text"
+                          value={slug}
+                          onChange={(e) => handleSlugChange(e.target.value)}
+                          disabled={isLoadingOrganization}
+                          className={`pr-10 ${
+                            slugStatus === 'taken' || slugStatus === 'invalid' 
+                              ? 'border-destructive focus-visible:ring-destructive' 
+                              : slugStatus === 'available' 
+                              ? 'border-green-500 focus-visible:ring-green-500' 
+                              : ''
+                          }`}
+                          required
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {slugStatus === 'checking' && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                          {slugStatus === 'available' && (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          )}
+                          {(slugStatus === 'taken' || slugStatus === 'invalid') && (
+                            <XCircle className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {slugError ? (
+                      <p className="text-sm text-destructive">{slugError}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        英小文字、数字、ハイフンのみ使用可能（例: tanaka-cleaning）
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
+                  >
+                    {isLoadingOrganization ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        更新中...
+                      </>
+                    ) : (
+                      '組織設定を保存'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* アカウントタブ */}
+          <TabsContent value="account" className="space-y-6">
+            {/* Profile Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>プロフィール情報</CardTitle>
+                <CardDescription>名前とメールアドレスを管理します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">名前</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isLoadingProfile}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">メールアドレス</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoadingProfile}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoadingProfile}>
+                    {isLoadingProfile ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        更新中...
+                      </>
+                    ) : (
+                      'プロフィールを更新'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Password Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle>パスワード変更</CardTitle>
+                <CardDescription>新しいパスワードを設定します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">現在のパスワード</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">新しいパスワード</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">パスワード（確認）</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoadingPassword}>
+                    {isLoadingPassword ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        変更中...
+                      </>
+                    ) : (
+                      'パスワードを変更'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Email Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="mail" size={20} />
+                  メールアドレス変更
+                </CardTitle>
+                <CardDescription>ログインに使用するメールアドレスを変更します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleEmailChange} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>現在のメールアドレス</Label>
+                    <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
+                      {user?.email || '未設定'}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newEmail">新しいメールアドレス</Label>
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="new@example.com"
+                      disabled={isLoadingEmail}
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Icon name="info" size={16} />
+                    <span>確認メールが新しいアドレスに送信されます</span>
+                  </div>
+                  <Button type="submit" disabled={isLoadingEmail || !newEmail}>
+                    {isLoadingEmail ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        送信中...
+                      </>
+                    ) : (
+                      'メールアドレスを変更'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* LINE連携タブ */}
+          <TabsContent value="line">
+            <LineSettingsForm />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
