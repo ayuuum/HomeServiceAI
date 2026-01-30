@@ -45,9 +45,16 @@ export const BookingDetailModal = ({
 
   const sendNotification = async (bookingId: string, type: 'confirmed' | 'cancelled') => {
     try {
-      await supabase.functions.invoke('send-booking-notification', {
+      // Use hybrid notification - automatically selects LINE or Email based on customer contact info
+      const { data, error } = await supabase.functions.invoke('send-hybrid-notification', {
         body: { bookingId, notificationType: type }
       });
+      
+      if (error) {
+        console.error('Hybrid notification error:', error);
+      } else {
+        console.log('Notification result:', data);
+      }
     } catch (error) {
       console.error('Notification error:', error);
       // Don't block the main flow if notification fails
