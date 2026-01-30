@@ -1,34 +1,45 @@
 
-# 設定ページのフォントサイズ統一
+# 設定ページのカードタイトルサイズ統一
 
 ## 問題点
 
-設定ページ（`ProfilePage.tsx`）のタイトルとサブタイトルのスタイルが、他の管理ページと一致していません。
+ProfilePage.tsx の CardTitle がデフォルトの `text-2xl`（24px）を使用しているため、他の管理ページ（AdminDashboardでは `text-base`）より大きく表示されている。
 
-| 要素 | ProfilePage（現在） | 他のページ（統一基準） |
-|------|---------------------|------------------------|
-| タイトル (h1) | `text-3xl` | `text-lg md:text-xl` |
-| サブタイトル | `mt-2`（text-smなし） | `text-sm mt-1` |
+| 要素 | 現状 | 統一基準 |
+|------|------|----------|
+| CardTitle | text-2xl (24px) | text-base (16px) |
 
-## 修正内容
+## 修正対象
+
+ProfilePage.tsx 内の全ての CardTitle に `text-base` を追加：
+
+1. 予約ページQRコード（行659）
+2. ブランディング設定（行743）
+3. 組織設定
+4. プロフィール情報
+5. パスワード変更
+6. メールアドレス変更
+
+## 修正例
 
 ```typescript
-// 修正前（行631-632）
-<h1 className="text-3xl font-bold">設定</h1>
-<p className="text-muted-foreground mt-2">アカウント情報・組織設定の管理</p>
+// 修正前
+<CardTitle className="flex items-center gap-2">
+  <Icon name="qr_code" size={24} />
+  予約ページQRコード
+</CardTitle>
 
 // 修正後
-<h1 className="text-lg md:text-xl font-bold">設定</h1>
-<p className="text-sm text-muted-foreground mt-1">アカウント情報・組織設定の管理</p>
+<CardTitle className="text-base flex items-center gap-2">
+  <Icon name="qr_code" size={20} />
+  予約ページQRコード
+</CardTitle>
 ```
+
+アイコンサイズも24pxから20pxに縮小して、テキストとのバランスを調整します。
 
 ## 変更ファイル
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/pages/ProfilePage.tsx` | タイトル・サブタイトルのクラス名を統一 |
-
-## 効果
-
-- 全管理ページで一貫したタイポグラフィ
-- デザイン標準（memory: design/admin-style-standards）との整合性
+| `src/pages/ProfilePage.tsx` | 全CardTitleに `text-base` を追加、アイコンサイズを調整 |
