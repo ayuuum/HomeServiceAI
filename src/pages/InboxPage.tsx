@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminHeader } from '@/components/AdminHeader';
 import { ConversationList } from '@/components/ConversationList';
@@ -14,8 +14,32 @@ interface SelectedConversation {
 }
 
 export default function InboxPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [selectedConversation, setSelectedConversation] = useState<SelectedConversation | null>(null);
     const [isMobileListVisible, setIsMobileListVisible] = useState(true);
+
+    // Auto-select conversation from notification deep link
+    useEffect(() => {
+        const customerId = searchParams.get("customerId");
+        if (customerId) {
+            supabase
+                .from("customers")
+                .select("id, name, line_user_id")
+                .eq("id", customerId)
+                .single()
+                .then(({ data }) => {
+                    if (data && data.line_user_id) {
+                        setSelectedConversation({
+                            customerId: data.id,
+                            customerName: data.name || "不明",
+                            lineUserId: data.line_user_id
+                        });
+                        setIsMobileListVisible(false);
+                    }
+                });
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // Mark messages as read when conversation is selected
     useEffect(() => {

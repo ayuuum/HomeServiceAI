@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     format,
     startOfMonth,
@@ -29,6 +30,7 @@ import { WeeklyCalendarView } from "@/components/admin/WeeklyCalendarView";
 import { toast } from "sonner";
 
 export default function CalendarPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +48,19 @@ export default function CalendarPage() {
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         return addDays(today, mondayOffset);
     });
+
+    // Auto-open booking detail from notification deep link
+    useEffect(() => {
+        const bookingId = searchParams.get("bookingId");
+        if (bookingId && bookings.length > 0) {
+            const targetBooking = bookings.find(b => b.id === bookingId);
+            if (targetBooking) {
+                setSelectedBooking(targetBooking);
+                setIsModalOpen(true);
+                setSearchParams({}, { replace: true });
+            }
+        }
+    }, [bookings, searchParams, setSearchParams]);
 
     useEffect(() => {
         localStorage.setItem("calendar-view-mode", viewMode);

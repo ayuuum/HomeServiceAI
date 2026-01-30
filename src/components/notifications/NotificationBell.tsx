@@ -22,14 +22,22 @@ export function NotificationBell() {
       markAsRead(notification.id);
     }
 
-    // Navigate to relevant page
+    // Navigate to relevant page with resource ID for deep linking
     switch (notification.resource_type) {
       case "booking":
-        navigate("/admin/calendar");
+        if (notification.resource_id) {
+          navigate(`/admin/calendar?bookingId=${notification.resource_id}`);
+        } else {
+          navigate("/admin/calendar");
+        }
         break;
       case "line_message":
       case "customer":
-        navigate("/admin/inbox");
+        if (notification.resource_id) {
+          navigate(`/admin/inbox?customerId=${notification.resource_id}`);
+        } else {
+          navigate("/admin/inbox");
+        }
         break;
       default:
         navigate("/admin");
