@@ -80,17 +80,16 @@ export default function CalendarPage() {
     }, [currentDate, weekStart, viewMode, organizationId]);
 
     const handleBlockChange = useCallback(() => {
-        clearWeekCache();
         if (organizationId) {
-            fetchWeekAvailability(weekStart);
+            fetchWeekAvailability(weekStart, false, true); // forceRefresh=true, no loading indicator
         }
-    }, [clearWeekCache, fetchWeekAvailability, weekStart, organizationId]);
+    }, [fetchWeekAvailability, weekStart, organizationId]);
 
     const fetchBookings = async () => {
         try {
             setIsLoading(true);
             let start: Date, end: Date;
-            
+
             if (viewMode === "week") {
                 start = weekStart;
                 end = addDays(weekStart, 6);
@@ -183,7 +182,7 @@ export default function CalendarPage() {
         <div className="min-h-screen bg-background">
             <AdminHeader />
             <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
-            <div className="flex flex-col gap-4 mb-6">
+                <div className="flex flex-col gap-4 mb-6">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-lg md:text-xl font-bold text-foreground">予約管理</h1>
@@ -191,7 +190,7 @@ export default function CalendarPage() {
                                 予約の確認・承認・管理ができます
                             </p>
                         </div>
-                        <Button 
+                        <Button
                             onClick={() => {
                                 setInitialBookingDate(undefined);
                                 setNewBookingModalOpen(true);
@@ -207,16 +206,16 @@ export default function CalendarPage() {
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto md:self-end">
                         {/* ビュー切り替え */}
                         <div className="flex rounded-lg border bg-muted p-0.5 self-center sm:self-auto">
-                            <Button 
-                                variant={viewMode === "month" ? "default" : "ghost"} 
+                            <Button
+                                variant={viewMode === "month" ? "default" : "ghost"}
                                 size="sm"
                                 onClick={() => setViewMode("month")}
                                 className="h-7 px-3 text-xs"
                             >
                                 月
                             </Button>
-                            <Button 
-                                variant={viewMode === "week" ? "default" : "ghost"} 
+                            <Button
+                                variant={viewMode === "week" ? "default" : "ghost"}
                                 size="sm"
                                 onClick={() => setViewMode("week")}
                                 className="h-7 px-3 text-xs"
@@ -224,7 +223,7 @@ export default function CalendarPage() {
                                 週
                             </Button>
                         </div>
-                        
+
                         {/* 月間ナビゲーション（月間ビューのみ） */}
                         {viewMode === "month" && (
                             <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
@@ -262,8 +261,8 @@ export default function CalendarPage() {
                                 size="sm"
                                 onClick={() => {
                                     goToToday();
-                                    document.getElementById('calendar-section')?.scrollIntoView({ 
-                                        behavior: 'smooth' 
+                                    document.getElementById('calendar-section')?.scrollIntoView({
+                                        behavior: 'smooth'
                                     });
                                 }}
                                 className="text-xs md:text-sm self-start md:self-auto"
@@ -289,36 +288,33 @@ export default function CalendarPage() {
                                     <button
                                         key={booking.id}
                                         onClick={() => handleBookingClick(booking)}
-                                        className={`w-full text-left p-3 md:p-4 rounded-lg border transition-all hover:shadow-md ${
-                                            booking.status === "confirmed"
-                                                ? "bg-success/5 border-success/20 hover:bg-success/10"
-                                                : booking.status === "cancelled"
-                                                    ? "bg-muted border-border opacity-60"
-                                                    : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                                        }`}
+                                        className={`w-full text-left p-3 md:p-4 rounded-lg border transition-all hover:shadow-md ${booking.status === "confirmed"
+                                            ? "bg-success/5 border-success/20 hover:bg-success/10"
+                                            : booking.status === "cancelled"
+                                                ? "bg-muted border-border opacity-60"
+                                                : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                                            }`}
                                     >
                                         {/* Mobile Layout */}
                                         <div className="md:hidden">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-base font-bold tabular-nums ${
-                                                        booking.status === "confirmed" ? "text-success" : 
+                                                    <span className={`text-base font-bold tabular-nums ${booking.status === "confirmed" ? "text-success" :
                                                         booking.status === "pending" ? "text-warning" : "text-muted-foreground"
-                                                    }`}>
+                                                        }`}>
                                                         {booking.selectedTime}
                                                     </span>
                                                     <Badge
                                                         variant={
                                                             booking.status === "confirmed" ? "default" :
-                                                            booking.status === "pending" ? "secondary" : "outline"
+                                                                booking.status === "pending" ? "secondary" : "outline"
                                                         }
-                                                        className={`text-xs ${
-                                                            booking.status === "confirmed" ? "bg-success text-success-foreground" :
+                                                        className={`text-xs ${booking.status === "confirmed" ? "bg-success text-success-foreground" :
                                                             booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {booking.status === "confirmed" ? "確定" :
-                                                         booking.status === "pending" ? "承認待ち" : "キャンセル"}
+                                                            booking.status === "pending" ? "承認待ち" : "キャンセル"}
                                                     </Badge>
                                                 </div>
                                                 <div className="flex items-center gap-1">
@@ -337,10 +333,9 @@ export default function CalendarPage() {
                                         {/* Desktop Layout */}
                                         <div className="hidden md:flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-4">
-                                                <div className={`text-lg font-bold tabular-nums ${
-                                                    booking.status === "confirmed" ? "text-success" : 
+                                                <div className={`text-lg font-bold tabular-nums ${booking.status === "confirmed" ? "text-success" :
                                                     booking.status === "pending" ? "text-warning" : "text-muted-foreground"
-                                                }`}>
+                                                    }`}>
                                                     {booking.selectedTime}
                                                 </div>
                                                 <div className="flex flex-col">
@@ -359,15 +354,15 @@ export default function CalendarPage() {
                                                 <Badge
                                                     variant={
                                                         booking.status === "confirmed" ? "default" :
-                                                        booking.status === "pending" ? "secondary" : "outline"
+                                                            booking.status === "pending" ? "secondary" : "outline"
                                                     }
                                                     className={
                                                         booking.status === "confirmed" ? "bg-success text-success-foreground" :
-                                                        booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
+                                                            booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
                                                     }
                                                 >
                                                     {booking.status === "confirmed" ? "確定" :
-                                                     booking.status === "pending" ? "承認待ち" : "キャンセル"}
+                                                        booking.status === "pending" ? "承認待ち" : "キャンセル"}
                                                 </Badge>
                                                 <Icon name="chevron_right" size={20} className="text-muted-foreground" />
                                             </div>

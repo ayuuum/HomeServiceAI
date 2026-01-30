@@ -86,14 +86,14 @@ export const BookingDateTimeSelection = ({
         const isPast = isBefore(day, startOfDay(new Date()));
         const dateStr = format(day, "yyyy-MM-dd");
         const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
-        
+
         if (isPast || slotInfo?.isBooked) return;
 
         // 同じ日時が既に他の希望で選択されていないかチェック
-        const isDuplicate = preferences.some((pref, idx) => 
-            idx !== editingPreference && 
-            pref.date && 
-            isSameDay(pref.date, day) && 
+        const isDuplicate = preferences.some((pref, idx) =>
+            idx !== editingPreference &&
+            pref.date &&
+            isSameDay(pref.date, day) &&
             pref.time === time
         );
 
@@ -138,36 +138,38 @@ export const BookingDateTimeSelection = ({
     }, [weekTimeSlots, weekStart, organizationId, prefetchAdjacentWeeks]);
 
     // 時間スロットの状態を取得
-    const getSlotStatus = (day: Date, time: string): { 
-        available: boolean; 
-        isSelected: boolean; 
+    const getSlotStatus = (day: Date, time: string): {
+        available: boolean;
+        isSelected: boolean;
         isBooked: boolean;
+        isBlocked: boolean;
         selectedByOther: boolean;
     } => {
         const isPast = isBefore(day, startOfDay(new Date()));
         const dateStr = format(day, "yyyy-MM-dd");
-        
+
         if (isPast) {
-            return { available: false, isSelected: false, isBooked: false, selectedByOther: false };
+            return { available: false, isSelected: false, isBooked: false, isBlocked: false, selectedByOther: false };
         }
 
         // weekTimeSlotsから予約状況を取得
         const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
         const isBooked = slotInfo?.isBooked ?? false;
-        
+        const isBlocked = slotInfo?.isBlocked ?? false;
+
         // 現在編集中の希望で選択中かどうか
         const currentPref = preferences[editingPreference];
         const isSelected = currentPref?.date && isSameDay(currentPref.date, day) && currentPref.time === time;
 
         // 他の希望で選択済みかどうか
-        const selectedByOther = preferences.some((pref, idx) => 
-            idx !== editingPreference && 
-            pref.date && 
-            isSameDay(pref.date, day) && 
+        const selectedByOther = preferences.some((pref, idx) =>
+            idx !== editingPreference &&
+            pref.date &&
+            isSameDay(pref.date, day) &&
             pref.time === time
         );
-        
-        return { available: !isBooked && !selectedByOther, isSelected: !!isSelected, isBooked, selectedByOther };
+
+        return { available: !isBooked && !isBlocked && !selectedByOther, isSelected: !!isSelected, isBooked, isBlocked, selectedByOther };
     };
 
     // 週の範囲表示
@@ -187,13 +189,13 @@ export const BookingDateTimeSelection = ({
                     <Icon name="calendar_today" size={18} className="text-primary" />
                     <h3 className="text-base font-bold">希望日時を選択（3つまで）</h3>
                 </div>
-                
+
                 <div className="grid gap-2">
                     {preferences.map((pref, index) => {
                         const isSelected = pref.date && pref.time;
                         const isEditing = editingPreference === index;
                         const isRequired = index === 0;
-                        
+
                         return (
                             <div
                                 key={index}
@@ -220,7 +222,7 @@ export const BookingDateTimeSelection = ({
                                         <span className="text-xs text-muted-foreground">任意</span>
                                     )}
                                 </div>
-                                
+
                                 {isSelected ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">
@@ -332,24 +334,24 @@ export const BookingDateTimeSelection = ({
                                 {weekDays.map((day, dayIdx) => {
                                     const dateStr = format(day, "yyyy-MM-dd");
                                     const hasData = weekTimeSlots[dateStr] !== undefined;
-                                    const { available, isSelected, isBooked, selectedByOther } = getSlotStatus(day, time);
+                                    const { available, isSelected, isBooked, isBlocked, selectedByOther } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
                                     const isSaturday = day.getDay() === 6;
                                     const isSunday = day.getDay() === 0;
-                                    
+
                                     // 他の希望で選択されているかどうかをチェック
-                                    const otherPreferenceIndex = preferences.findIndex((pref, idx) => 
-                                        idx !== editingPreference && 
-                                        pref.date && 
-                                        isSameDay(pref.date, day) && 
+                                    const otherPreferenceIndex = preferences.findIndex((pref, idx) =>
+                                        idx !== editingPreference &&
+                                        pref.date &&
+                                        isSameDay(pref.date, day) &&
                                         pref.time === time
                                     );
-                                    
+
                                     return (
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isBooked || selectedByOther || (loadingWeek && !hasData)}
+                                            disabled={isPast || isBooked || isBlocked || selectedByOther || (loadingWeek && !hasData)}
                                             className={cn(
                                                 "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
                                                 // 土日の背景色
@@ -376,7 +378,7 @@ export const BookingDateTimeSelection = ({
                                                     {otherPreferenceIndex + 1}
                                                 </span>
                                             )}
-                                            {hasData && isBooked && !isPast && !isSelected && !selectedByOther && (
+                                            {hasData && (isBooked || isBlocked) && !isPast && !isSelected && !selectedByOther && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
                                             )}
                                             {hasData && available && !isPast && !isSelected && (

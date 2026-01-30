@@ -51,7 +51,7 @@ export const useAvailability = (organizationId?: string) => {
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
-  
+
   // キャッシュ: 週データを保存して再利用
   const [weekAvailabilityCache, setWeekAvailabilityCache] = useState<
     Record<string, { slots: WeekTimeSlotAvailability; blocks: WeekBlocks }>
@@ -130,7 +130,7 @@ export const useAvailability = (organizationId?: string) => {
     // 時間帯ごとの予約数を集計
     const bookingsByTime: Record<string, number> = {};
     (bookings || []).forEach((booking) => {
-      bookingsByTime[booking.selected_time] = 
+      bookingsByTime[booking.selected_time] =
         (bookingsByTime[booking.selected_time] || 0) + 1;
     });
 
@@ -145,13 +145,13 @@ export const useAvailability = (organizationId?: string) => {
   }, [organizationId]);
 
   // 週単位で全時間スロットの空き状況を取得（Edge Function経由で安全に取得）
-  const fetchWeekAvailability = useCallback(async (weekStart: Date, showLoading = true) => {
+  const fetchWeekAvailability = useCallback(async (weekStart: Date, showLoading = true, forceRefresh = false) => {
     if (!organizationId) return;
 
     const cacheKey = format(weekStart, "yyyy-MM-dd");
-    
-    // キャッシュにあればそれを使用（即座に表示）
-    if (weekAvailabilityCache[cacheKey]) {
+
+    // キャッシュにあればそれを使用（強制更新でなければ即座に表示）
+    if (!forceRefresh && weekAvailabilityCache[cacheKey]) {
       setWeekTimeSlots(weekAvailabilityCache[cacheKey].slots);
       setWeekBlocks(weekAvailabilityCache[cacheKey].blocks);
       return;
@@ -160,7 +160,7 @@ export const useAvailability = (organizationId?: string) => {
     if (showLoading) {
       setLoadingWeek(true);
     }
-    
+
     const weekEnd = addDays(weekStart, 6);
     const startDateStr = format(weekStart, "yyyy-MM-dd");
     const endDateStr = format(weekEnd, "yyyy-MM-dd");
@@ -190,16 +190,16 @@ export const useAvailability = (organizationId?: string) => {
         const dateStr = format(day, "yyyy-MM-dd");
         const dayBookings = bookingsByDateTime[dateStr] || {};
         const dayBlocks = blocksData[dateStr] || [];
-        
+
         // Check for all-day block
         const allDayBlock = dayBlocks.find(b => b.time === null);
-        
+
         weekSlots[dateStr] = TIME_SLOTS.map((time) => {
           // Check if this specific time is blocked
           const timeBlock = dayBlocks.find(b => b.time === time);
           const isBlocked = !!allDayBlock || !!timeBlock;
           const blockInfo = timeBlock || allDayBlock;
-          
+
           return {
             time,
             isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
@@ -218,7 +218,7 @@ export const useAvailability = (organizationId?: string) => {
         ...prev,
         [cacheKey]: { slots: weekSlots, blocks: blocksData }
       }));
-      
+
       setWeekTimeSlots(weekSlots);
       setWeekBlocks(blocksData);
     } catch (err) {
@@ -231,17 +231,17 @@ export const useAvailability = (organizationId?: string) => {
   // 前後の週を先読み（バックグラウンド）
   const prefetchAdjacentWeeks = useCallback(async (currentWeekStart: Date) => {
     if (!organizationId) return;
-    
+
     const nextWeek = addDays(currentWeekStart, 7);
     const prevWeek = addDays(currentWeekStart, -7);
     const today = new Date();
-    
+
     // 次の週を先読み
     const nextCacheKey = format(nextWeek, "yyyy-MM-dd");
     if (!weekAvailabilityCache[nextCacheKey]) {
       fetchWeekAvailability(nextWeek, false);
     }
-    
+
     // 前の週を先読み（過去でなければ）
     if (!isBefore(prevWeek, startOfWeek(today, { weekStartsOn: 1 }))) {
       const prevCacheKey = format(prevWeek, "yyyy-MM-dd");
