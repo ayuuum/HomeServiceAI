@@ -93,23 +93,23 @@ export default function CancelBookingPage() {
       if (data) {
         setStatus('cancelled');
         toast.success("予約をキャンセルしました");
-        
+
         // Send notifications (fire and forget)
         if (booking) {
-          // Customer LINE notification
-          supabase.functions.invoke('send-booking-notification', {
+          // Customer notification (Hybrid: LINE or Email)
+          supabase.functions.invoke('send-hybrid-notification', {
             body: { bookingId: booking.id, notificationType: 'cancelled' }
           }).catch(console.error);
-          
-          // Admin email notification
-          supabase.functions.invoke('send-booking-email', {
-            body: { 
-              bookingId: booking.id, 
-              emailType: 'admin_notification',
+
+          // Admin notification (Email)
+          supabase.functions.invoke('send-hybrid-notification', {
+            body: {
+              bookingId: booking.id,
+              notificationType: 'admin_notification',
               adminNotificationType: 'cancelled'
             }
           }).catch(console.error);
-          
+
           // In-app notification for admin
           supabase
             .from('notifications')

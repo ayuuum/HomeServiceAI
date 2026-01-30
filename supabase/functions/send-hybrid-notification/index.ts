@@ -12,7 +12,8 @@ const corsHeaders = {
 
 interface HybridNotificationRequest {
   bookingId: string;
-  notificationType: 'confirmed' | 'cancelled' | 'reminder';
+  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification';
+  adminNotificationType?: 'new_booking' | 'cancelled';
 }
 
 interface NotificationResult {
@@ -29,7 +30,7 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { bookingId, notificationType }: HybridNotificationRequest = await req.json();
+    const { bookingId, notificationType, adminNotificationType }: HybridNotificationRequest = await req.json();
 
     if (!bookingId || !notificationType) {
       return new Response(
@@ -95,11 +96,15 @@ serve(async (req: Request): Promise<Response> => {
 
     let result: NotificationResult;
 
-    // Priority 1: LINE (if customer has line_user_id AND org has LINE configured)
-    if (hasLine && hasLineConfig) {
+    // Priority 1: Admin Notification
+    if (notificationType === 'admin_notification') {
+      result = await sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType);
+    }
+    // Priority 2: LINE (if customer has line_user_id AND org has LINE configured)
+    else if (hasLine && hasLineConfig) {
       result = await sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase);
     }
-    // Priority 2: Email (if customer has email)
+    // Priority 3: Email (if customer has email)
     else if (hasEmail) {
       result = await sendEmailNotification(booking, org, notificationType, supabase);
     }
@@ -195,7 +200,8 @@ async function sendEmailNotification(
   booking: any,
   org: any,
   notificationType: string,
-  supabase: any
+  supabase: any,
+  adminNotificationType?: string
 ): Promise<NotificationResult> {
   try {
     console.log(`[send-hybrid-notification] Sending email notification to ${booking.customer_email}`);
@@ -260,6 +266,21 @@ async function sendEmailNotification(
         formattedDate,
         selectedTime: booking.selected_time,
       });
+    } else if (notificationType === 'admin_notification') {
+      const typeLabel = adminNotificationType === 'new_booking' ? '新規予約' : 'キャンセル';
+      subject = `【管理通知】${typeLabel}のお知らせ (${booking.customer_name}様)`;
+      htmlContent = buildAdminNotificationEmail({
+        customerName: booking.customer_name,
+        customerEmail: booking.customer_email,
+        customerPhone: booking.customer_phone,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        servicesList,
+        totalPrice: booking.total_price,
+        adminNotificationType: adminNotificationType || 'new_booking',
+      });
     } else {
       subject = `【${orgName}】明日のご予約リマインダー`;
       htmlContent = buildReminderEmail({
@@ -273,11 +294,22 @@ async function sendEmailNotification(
       });
     }
 
+    // Determine recipient
+    const recipientEmail = notificationType === 'admin_notification' ? (replyToEmail || Deno.env.get("ADMIN_EMAIL")) : booking.customer_email;
+
+    if (!recipientEmail) {
+      return {
+        success: false,
+        channel: 'email',
+        message: "Recipient email not found"
+      };
+    }
+
     // Send email via Resend with Reply-To header
     const emailResponse = await resend.emails.send({
-      from: `${orgName} <noreply@amber-inc.com>`,
-      reply_to: replyToEmail || undefined,  // 店舗のメールアドレスに返信が届く
-      to: [booking.customer_email],
+      from: `${orgName} <info@amber-inc.com>`,
+      reply_to: replyToEmail || undefined,
+      to: [recipientEmail],
       subject,
       html: htmlContent,
     });
@@ -364,6 +396,9 @@ interface EmailParams {
   servicesList?: string;
   totalPrice?: number;
   cancelUrl?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  adminNotificationType?: string;
 }
 
 function buildConfirmedEmail(params: EmailParams): string {
@@ -564,6 +599,92 @@ function buildReminderEmail(params: EmailParams): string {
               <p style="margin: 10px 0 0; font-size: 12px; color: #999;">
                 ※このメールに返信いただくと、店舗へ直接お問い合わせができます。
               </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+function buildAdminNotificationEmail(params: EmailParams): string {
+  const isNew = params.adminNotificationType === 'new_booking';
+  const statusLabel = isNew ? '新規予約申込み' : '予約キャンセル';
+  const statusColor = isNew ? '#4F46E5' : '#dc3545';
+
+  return `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background-color: ${statusColor}; padding: 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">${statusLabel}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
+                管理画面より内容を確認してください。
+              </p>
+              
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <h2 style="margin: 0 0 20px; font-size: 18px; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+                      予約詳細
+                    </h2>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 100px;">顧客名</td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px; font-weight: bold;">${params.customerName} 様</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px;">連絡先</td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px;">
+                          ${params.customerEmail}<br>${params.customerPhone}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px;">日時</td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px;">
+                          ${params.formattedDate}<br>${params.selectedTime}〜
+                        </td>
+                      </tr>
+                      ${params.servicesList ? `
+                      <tr>
+                        <td style="padding: 8px 0; color: #666; font-size: 14px;">サービス</td>
+                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${params.servicesList}</td>
+                      </tr>
+                      ` : ''}
+                      ${params.totalPrice ? `
+                      <tr>
+                        <td style="padding: 12px 0 0; color: #666; font-size: 14px; border-top: 1px solid #ddd;">合計金額</td>
+                        <td style="padding: 12px 0 0; color: #333; font-size: 20px; font-weight: bold; border-top: 1px solid #ddd;">
+                          ¥${params.totalPrice.toLocaleString()}
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="text-align: center;">
+                <a href="${Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app"}/admin" style="display: inline-block; padding: 12px 30px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">
+                  管理画面を開く
+                </a>
+              </div>
             </td>
           </tr>
         </table>

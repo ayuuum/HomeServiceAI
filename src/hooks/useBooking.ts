@@ -613,48 +613,46 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     if (optionsError) throw optionsError;
                 }
 
-                // Send confirmation email if customer has email
-                if (customerEmail.trim()) {
-                    try {
-                        console.log('[useBooking] Sending confirmation email for booking:', newBookingId);
-                        const { error: emailError } = await supabase.functions.invoke('send-booking-email', {
-                            body: {
-                                bookingId: newBookingId,
-                                emailType: 'confirmation'
-                            }
-                        });
-
-                        if (emailError) {
-                            console.error('[useBooking] Email send error:', emailError);
-                            // Don't fail the booking if email fails
-                        } else {
-                            console.log('[useBooking] Confirmation email sent successfully');
-                        }
-                    } catch (emailErr) {
-                        console.error('[useBooking] Email function error:', emailErr);
-                        // Don't fail the booking if email fails
-                    }
-                }
-
-                // Send admin notification email for new booking
+                // Send confirmation notification
                 try {
-                    console.log('[useBooking] Sending admin notification email for new booking:', newBookingId);
-                    const { error: adminEmailError } = await supabase.functions.invoke('send-booking-email', {
+                    console.log('[useBooking] Sending confirmation notification for booking:', newBookingId);
+                    const { error: emailError } = await supabase.functions.invoke('send-hybrid-notification', {
                         body: {
                             bookingId: newBookingId,
-                            emailType: 'admin_notification',
+                            notificationType: 'confirmed'
+                        }
+                    });
+
+                    if (emailError) {
+                        console.error('[useBooking] Notification send error:', emailError);
+                        // Don't fail the booking if notification fails
+                    } else {
+                        console.log('[useBooking] Confirmation notification sent successfully');
+                    }
+                } catch (emailErr) {
+                    console.error('[useBooking] Notification function error:', emailErr);
+                    // Don't fail the booking if notification fails
+                }
+
+                // Send admin notification for new booking
+                try {
+                    console.log('[useBooking] Sending admin notification for new booking:', newBookingId);
+                    const { error: adminEmailError } = await supabase.functions.invoke('send-hybrid-notification', {
+                        body: {
+                            bookingId: newBookingId,
+                            notificationType: 'admin_notification',
                             adminNotificationType: 'new_booking'
                         }
                     });
 
                     if (adminEmailError) {
-                        console.error('[useBooking] Admin notification email error:', adminEmailError);
+                        console.error('[useBooking] Admin notification error:', adminEmailError);
                     } else {
-                        console.log('[useBooking] Admin notification email sent successfully');
+                        console.log('[useBooking] Admin notification sent successfully');
                     }
                 } catch (adminEmailErr) {
-                    console.error('[useBooking] Admin email function error:', adminEmailErr);
-                    // Don't fail the booking if admin email fails
+                    console.error('[useBooking] Admin notification function error:', adminEmailErr);
+                    // Don't fail the booking if admin notification fails
                 }
 
                 // Create in-app notification for new booking request

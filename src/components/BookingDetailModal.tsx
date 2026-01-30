@@ -49,7 +49,7 @@ export const BookingDetailModal = ({
       const { data, error } = await supabase.functions.invoke('send-hybrid-notification', {
         body: { bookingId, notificationType: type }
       });
-      
+
       if (error) {
         console.error('Hybrid notification error:', error);
       } else {
@@ -123,8 +123,11 @@ export const BookingDetailModal = ({
   const handleSendReminder = async () => {
     try {
       setIsSendingReminder(true);
-      const { data, error } = await supabase.functions.invoke('send-booking-reminder', {
-        body: { bookingId: booking.id }
+      const { data, error } = await supabase.functions.invoke('send-hybrid-notification', {
+        body: {
+          bookingId: booking.id,
+          notificationType: 'reminder'
+        }
       });
 
       if (error) throw error;
@@ -250,10 +253,10 @@ export const BookingDetailModal = ({
                 <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
                   {booking.diagnosisHasParking !== undefined && (
                     <div className="flex items-center gap-2">
-                      <Icon 
-                        name={booking.diagnosisHasParking ? "local_parking" : "block"} 
-                        size={18} 
-                        className={booking.diagnosisHasParking ? "text-success" : "text-muted-foreground"} 
+                      <Icon
+                        name={booking.diagnosisHasParking ? "local_parking" : "block"}
+                        size={18}
+                        className={booking.diagnosisHasParking ? "text-success" : "text-muted-foreground"}
                       />
                       <span className="text-sm">
                         駐車場: {booking.diagnosisHasParking ? "あり" : "なし"}
@@ -289,7 +292,7 @@ export const BookingDetailModal = ({
                     const prefDate = booking[`preference${num}Date` as keyof Booking] as string | undefined;
                     const prefTime = booking[`preference${num}Time` as keyof Booking] as string | undefined;
                     if (!prefDate || !prefTime) return null;
-                    
+
                     return (
                       <div key={num} className="flex items-center justify-between p-2 rounded-lg border bg-background">
                         <div className="flex items-center gap-2">
@@ -352,8 +355,8 @@ export const BookingDetailModal = ({
                     booking.customerAddress,
                     booking.customerAddressBuilding,
                   ].filter(Boolean);
-                  const calendarLocation = locationParts.length > 0 
-                    ? locationParts.join(' ') 
+                  const calendarLocation = locationParts.length > 0
+                    ? locationParts.join(' ')
                     : undefined;
 
                   // 詳細情報を組み立て
