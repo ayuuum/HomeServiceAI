@@ -24,7 +24,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch bookings and blocks in parallel
@@ -68,11 +68,11 @@ serve(async (req) => {
 
     // Return only slot counts per date/time (no raw booking data)
     const availability: Record<string, Record<string, number>> = {};
-    
+
     for (const booking of bookingsResult.data || []) {
       const date = booking.selected_date;
       const time = booking.selected_time;
-      
+
       if (!availability[date]) {
         availability[date] = {};
       }
@@ -84,10 +84,10 @@ serve(async (req) => {
 
     // Process blocks: { "2025-01-30": [{ id, time, type, title }] }
     const blocks: Record<string, Array<{ id: string; time: string | null; type: string; title: string | null }>> = {};
-    
+
     for (const block of blocksResult.data || []) {
       const date = block.block_date;
-      
+
       if (!blocks[date]) {
         blocks[date] = [];
       }

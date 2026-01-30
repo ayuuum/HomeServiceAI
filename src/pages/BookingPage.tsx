@@ -564,7 +564,7 @@ const BookingPage = () => {
                   <ChevronRight className="w-4 h-4 ml-0.5" />
                 </Button>
               ) : (
-              <Button
+                <Button
                   onClick={handleSubmit}
                   disabled={!canSubmit || isSubmitting}
                   className="flex-1 h-10 text-sm font-semibold touch-manipulation"

@@ -53,11 +53,11 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
-  
+
   // Organization settings state
   const [organizationName, setOrganizationName] = useState('');
   const [slug, setSlug] = useState('');
@@ -75,15 +75,15 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Admin notification email state
   const [adminEmail, setAdminEmail] = useState('');
-  
+
   // QR Code ref
   const qrRef = useRef<HTMLDivElement>(null);
-  
+
   // Generate booking page URL
-  const bookingPageUrl = organization?.slug 
+  const bookingPageUrl = organization?.slug
     ? `${window.location.origin}/booking/${organization.slug}`
     : '';
 
@@ -322,7 +322,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
       const { error } = await supabase
         .from('organizations')
-        .update({ 
+        .update({
           name: organizationName.trim(),
           slug: slug.toLowerCase().trim(),
           admin_email: adminEmail.trim() || null
@@ -508,29 +508,29 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
-    
+
     const svg = qrRef.current.querySelector('svg');
     if (!svg) return;
-    
+
     // Create canvas
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const size = 400;
     canvas.width = size;
     canvas.height = size + 80; // Extra space for text
-    
+
     if (!ctx) return;
-    
+
     // White background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Convert SVG to image
     const svgData = new XMLSerializer().serializeToString(svg);
     const img = new Image();
     img.onload = () => {
       ctx.drawImage(img, 0, 0, size, size);
-      
+
       // Add text below QR
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 18px sans-serif';
@@ -539,7 +539,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
       ctx.font = '14px sans-serif';
       ctx.fillStyle = '#666666';
       ctx.fillText('上記QRコードを読み取ってご予約ください', size / 2, size + 55);
-      
+
       // Download
       const link = document.createElement('a');
       link.download = `qr-code-${organization?.slug || 'booking'}.png`;
@@ -548,7 +548,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     };
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
-  
+
   const handlePrintQR = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -559,7 +559,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
       });
       return;
     }
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -670,7 +670,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6 md:items-start">
-                  <div 
+                  <div
                     ref={qrRef}
                     className="bg-white p-3 md:p-4 rounded-lg border shadow-sm shrink-0"
                   >
@@ -698,8 +698,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                       </p>
                     </div>
                     <div className="flex flex-col md:flex-row gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={handleDownloadQR}
                         disabled={!bookingPageUrl}
@@ -708,8 +708,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                         <Download className="h-4 w-4 mr-2" />
                         ダウンロード
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={handlePrintQR}
                         disabled={!bookingPageUrl}
@@ -718,8 +718,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                         <Printer className="h-4 w-4 mr-2" />
                         印刷
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           navigator.clipboard.writeText(bookingPageUrl);
@@ -759,9 +759,9 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                   <div className="flex flex-col sm:flex-row gap-4 items-start">
                     <div className="w-48 h-20 bg-muted rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
                       {logoUrl ? (
-                        <img 
-                          src={logoUrl} 
-                          alt="ロゴ" 
+                        <img
+                          src={logoUrl}
+                          alt="ロゴ"
                           className="max-w-full max-h-full object-contain p-2"
                         />
                       ) : (
@@ -821,11 +821,10 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                         key={preset.value}
                         type="button"
                         onClick={() => setBrandColor(preset.value)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          brandColor === preset.value 
-                            ? 'border-foreground ring-2 ring-foreground ring-offset-2' 
+                        className={`w-10 h-10 rounded-full border-2 transition-all ${brandColor === preset.value
+                            ? 'border-foreground ring-2 ring-foreground ring-offset-2'
                             : 'border-transparent hover:border-muted-foreground'
-                        }`}
+                          }`}
                         style={{ backgroundColor: preset.value }}
                         title={preset.name}
                       />
@@ -845,7 +844,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                         className="w-24 font-mono text-sm"
                         placeholder="#1E3A8A"
                       />
-                      <div 
+                      <div
                         className="w-8 h-8 rounded border"
                         style={{ backgroundColor: brandColor }}
                       />
@@ -866,11 +865,10 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                     ].map((option) => (
                       <label
                         key={option.value}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          headerLayout === option.value 
-                            ? 'border-primary bg-primary/5' 
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${headerLayout === option.value
+                            ? 'border-primary bg-primary/5'
                             : 'border-border hover:border-muted-foreground'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -926,15 +924,15 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                 {/* Preview */}
                 <div className="p-4 rounded-lg border bg-muted/30">
                   <p className="text-sm font-medium mb-2">プレビュー</p>
-                  <div 
+                  <div
                     className="p-4 rounded-lg"
-                    style={{ 
-                      background: `linear-gradient(to bottom, ${brandColor}15, transparent)` 
+                    style={{
+                      background: `linear-gradient(to bottom, ${brandColor}15, transparent)`
                     }}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {headerLayout === 'name_only' ? (
-                        <span 
+                        <span
                           className="text-base font-bold"
                           style={{ color: brandColor }}
                         >
@@ -953,7 +951,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                         </>
                       )}
                     </div>
-                    <p 
+                    <p
                       className="text-lg font-bold"
                       style={{ color: brandColor }}
                     >
@@ -965,7 +963,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   type="button"
                   onClick={handleBrandingUpdate}
                   disabled={isSavingBranding}
@@ -1026,13 +1024,12 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                           value={slug}
                           onChange={(e) => handleSlugChange(e.target.value)}
                           disabled={isLoadingOrganization}
-                          className={`pr-10 ${
-                            slugStatus === 'taken' || slugStatus === 'invalid' 
-                              ? 'border-destructive focus-visible:ring-destructive' 
-                              : slugStatus === 'available' 
-                              ? 'border-green-500 focus-visible:ring-green-500' 
-                              : ''
-                          }`}
+                          className={`pr-10 ${slugStatus === 'taken' || slugStatus === 'invalid'
+                              ? 'border-destructive focus-visible:ring-destructive'
+                              : slugStatus === 'available'
+                                ? 'border-green-500 focus-visible:ring-green-500'
+                                : ''
+                            }`}
                           required
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -1056,8 +1053,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                       </p>
                     )}
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
                   >
                     {isLoadingOrganization ? (
