@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MobileNav } from "@/components/MobileNav";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function AdminHeader() {
   const { signOut, user, organization } = useAuth();
@@ -119,6 +120,7 @@ export function AdminHeader() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          <NotificationBell />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="icon" className="hidden lg:flex">
