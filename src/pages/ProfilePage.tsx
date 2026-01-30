@@ -628,8 +628,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
       <AdminHeader />
       <div className="container mx-auto p-4 md:p-6 max-w-4xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">設定</h1>
-          <p className="text-muted-foreground mt-2">アカウント情報・組織設定の管理</p>
+          <h1 className="text-lg md:text-xl font-bold">設定</h1>
+          <p className="text-sm text-muted-foreground mt-1">アカウント情報・組織設定の管理</p>
         </div>
 
         <Tabs defaultValue="booking" className="w-full">
