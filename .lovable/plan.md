@@ -1,126 +1,175 @@
 
-# 通知から該当ページへの直接遷移機能
+# ハイブリッド通知システム実装計画
 
 ## 概要
 
-通知をクリックした際に、関連する予約詳細やLINE会話を直接開けるようにします。
+顧客のLINE連携状況に応じて、最適な通知チャネルを自動選択するシステムを実装します。
 
-## 現状の動作
+## 現状の課題
 
-| 通知タイプ | 現在の遷移先 | 問題点 |
-|-----------|-------------|--------|
-| 新規予約 | `/admin/calendar` | カレンダーページが開くだけで、該当予約を探す必要がある |
-| キャンセル | `/admin/calendar` | 同上 |
-| LINEメッセージ | `/admin/inbox` | 受信トレイが開くだけで、該当会話を探す必要がある |
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      現在の通知フロー                        │
+├─────────────────────────────────────────────────────────────┤
+│  予約送信                                                    │
+│     │                                                        │
+│     ├─→ send-booking-email (顧客にメール送信)               │
+│     │      └─ customerEmail があれば送信                     │
+│     │                                                        │
+│     └─→ send-booking-notification (LINE送信)                │
+│            └─ line_user_id があれば送信                      │
+│            └─ なければスキップ（何も通知されない）           │
+│                                                              │
+│  問題: LINE連携していない顧客に確認・リマインダーが届かない  │
+└─────────────────────────────────────────────────────────────┘
+```
 
-## 改善後の動作
+## 改善後のフロー
 
-| 通知タイプ | 改善後の遷移 | 動作 |
-|-----------|-------------|------|
-| 新規予約 | `/admin/calendar?bookingId=xxx` | 予約詳細モーダルが自動で開く |
-| キャンセル | `/admin/calendar?bookingId=xxx` | 同上 |
-| LINEメッセージ | `/admin/inbox?customerId=xxx` | 該当顧客の会話が自動で選択される |
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                  ハイブリッド通知フロー                      │
+├─────────────────────────────────────────────────────────────┤
+│  予約確定/キャンセル/リマインダー                            │
+│     │                                                        │
+│     ▼                                                        │
+│  send-hybrid-notification (新規Edge Function)               │
+│     │                                                        │
+│     ├─ 顧客にLINE User IDがある？                            │
+│     │     │                                                  │
+│     │     ├─ YES → LINE通知を送信                            │
+│     │     │                                                  │
+│     │     └─ NO → メールアドレスがある？                     │
+│     │              │                                         │
+│     │              ├─ YES → メール通知を送信                 │
+│     │              │                                         │
+│     │              └─ NO → 通知スキップ                      │
+│     │                                                        │
+│     └─ 管理者への通知は別途送信（変更なし）                  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 実装内容
 
-### 1. NotificationBell.tsx - URLパラメータの追加
+### 1. 新規Edge Function: send-hybrid-notification
+
+統合通知関数を作成し、顧客の連絡先に応じて最適なチャネルを選択します。
 
 ```typescript
-// 修正後のナビゲーション処理
-const handleNotificationClick = (notification: Notification) => {
-  if (!notification.read_at) {
-    markAsRead(notification.id);
-  }
+// supabase/functions/send-hybrid-notification/index.ts
 
-  switch (notification.resource_type) {
-    case "booking":
-      if (notification.resource_id) {
-        navigate(`/admin/calendar?bookingId=${notification.resource_id}`);
-      } else {
-        navigate("/admin/calendar");
-      }
-      break;
-    case "line_message":
-    case "customer":
-      if (notification.resource_id) {
-        navigate(`/admin/inbox?customerId=${notification.resource_id}`);
-      } else {
-        navigate("/admin/inbox");
-      }
-      break;
-    default:
-      navigate("/admin");
-  }
-};
+interface HybridNotificationRequest {
+  bookingId: string;
+  notificationType: 'confirmed' | 'cancelled' | 'reminder';
+}
+
+// 処理フロー:
+// 1. 予約情報と顧客情報を取得
+// 2. 顧客のline_user_idをチェック
+//    - あり → LINE通知を送信
+//    - なし → メールアドレスをチェック
+//       - あり → メール通知を送信
+//       - なし → スキップ
+// 3. 送信結果をレスポンス
 ```
 
-### 2. CalendarPage.tsx - 予約詳細の自動表示
+### 2. 既存コードの修正
+
+#### AdminDashboard / BookingDetailModal
+予約ステータス変更時の通知呼び出しを `send-hybrid-notification` に変更
+
+#### useBooking.ts (予約送信時)
+予約送信後の顧客通知を `send-hybrid-notification` に統一
+
+### 3. Reply-Toヘッダーの追加
+
+メール送信時に店舗のメールアドレスをReply-Toに設定し、顧客が返信できるようにします。
 
 ```typescript
-// useSearchParams を追加
-import { useSearchParams } from "react-router-dom";
+// organizationsテーブルにreply_to_emailカラムを追加
+// または profilesテーブルのemailを使用
 
-// コンポーネント内で
-const [searchParams, setSearchParams] = useSearchParams();
-
-// bookings取得後に該当予約を自動選択
-useEffect(() => {
-  const bookingId = searchParams.get("bookingId");
-  if (bookingId && bookings.length > 0) {
-    const targetBooking = bookings.find(b => b.id === bookingId);
-    if (targetBooking) {
-      setSelectedBooking(targetBooking);
-      setIsModalOpen(true);
-      // パラメータをクリア
-      setSearchParams({});
-    }
-  }
-}, [bookings, searchParams]);
+await resend.emails.send({
+  from: `${orgName} <noreply@platform.com>`,
+  replyTo: adminEmail,  // 店舗のメールアドレス
+  to: [customerEmail],
+  subject: "...",
+  html: "..."
+});
 ```
 
-### 3. InboxPage.tsx - 会話の自動選択
-
-```typescript
-// useSearchParams を追加
-import { useSearchParams } from "react-router-dom";
-
-// コンポーネント内で
-const [searchParams, setSearchParams] = useSearchParams();
-
-// 顧客IDからcustomer情報を取得して会話を自動選択
-useEffect(() => {
-  const customerId = searchParams.get("customerId");
-  if (customerId) {
-    // 顧客情報を取得して会話を選択
-    supabase
-      .from("customers")
-      .select("id, name, line_user_id")
-      .eq("id", customerId)
-      .single()
-      .then(({ data }) => {
-        if (data && data.line_user_id) {
-          handleSelectConversation({
-            customerId: data.id,
-            customerName: data.name || "不明",
-            lineUserId: data.line_user_id
-          });
-        }
-      });
-    setSearchParams({});
-  }
-}, [searchParams]);
-```
-
-## 変更ファイル
+## 変更ファイル一覧
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/components/notifications/NotificationBell.tsx` | resource_idをURLパラメータとして付加 |
-| `src/pages/CalendarPage.tsx` | bookingIdパラメータで予約詳細モーダルを自動表示 |
-| `src/pages/InboxPage.tsx` | customerIdパラメータで会話を自動選択 |
+| `supabase/functions/send-hybrid-notification/index.ts` | 新規作成 - ハイブリッド通知ロジック |
+| `supabase/functions/send-booking-email/index.ts` | Reply-Toヘッダーを追加 |
+| `supabase/config.toml` | 新規関数の設定追加 |
+| `src/components/BookingDetailModal.tsx` | 通知呼び出しを統合関数に変更 |
+
+## 通知チャネルの優先順位
+
+| 優先度 | チャネル | 条件 |
+|--------|----------|------|
+| 1 | LINE | `line_user_id` が存在する |
+| 2 | メール | `customer_email` が存在する |
+| 3 | なし | どちらも存在しない場合はスキップ |
+
+## 技術詳細
+
+### send-hybrid-notification の主要ロジック
+
+```typescript
+// 1. 顧客情報を取得
+const { data: booking } = await supabase
+  .from("bookings")
+  .select(`*, customers(id, name, line_user_id, email)`)
+  .eq("id", bookingId)
+  .single();
+
+// 2. 通知チャネルを決定
+const customer = booking.customers;
+const hasLine = !!customer?.line_user_id;
+const hasEmail = !!booking.customer_email;
+
+let notificationChannel: 'line' | 'email' | 'none' = 'none';
+if (hasLine) {
+  notificationChannel = 'line';
+} else if (hasEmail) {
+  notificationChannel = 'email';
+}
+
+// 3. チャネルに応じて通知を送信
+if (notificationChannel === 'line') {
+  // LINE Push Message API を使用
+} else if (notificationChannel === 'email') {
+  // Resend API を使用
+}
+```
+
+### メールのReply-To設定
+
+```typescript
+// 管理者のメールアドレスを取得
+const { data: adminProfile } = await supabase
+  .from('profiles')
+  .select('email')
+  .eq('organization_id', booking.organization_id)
+  .single();
+
+await resend.emails.send({
+  from: `${orgName} <onboarding@resend.dev>`,
+  replyTo: adminProfile?.email || undefined,  // 返信先を店舗に設定
+  to: [customerEmail],
+  // ...
+});
+```
 
 ## ユーザー体験の改善
 
-1. **新規予約通知** → クリック → 予約詳細モーダルが即座に開く
-2. **キャンセル通知** → クリック → キャンセルされた予約の詳細が開く
-3. **LINEメッセージ通知** → クリック → その顧客との会話画面が開く
+| シナリオ | Before | After |
+|----------|--------|-------|
+| LINE連携顧客の予約確定 | LINE通知のみ | LINE通知（変更なし） |
+| 非LINE顧客の予約確定 | 通知なし | メール通知を送信 |
+| 非LINE顧客の予約リマインダー | 通知なし | メールでリマインダー送信 |
+| 顧客がメールに返信 | 返信不可 | 店舗のメールアドレスに届く |
