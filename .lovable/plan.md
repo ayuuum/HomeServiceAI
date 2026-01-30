@@ -1,86 +1,76 @@
 
-# 設定ページのフォントサイズ統一（網羅的修正）
+# 通知フローのテスト計画
 
-## 発見した問題点
+## 現在の状況
 
-### ProfilePage.tsx
-| 箇所 | 行番号 | 現状 | 修正内容 |
-|------|--------|------|----------|
-| メールアドレス変更 | 1162 | `text-base` なし | `text-base` を追加 |
+調査の結果、以下が確認できました：
 
-### LineSettingsForm.tsx
-| 箇所 | 行番号 | 現状 | 修正内容 |
-|------|--------|------|----------|
-| LINE連携設定（CardTitle） | 227 | `text-base` なし | `text-base` を追加 |
-| リマインダー設定（h3） | 354 | `font-semibold` のみ | `text-sm font-semibold` に変更 |
-| AI自動応答（h3） | 396 | `font-semibold` のみ | `text-sm font-semibold` に変更 |
+| 機能 | 状態 | 備考 |
+|------|------|------|
+| メール通知（Edge Function） | ✅ 正常動作 | `send-booking-email` がstatus 200を返却 |
+| LINE通知（Edge Function） | ✅ 正常動作 | LINE連携がない顧客はスキップ（期待通り） |
+| Realtime設定 | ✅ 設定済み | `notifications` テーブルがpublicationに含まれている |
+| 通知データ | ⚠️ 空 | 現在データベースに通知が0件 |
 
-## 修正詳細
+## テスト方法
 
-### 1. ProfilePage.tsx（メールアドレス変更）
+### テスト1: 新規予約による通知テスト
 
-```typescript
-// 修正前（行1162）
-<CardTitle className="flex items-center gap-2">
-  <Icon name="mail" size={20} />
-  メールアドレス変更
-</CardTitle>
+1. **予約ページを開く**
+   - `/booking/nagareboshi-test` にアクセス
+   - 新しい予約を作成する
 
-// 修正後
-<CardTitle className="text-base flex items-center gap-2">
-  <Icon name="mail" size={20} />
-  メールアドレス変更
-</CardTitle>
+2. **期待される動作**
+   - 管理者のヘッダーに🔔ベルアイコンに通知バッジが表示される
+   - `notifications` テーブルに `type: 'new_booking'` のレコードが追加される
+   - 管理者メールに通知が届く
+
+### テスト2: 予約キャンセルによる通知テスト
+
+1. **既存予約のキャンセルURLにアクセス**
+   - 予約詳細から「キャンセルリンクをコピー」
+   - そのURLでキャンセルを実行
+
+2. **期待される動作**
+   - `type: 'booking_cancelled'` の通知が作成される
+   - 管理者メールにキャンセル通知が届く
+
+### テスト3: LINE メッセージによる通知テスト
+
+1. **LINE公式アカウントにメッセージを送信**
+   - 顧客のLINEアカウントから店舗のLINE公式アカウントにメッセージを送る
+
+2. **期待される動作**
+   - `type: 'line_message'` の通知が作成される
+   - 管理者画面でリアルタイムに🔔に表示される
+
+---
+
+## 実装の確認ポイント
+
+通知作成のコード箇所：
+
+```text
+1. 新規予約 → src/hooks/useBooking.ts:660-672
+2. キャンセル → src/pages/CancelBookingPage.tsx:113-124
+3. LINEメッセージ → supabase/functions/line-webhook/index.ts:314-323
 ```
 
-### 2. LineSettingsForm.tsx（LINE連携設定）
-
-```typescript
-// 修正前（行227）
-<CardTitle className="flex items-center gap-2">
-  <div className="w-8 h-8 rounded-lg bg-[#06C755] flex items-center justify-center">
-    <Icon name="chat" size={18} className="text-white" />
-  </div>
-  LINE連携設定
-</CardTitle>
-
-// 修正後
-<CardTitle className="text-base flex items-center gap-2">
-  <div className="w-6 h-6 rounded-lg bg-[#06C755] flex items-center justify-center">
-    <Icon name="chat" size={14} className="text-white" />
-  </div>
-  LINE連携設定
-</CardTitle>
+Realtimeリスナー：
+```text
+src/hooks/useNotifications.ts → postgres_changes で INSERT を監視
 ```
 
-### 3. LineSettingsForm.tsx（セクション見出し）
+---
 
-```typescript
-// 修正前（行354）
-<h3 className="font-semibold">リマインダー設定</h3>
+## 推奨テスト手順
 
-// 修正後
-<h3 className="text-sm font-semibold">リマインダー設定</h3>
+**最も簡単なテスト方法**: 
+1. 別のブラウザ/シークレットウィンドウで予約ページを開く
+2. 新しい予約を作成する
+3. 管理者画面で通知ベルを確認する
 
-// 修正前（行396）
-<h3 className="font-semibold">AI自動応答</h3>
-
-// 修正後
-<h3 className="text-sm font-semibold">AI自動応答</h3>
-```
-
-アイコンサイズも調整：
-- リマインダー設定のアイコン: `size={20}` → `size={16}`
-- AI自動応答のアイコン: `h-5 w-5` → `h-4 w-4`
-
-## 修正対象ファイル
-
-| ファイル | 変更内容 |
-|----------|----------|
-| `src/pages/ProfilePage.tsx` | メールアドレス変更の CardTitle に `text-base` 追加 |
-| `src/components/LineSettingsForm.tsx` | CardTitle に `text-base` 追加、セクション見出しを `text-sm` に統一、アイコンサイズ調整 |
-
-## 効果
-
-- 設定ページ全体でフォントサイズが統一
-- 他の管理ページ（ダッシュボード、顧客管理等）との視覚的一貫性が確保
+これにより、以下が一度にテストできます：
+- ✅ 予約作成時のin-app通知挿入
+- ✅ Realtimeによる即時更新
+- ✅ 管理者メール通知
