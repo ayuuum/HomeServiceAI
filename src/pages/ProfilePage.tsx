@@ -76,6 +76,9 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   
+  // Admin notification email state
+  const [adminEmail, setAdminEmail] = useState('');
+  
   // QR Code ref
   const qrRef = useRef<HTMLDivElement>(null);
   
@@ -102,6 +105,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
       setWelcomeMessage(organization.welcome_message || '');
       setBookingHeadline((organization as any).booking_headline || '');
       setHeaderLayout((organization.header_layout as 'logo_only' | 'logo_and_name' | 'name_only') || 'logo_and_name');
+      // Load admin notification email
+      setAdminEmail((organization as any).admin_email || '');
     }
   }, [organization]);
 
@@ -319,7 +324,8 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
         .from('organizations')
         .update({ 
           name: organizationName.trim(),
-          slug: slug.toLowerCase().trim()
+          slug: slug.toLowerCase().trim(),
+          admin_email: adminEmail.trim() || null
         })
         .eq('id', organization?.id);
 
@@ -994,6 +1000,20 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
                       disabled={isLoadingOrganization}
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail">通知用メールアドレス</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="notifications@example.com"
+                      disabled={isLoadingOrganization}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      新規予約やキャンセルの通知を受け取るメールアドレス
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="slug">予約ページURL</Label>
