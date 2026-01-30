@@ -1159,7 +1159,7 @@ const [isLoadingProfile, setIsLoadingProfile] = useState(false);
             {/* Email Change */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-base flex items-center gap-2">
                   <Icon name="mail" size={20} />
                   メールアドレス変更
                 </CardTitle>
