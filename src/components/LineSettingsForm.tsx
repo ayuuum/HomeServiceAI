@@ -224,9 +224,9 @@ export function LineSettingsForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#06C755] flex items-center justify-center">
-            <Icon name="chat" size={18} className="text-white" />
+        <CardTitle className="text-base flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-[#06C755] flex items-center justify-center">
+            <Icon name="chat" size={14} className="text-white" />
           </div>
           LINE連携設定
         </CardTitle>
@@ -350,8 +350,8 @@ export function LineSettingsForm() {
         {/* Reminder Settings Section */}
         <div className="pt-6 border-t space-y-4">
           <div className="flex items-center gap-2">
-            <Icon name="notifications" size={20} className="text-primary" />
-            <h3 className="font-semibold">リマインダー設定</h3>
+            <Icon name="notifications" size={16} className="text-primary" />
+            <h3 className="text-sm font-semibold">リマインダー設定</h3>
           </div>
           <p className="text-xs text-muted-foreground">
             予約前に自動でリマインダーを送信するタイミングを設定します
@@ -392,8 +392,8 @@ export function LineSettingsForm() {
         {/* AI Auto-Response Section */}
         <div className="pt-6 border-t space-y-4">
           <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">AI自動応答</h3>
+            <Bot className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">AI自動応答</h3>
           </div>
           
           <div className="flex items-center justify-between">
