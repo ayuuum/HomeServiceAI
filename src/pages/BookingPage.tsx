@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { useBooking } from "@/hooks/useBooking";
@@ -124,6 +124,8 @@ const BookingPage = () => {
   }, [selectedDate, fetchDayAvailability]);
 
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [bookingData, setBookingData] = useState<{
     date: Date;
     time: string;
@@ -174,20 +176,32 @@ const BookingPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (selectedDate && selectedTime) {
-      const isStillAvailable = await checkRealTimeAvailability(selectedDate, selectedTime);
-      if (!isStillAvailable) {
-        toast.error("申し訳ありません。この時間帯は他の方が予約されました。別の時間帯を選択してください。");
-        await fetchDayAvailability(selectedDate);
-        setCurrentStep(2); // Go back to date/time selection
-        return;
-      }
+    // 二重送信防止
+    if (submittingRef.current) {
+      return;
     }
+    submittingRef.current = true;
+    setIsSubmitting(true);
 
-    const result = await submitBooking();
-    if (result) {
-      setBookingData(result);
-      setShowConfirmation(true);
+    try {
+      if (selectedDate && selectedTime) {
+        const isStillAvailable = await checkRealTimeAvailability(selectedDate, selectedTime);
+        if (!isStillAvailable) {
+          toast.error("申し訳ありません。この時間帯は他の方が予約されました。別の時間帯を選択してください。");
+          await fetchDayAvailability(selectedDate);
+          setCurrentStep(2);
+          return;
+        }
+      }
+
+      const result = await submitBooking();
+      if (result) {
+        setBookingData(result);
+        setShowConfirmation(true);
+      }
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -550,12 +564,19 @@ const BookingPage = () => {
                   <ChevronRight className="w-4 h-4 ml-0.5" />
                 </Button>
               ) : (
-                <Button
+              <Button
                   onClick={handleSubmit}
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || isSubmitting}
                   className="flex-1 h-10 text-sm font-semibold touch-manipulation"
                 >
-                  予約を確定する
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      送信中...
+                    </>
+                  ) : (
+                    "予約リクエストを送信"
+                  )}
                 </Button>
               )}
             </div>
