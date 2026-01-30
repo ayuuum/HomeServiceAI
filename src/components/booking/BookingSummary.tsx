@@ -47,7 +47,7 @@ export const BookingSummary = ({
                             className="flex-1 max-w-[200px] h-12 shadow-lg touch-manipulation"
                             style={buttonStyle}
                         >
-                            予約する
+                            リクエストを送信
                             <Icon name="arrow_forward" size={16} className="ml-1" />
                         </Button>
                     </div>
@@ -78,7 +78,7 @@ export const BookingSummary = ({
                         className="shadow-lg hover:shadow-xl transition-all"
                         style={buttonStyle}
                     >
-                        予約内容を確認する
+                        予約リクエストを送信
                         <Icon name="arrow_forward" size={16} className="ml-2" />
                     </Button>
                 </div>
