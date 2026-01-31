@@ -171,7 +171,7 @@ export default function CancelBookingPage() {
         {status === 'found' && booking && (
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">予約キャンセル</CardTitle>
+              <CardTitle className="text-2xl">予約の変更・キャンセル</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-muted/50 p-4 rounded-lg space-y-3">
@@ -195,39 +195,67 @@ export default function CancelBookingPage() {
                 </div>
               </div>
 
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
+              {/* Reschedule Option */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <Icon name="warning" size={20} className="text-warning mt-0.5" />
-                  <div>
-                    <p className="font-medium text-warning">キャンセルについて</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      一度キャンセルすると元に戻すことはできません。再度ご予約が必要です。
+                  <Icon name="event_repeat" size={24} className="text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-primary mb-1">日時を変更する</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      別の日時に予約を変更できます。サービス内容はそのままです。
                     </p>
+                    <Link to={`/reschedule/${token}`}>
+                      <Button className="w-full">
+                        <Icon name="calendar_month" size={18} className="mr-2" />
+                        日時変更ページへ
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>
 
-              <Button
-                onClick={handleCancel}
-                variant="destructive"
-                className="w-full h-12"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
-                    キャンセル中...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="cancel" size={20} className="mr-2" />
-                    この予約をキャンセルする
-                  </>
-                )}
-              </Button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">または</span>
+                </div>
+              </div>
+
+              {/* Cancel Option */}
+              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Icon name="warning" size={24} className="text-destructive mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-destructive mb-1">予約をキャンセル</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      一度キャンセルすると元に戻せません。再度ご予約が必要です。
+                    </p>
+                    <Button
+                      onClick={handleCancel}
+                      variant="destructive"
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Icon name="sync" size={18} className="mr-2 animate-spin" />
+                          キャンセル中...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="cancel" size={18} className="mr-2" />
+                          この予約をキャンセルする
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
               <p className="text-center text-sm text-muted-foreground">
-                キャンセルしない場合はこのページを閉じてください
+                変更やキャンセルをしない場合はこのページを閉じてください
               </p>
             </CardContent>
           </Card>

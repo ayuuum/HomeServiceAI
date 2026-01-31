@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import {
   format,
   addDays,
@@ -12,12 +12,21 @@ import {
 import { ja } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Booking } from "@/types/booking";
 import { cn } from "@/lib/utils";
 import { SlotActionPopover } from "./SlotActionPopover";
@@ -40,6 +49,12 @@ const TIME_SLOTS = Array.from({ length: 10 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:00`;
 });
 
+interface DragSlot {
+  day: Date;
+  time: string;
+  dateStr: string;
+}
+
 export function WeeklyCalendarView({
   weekStart,
   bookings,
@@ -51,13 +66,37 @@ export function WeeklyCalendarView({
 }: WeeklyCalendarViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [openPopover, setOpenPopover] = useState<string | null>(null);
-  const { createBlock, deleteBlock, loading: blockLoading } = useScheduleBlocks();
+  const { createBlock, createMultipleBlocks, deleteBlock, loading: blockLoading } = useScheduleBlocks();
+
+  // Drag selection state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<DragSlot | null>(null);
+  const [dragEnd, setDragEnd] = useState<DragSlot | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // 現在時刻の更新（1分ごと）
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Global mouse up listener for drag end
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging && dragStart && dragEnd) {
+        const slots = getSelectedSlots();
+        if (slots.length > 0) {
+          setShowConfirmDialog(true);
+        }
+        setIsDragging(false);
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }
+  }, [isDragging, dragStart, dragEnd]);
 
   // 週の7日間を生成
   const weekDays = useMemo(() => {
@@ -95,6 +134,47 @@ export function WeeklyCalendarView({
     return daySlots?.find(s => s.time === time);
   };
 
+  // Calculate selected slots from drag range
+  const getSelectedSlots = useCallback((): DragSlot[] => {
+    if (!dragStart || !dragEnd) return [];
+
+    const slots: DragSlot[] = [];
+    const startDayIndex = weekDays.findIndex(d => isSameDay(d, dragStart.day));
+    const endDayIndex = weekDays.findIndex(d => isSameDay(d, dragEnd.day));
+    const startTimeIndex = TIME_SLOTS.indexOf(dragStart.time);
+    const endTimeIndex = TIME_SLOTS.indexOf(dragEnd.time);
+
+    const minDayIndex = Math.min(startDayIndex, endDayIndex);
+    const maxDayIndex = Math.max(startDayIndex, endDayIndex);
+    const minTimeIndex = Math.min(startTimeIndex, endTimeIndex);
+    const maxTimeIndex = Math.max(startTimeIndex, endTimeIndex);
+
+    for (let dayIdx = minDayIndex; dayIdx <= maxDayIndex; dayIdx++) {
+      for (let timeIdx = minTimeIndex; timeIdx <= maxTimeIndex; timeIdx++) {
+        const day = weekDays[dayIdx];
+        const time = TIME_SLOTS[timeIdx];
+        const dateStr = format(day, "yyyy-MM-dd");
+        
+        // Only include slots that are not already booked or blocked
+        const slotBookings = getBookingsForSlot(day, time);
+        const slotInfo = getSlotInfo(day, time);
+        
+        if (slotBookings.length === 0 && !slotInfo?.isBlocked) {
+          slots.push({ day, time, dateStr });
+        }
+      }
+    }
+
+    return slots;
+  }, [dragStart, dragEnd, weekDays, getBookingsForSlot, getSlotInfo]);
+
+  const selectedSlots = useMemo(() => getSelectedSlots(), [getSelectedSlots]);
+
+  const isSlotInSelection = (day: Date, time: string): boolean => {
+    if (!isDragging || !dragStart || !dragEnd) return false;
+    return selectedSlots.some(s => isSameDay(s.day, day) && s.time === time);
+  };
+
   // 現在時刻のインジケーター位置を計算
   const getCurrentTimePosition = () => {
     const hours = currentTime.getHours();
@@ -126,6 +206,51 @@ export function WeeklyCalendarView({
     onBlockChange?.();
   };
 
+  const handleConfirmBulkBlock = async () => {
+    const slots = selectedSlots.map(s => ({
+      date: s.dateStr,
+      time: s.time
+    }));
+    
+    const success = await createMultipleBlocks(slots);
+    if (success) {
+      onBlockChange?.();
+    }
+    
+    setShowConfirmDialog(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  const handleCancelBulkBlock = () => {
+    setShowConfirmDialog(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  // Drag handlers
+  const handleMouseDown = (day: Date, time: string, e: React.MouseEvent) => {
+    // Only start drag on empty cells
+    const slotBookings = getBookingsForSlot(day, time);
+    const slotInfo = getSlotInfo(day, time);
+    
+    if (slotBookings.length === 0 && !slotInfo?.isBlocked) {
+      e.preventDefault();
+      const dateStr = format(day, "yyyy-MM-dd");
+      setIsDragging(true);
+      setDragStart({ day, time, dateStr });
+      setDragEnd({ day, time, dateStr });
+      setOpenPopover(null);
+    }
+  };
+
+  const handleMouseEnter = (day: Date, time: string) => {
+    if (isDragging) {
+      const dateStr = format(day, "yyyy-MM-dd");
+      setDragEnd({ day, time, dateStr });
+    }
+  };
+
   const timePosition = getCurrentTimePosition();
   const showTimeIndicator = isToday(weekDays[0]) || weekDays.some(d => isToday(d));
 
@@ -134,6 +259,34 @@ export function WeeklyCalendarView({
 
   return (
     <div className="space-y-3">
+      {/* Bulk Block Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>選択したスロットをブロック</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedSlots.length}件のスロットをブロックします。よろしいですか？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-40 overflow-y-auto bg-muted/50 rounded-lg p-3 text-sm">
+            {selectedSlots.slice(0, 10).map((slot, idx) => (
+              <div key={idx} className="py-0.5">
+                {format(slot.day, "M/d(E)", { locale: ja })} {slot.time}
+              </div>
+            ))}
+            {selectedSlots.length > 10 && (
+              <div className="text-muted-foreground pt-1">...他{selectedSlots.length - 10}件</div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelBulkBlock}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBulkBlock} disabled={blockLoading}>
+              {blockLoading ? "処理中..." : "ブロックする"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 週ナビゲーション */}
       <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
         <Button
@@ -175,8 +328,20 @@ export function WeeklyCalendarView({
         </Button>
       </div>
 
+      {/* ドラッグ操作のヒント */}
+      <div className="text-xs text-muted-foreground text-center">
+        💡 空きセルをドラッグで複数選択してまとめてブロックできます
+      </div>
+
       {/* 週間グリッド */}
-      <div className="bg-card rounded-lg border shadow-subtle overflow-hidden">
+      <div 
+        className="bg-card rounded-lg border shadow-subtle overflow-hidden select-none"
+        onMouseLeave={() => {
+          if (isDragging) {
+            // Keep selection when leaving the grid
+          }
+        }}
+      >
         {/* ヘッダー（曜日・日付） */}
         <div className="grid grid-cols-[50px_repeat(7,1fr)] md:grid-cols-[60px_repeat(7,1fr)] border-b">
           <div className="py-2 px-1 text-center text-xs text-muted-foreground border-r bg-muted/30">
@@ -262,6 +427,7 @@ export function WeeklyCalendarView({
                 const isBlocked = slotInfo?.isBlocked ?? false;
                 const popoverKey = `${format(day, "yyyy-MM-dd")}_${time}`;
                 const hasBookings = slotBookings.length > 0;
+                const inSelection = isSlotInSelection(day, time);
 
                 // ブロック済みセルの表示（クリックで解除可能）
                 if (isBlocked && !hasBookings) {
@@ -361,28 +527,41 @@ export function WeeklyCalendarView({
                   );
                 }
 
-                // 空きセル（ポップオーバー付き）
+                // 空きセル（ドラッグ選択 or ポップオーバー）
                 return (
-                  <SlotActionPopover
+                  <div
                     key={popoverKey}
-                    day={day}
-                    time={time}
-                    isOpen={openPopover === popoverKey}
-                    onOpenChange={(open) => setOpenPopover(open ? popoverKey : null)}
-                    onAddBooking={() => onDayClick(day, time)}
-                    onBlockSlot={() => handleBlockSlot(day, time)}
-                    onBlockAllDay={() => handleBlockAllDay(day)}
+                    onMouseDown={(e) => handleMouseDown(day, time, e)}
+                    onMouseEnter={() => handleMouseEnter(day, time)}
+                    onClick={() => {
+                      if (!isDragging) {
+                        setOpenPopover(openPopover === popoverKey ? null : popoverKey);
+                      }
+                    }}
+                    className={cn(
+                      "p-0.5 border-r last:border-r-0 transition-colors h-full cursor-pointer relative",
+                      inSelection && "bg-primary/30 ring-2 ring-inset ring-primary/50",
+                      !inSelection && isSunday && "bg-destructive/5 hover:bg-destructive/10",
+                      !inSelection && isSaturday && "bg-primary/5 hover:bg-primary/10",
+                      !inSelection && isTodayDate && "bg-primary/10 hover:bg-primary/20",
+                      !inSelection && !isSunday && !isSaturday && !isTodayDate && "hover:bg-muted/50"
+                    )}
                   >
-                    <div
-                      className={cn(
-                        "p-0.5 border-r last:border-r-0 transition-colors h-full cursor-pointer",
-                        isSunday && "bg-destructive/5 hover:bg-destructive/10",
-                        isSaturday && "bg-primary/5 hover:bg-primary/10",
-                        isTodayDate && "bg-primary/10 hover:bg-primary/20",
-                        !isSunday && !isSaturday && !isTodayDate && "hover:bg-muted/50"
-                      )}
-                    />
-                  </SlotActionPopover>
+                    {/* Popover for single click */}
+                    {!isDragging && openPopover === popoverKey && (
+                      <SlotActionPopover
+                        day={day}
+                        time={time}
+                        isOpen={true}
+                        onOpenChange={(open) => setOpenPopover(open ? popoverKey : null)}
+                        onAddBooking={() => onDayClick(day, time)}
+                        onBlockSlot={() => handleBlockSlot(day, time)}
+                        onBlockAllDay={() => handleBlockAllDay(day)}
+                      >
+                        <div className="absolute inset-0" />
+                      </SlotActionPopover>
+                    )}
+                  </div>
                 );
               })}
             </div>

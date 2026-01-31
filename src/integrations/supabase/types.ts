@@ -783,6 +783,10 @@ export type Database = {
         }[]
       }
       get_user_organization_id: { Args: never; Returns: string }
+      reschedule_booking_by_token: {
+        Args: { p_new_date: string; p_new_time: string; p_token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
