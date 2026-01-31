@@ -184,9 +184,7 @@ export const BookingDetailModal = ({
             <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
               <p className="font-semibold text-base md:text-lg flex items-center gap-2">
                 {booking.serviceName}
-                {booking.serviceQuantity > 1 && (
-                  <Badge className="bg-primary text-white">×{booking.serviceQuantity}台</Badge>
-                )}
+                <Badge className="bg-primary text-white">×{booking.serviceQuantity}台</Badge>
               </p>
               {booking.optionsSummary.length > 0 && (
                 <div className="pt-2">
