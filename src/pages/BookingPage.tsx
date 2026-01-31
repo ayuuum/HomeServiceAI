@@ -144,7 +144,7 @@ const BookingPage = () => {
   // Validation for each step
   const canProceedToStep2 = selectedServices.length > 0;
   const canProceedToStep3 = selectedDate && selectedTime && hasParking !== null;
-  const canProceedToStep4 = customerLastName && customerPhone && customerAddress;
+  const canProceedToStep4 = customerLastName && customerPhone && customerAddress && customerEmail;
   const canSubmit = canProceedToStep2 && canProceedToStep3 && canProceedToStep4;
 
   const handleStepClick = (step: number) => {

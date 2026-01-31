@@ -486,7 +486,12 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
             return null;
         }
 
-        if (customerEmail && !customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        if (!customerEmail) {
+            toast.error("メールアドレスを入力してください");
+            return null;
+        }
+
+        if (!customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
             toast.error("有効なメールアドレスを入力してください");
             return null;
         }

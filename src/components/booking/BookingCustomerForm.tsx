@@ -188,8 +188,8 @@ export const BookingCustomerForm = ({
               <Label htmlFor="email" className="text-base sm:text-lg font-semibold">
                 メールアドレス
               </Label>
-              <Badge variant="outline" className="text-xs px-2 py-0.5">
-                任意
+              <Badge className="bg-destructive text-white hover:bg-destructive text-xs px-2 py-0.5">
+                必須
               </Badge>
             </div>
             <Input
