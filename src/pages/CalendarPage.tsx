@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
     format,
@@ -31,6 +31,8 @@ import { useAvailability } from "@/hooks/useAvailability";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
+
 export default function CalendarPage() {
     const { organizationId } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -52,8 +54,23 @@ export default function CalendarPage() {
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         return addDays(today, mondayOffset);
     });
+    const [statusFilter, setStatusFilter] = useState<BookingStatus[]>(['pending', 'confirmed']);
 
     const { weekTimeSlots, fetchWeekAvailability, clearWeekCache } = useAvailability(organizationId);
+
+    // フィルタリングされた予約
+    const filteredBookings = useMemo(() => {
+        if (statusFilter.length === 0) return bookings;
+        return bookings.filter(b => statusFilter.includes(b.status as BookingStatus));
+    }, [bookings, statusFilter]);
+
+    const toggleStatusFilter = (status: BookingStatus) => {
+        setStatusFilter(prev => 
+            prev.includes(status) 
+                ? prev.filter(s => s !== status)
+                : [...prev, status]
+        );
+    };
 
     // Auto-open booking detail from notification deep link
     useEffect(() => {
@@ -203,45 +220,78 @@ export default function CalendarPage() {
                             <span className="md:hidden">予約</span>
                         </Button>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto md:self-end">
-                        {/* ビュー切り替え */}
-                        <div className="flex rounded-lg border bg-muted p-0.5 self-center sm:self-auto">
-                            <Button
-                                variant={viewMode === "month" ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => setViewMode("month")}
-                                className="h-7 px-3 text-xs"
-                            >
-                                月
-                            </Button>
-                            <Button
-                                variant={viewMode === "week" ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => setViewMode("week")}
-                                className="h-7 px-3 text-xs"
-                            >
-                                週
-                            </Button>
-                        </div>
-
-                        {/* 月間ナビゲーション（月間ビューのみ） */}
-                        {viewMode === "month" && (
-                            <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
-                                <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
-                                    <Icon name="chevron_left" size={18} />
+                    <div className="flex flex-col gap-2 w-full md:w-auto md:self-end">
+                        {/* ステータスフィルタ */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">ステータス:</span>
+                            <div className="flex gap-1 flex-wrap">
+                                <Button
+                                    variant={statusFilter.includes('pending') ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleStatusFilter('pending')}
+                                    className={`h-7 px-2 text-xs ${statusFilter.includes('pending') ? 'bg-warning text-warning-foreground hover:bg-warning/90' : ''}`}
+                                >
+                                    承認待ち
                                 </Button>
-                                <h2 className="text-base md:text-xl font-bold min-w-[140px] md:min-w-[160px] text-center tabular-nums">
-                                    {format(currentDate, "yyyy年 M月", { locale: ja })}
-                                </h2>
-                                <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
-                                    <Icon name="chevron_right" size={18} />
+                                <Button
+                                    variant={statusFilter.includes('confirmed') ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleStatusFilter('confirmed')}
+                                    className={`h-7 px-2 text-xs ${statusFilter.includes('confirmed') ? 'bg-success text-success-foreground hover:bg-success/90' : ''}`}
+                                >
+                                    確定
                                 </Button>
-                                <div className="w-px h-5 bg-border mx-0.5" />
-                                <Button variant="ghost" onClick={goToToday} className="text-xs md:text-sm font-medium hover:bg-muted px-2 md:px-3 h-8 md:h-9">
-                                    今日
+                                <Button
+                                    variant={statusFilter.includes('cancelled') ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleStatusFilter('cancelled')}
+                                    className="h-7 px-2 text-xs"
+                                >
+                                    キャンセル
                                 </Button>
                             </div>
-                        )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            {/* ビュー切り替え */}
+                            <div className="flex rounded-lg border bg-muted p-0.5 self-center sm:self-auto">
+                                <Button
+                                    variant={viewMode === "month" ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => setViewMode("month")}
+                                    className="h-7 px-3 text-xs"
+                                >
+                                    月
+                                </Button>
+                                <Button
+                                    variant={viewMode === "week" ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => setViewMode("week")}
+                                    className="h-7 px-3 text-xs"
+                                >
+                                    週
+                                </Button>
+                            </div>
+
+                            {/* 月間ナビゲーション（月間ビューのみ） */}
+                            {viewMode === "month" && (
+                                <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
+                                    <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
+                                        <Icon name="chevron_left" size={18} />
+                                    </Button>
+                                    <h2 className="text-base md:text-xl font-bold min-w-[140px] md:min-w-[160px] text-center tabular-nums">
+                                        {format(currentDate, "yyyy年 M月", { locale: ja })}
+                                    </h2>
+                                    <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
+                                        <Icon name="chevron_right" size={18} />
+                                    </Button>
+                                    <div className="w-px h-5 bg-border mx-0.5" />
+                                    <Button variant="ghost" onClick={goToToday} className="text-xs md:text-sm font-medium hover:bg-muted px-2 md:px-3 h-8 md:h-9">
+                                        今日
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -378,7 +428,7 @@ export default function CalendarPage() {
                 {viewMode === "week" ? (
                     <WeeklyCalendarView
                         weekStart={weekStart}
-                        bookings={bookings}
+                        bookings={filteredBookings}
                         onBookingClick={handleBookingClick}
                         onWeekChange={setWeekStart}
                         onDayClick={(day, time) => {

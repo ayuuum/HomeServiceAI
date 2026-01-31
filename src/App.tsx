@@ -19,6 +19,7 @@ import CalendarPage from "./pages/CalendarPage";
 import InboxPage from "./pages/InboxPage";
 import BroadcastPage from "./pages/BroadcastPage";
 import CancelBookingPage from "./pages/CancelBookingPage";
+import RescheduleBookingPage from "./pages/RescheduleBookingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MyBookingsPage from "./pages/liff/MyBookingsPage";
@@ -41,6 +42,7 @@ const App = () => (
             {/* Default booking page */}
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/cancel/:token" element={<CancelBookingPage />} />
+            <Route path="/reschedule/:token" element={<RescheduleBookingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

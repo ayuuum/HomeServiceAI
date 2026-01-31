@@ -62,6 +62,46 @@ export function useScheduleBlocks() {
     [organizationId]
   );
 
+  const createMultipleBlocks = useCallback(
+    async (
+      slots: Array<{ date: string; time: string }>,
+      blockType: "holiday" | "vacation" | "maintenance" | "other" = "other"
+    ) => {
+      if (!organizationId) {
+        toast.error("組織情報が取得できません");
+        return false;
+      }
+
+      if (slots.length === 0) return false;
+
+      setLoading(true);
+      try {
+        const insertData = slots.map((slot) => ({
+          organization_id: organizationId,
+          block_date: slot.date,
+          block_time: slot.time,
+          block_type: blockType,
+        }));
+
+        const { error } = await supabase
+          .from("schedule_blocks")
+          .insert(insertData);
+
+        if (error) throw error;
+
+        toast.success(`${slots.length}件のスロットをブロックしました`);
+        return true;
+      } catch (error) {
+        console.error("Error creating multiple blocks:", error);
+        toast.error("ブロックの作成に失敗しました");
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [organizationId]
+  );
+
   const deleteBlock = useCallback(
     async (blockId: string) => {
       if (!organizationId) {
@@ -94,6 +134,7 @@ export function useScheduleBlocks() {
   return {
     loading,
     createBlock,
+    createMultipleBlocks,
     deleteBlock,
   };
 }
