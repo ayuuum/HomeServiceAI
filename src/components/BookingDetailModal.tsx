@@ -182,7 +182,12 @@ export const BookingDetailModal = ({
               サービス内容
             </h3>
             <div className="bg-muted/50 p-3 md:p-4 rounded-lg space-y-2">
-              <p className="font-semibold text-base md:text-lg">{booking.serviceName}</p>
+              <p className="font-semibold text-base md:text-lg flex items-center gap-2">
+                {booking.serviceName}
+                {booking.serviceQuantity > 1 && (
+                  <Badge className="bg-primary text-white">×{booking.serviceQuantity}台</Badge>
+                )}
+              </p>
               {booking.optionsSummary.length > 0 && (
                 <div className="pt-2">
                   <p className="text-sm text-muted-foreground mb-2">選択オプション:</p>
