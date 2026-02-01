@@ -706,7 +706,7 @@ function buildReminderEmail(params: ReminderEmailParams): string {
       ${params.customerName} 様
     </p>
     <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
-      明日のご予約のお知らせです。
+      明日のご予約のリマインダーです。<br>当日お伺いいたします。
     </p>
     
     <!-- Booking Details Card -->
@@ -746,7 +746,7 @@ function buildReminderEmail(params: ReminderEmailParams): string {
     brandColor: params.brandColor,
     orgName: params.orgName,
     headerBgColor: 'linear-gradient(135deg, ' + params.brandColor + ' 0%, ' + adjustColor(params.brandColor, -20) + ' 100%)',
-    headerText: '明日のご予約',
+    headerText: '📅 リマインダー',
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl
