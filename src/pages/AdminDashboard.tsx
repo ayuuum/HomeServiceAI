@@ -312,11 +312,13 @@ const AdminDashboard = () => {
                           {booking.status === 'pending' && (
                             <Button
                               size="sm"
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleApprove(booking.id);
                               }}
                             >
+                              <Icon name="check_circle" size={14} className="mr-1" />
                               承認
                             </Button>
                           )}
@@ -370,16 +372,18 @@ const AdminDashboard = () => {
                           </Button>
                           <Button
                             size="sm"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-sm"
                             onClick={() => handleApprove(booking.id)}
                           >
+                            <Icon name="check_circle" size={14} className="mr-1" />
                             承認
                           </Button>
                           <Button
-                            variant="ghost"
                             size="sm"
+                            className="bg-red-500 hover:bg-red-600 text-white font-medium shadow-sm"
                             onClick={() => handleReject(booking.id)}
-                            className="text-destructive hover:text-destructive"
                           >
+                            <Icon name="cancel" size={14} className="mr-1" />
                             却下
                           </Button>
                         </div>

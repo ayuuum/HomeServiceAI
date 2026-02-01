@@ -437,31 +437,32 @@ export const BookingDetailModal = ({
           {/* Actions */}
           {booking.status === "pending" && (
             <div className="space-y-3 pt-4">
-              <div className="flex gap-2 md:gap-3">
+              <div className="flex gap-3">
                 <Button
-                  className="flex-1 btn-primary h-10 md:h-12 text-sm md:text-base"
+                  className="flex-1 h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25 transition-all duration-200 hover:scale-[1.02]"
                   onClick={handleApprove}
                   disabled={isApproving}
                 >
                   {isApproving ? (
-                    <Icon name="sync" size={18} className="mr-1 md:mr-2 animate-spin" />
+                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
                   ) : (
-                    <Icon name="check_circle" size={18} className="mr-1 md:mr-2" />
+                    <Icon name="check_circle" size={20} className="mr-2" />
                   )}
-                  <span className="hidden md:inline">予約を</span>承認<span className="hidden md:inline">する</span>
+                  <span className="hidden md:inline">予約を承認する</span>
+                  <span className="md:hidden">承認</span>
                 </Button>
                 <Button
-                  variant="outline"
-                  className="flex-1 h-10 md:h-12 text-sm md:text-base border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  className="flex-1 h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/25 transition-all duration-200 hover:scale-[1.02]"
                   onClick={handleReject}
                   disabled={isRejecting}
                 >
                   {isRejecting ? (
-                    <Icon name="sync" size={18} className="mr-1 md:mr-2 animate-spin" />
+                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
                   ) : (
-                    <Icon name="cancel" size={18} className="mr-1 md:mr-2" />
+                    <Icon name="cancel" size={20} className="mr-2" />
                   )}
-                  <span className="hidden md:inline">予約を</span>却下<span className="hidden md:inline">する</span>
+                  <span className="hidden md:inline">予約を却下する</span>
+                  <span className="md:hidden">却下</span>
                 </Button>
               </div>
               <div className="flex gap-2 md:gap-3">

@@ -624,7 +624,7 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     const { error: emailError } = await supabase.functions.invoke('send-hybrid-notification', {
                         body: {
                             bookingId: newBookingId,
-                            notificationType: 'confirmed'
+                            notificationType: 'pending'
                         }
                     });
 

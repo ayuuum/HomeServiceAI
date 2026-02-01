@@ -23,10 +23,8 @@ interface BookingInfo {
   organization_id: string;
 }
 
-interface TimeSlot {
-  time: string;
-  available: boolean;
-}
+// MAX_BOOKINGS_PER_SLOT: 1つの時間帯に1件のみ予約可能
+const MAX_BOOKINGS_PER_SLOT = 1;
 
 const TIME_SLOTS = Array.from({ length: 10 }, (_, i) => {
   const hour = 9 + i;
@@ -39,7 +37,7 @@ export default function RescheduleBookingPage() {
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [status, setStatus] = useState<PageStatus>('loading');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Week selection state
   const [weekStart, setWeekStart] = useState(() => {
     const today = new Date();
@@ -49,7 +47,7 @@ export default function RescheduleBookingPage() {
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [availability, setAvailability] = useState<Record<string, TimeSlot[]>>({});
+  const [availability, setAvailability] = useState<Record<string, Record<string, number>>>({});
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   const weekDays = useMemo(() => {
@@ -131,7 +129,7 @@ export default function RescheduleBookingPage() {
 
     try {
       const newDate = format(selectedDate, "yyyy-MM-dd");
-      
+
       const { data, error } = await supabase.rpc('reschedule_booking_by_token', {
         p_token: token,
         p_new_date: newDate,
@@ -152,8 +150,8 @@ export default function RescheduleBookingPage() {
         // Send notifications
         if (booking) {
           supabase.functions.invoke('send-booking-email', {
-            body: { 
-              bookingId: booking.id, 
+            body: {
+              bookingId: booking.id,
               emailType: 'reschedule',
               oldDate: booking.selected_date,
               oldTime: booking.selected_time,
@@ -190,10 +188,10 @@ export default function RescheduleBookingPage() {
 
   const getSlotAvailability = (day: Date, time: string): boolean => {
     const dateStr = format(day, "yyyy-MM-dd");
-    const daySlots = availability[dateStr];
-    if (!daySlots) return true; // Default to available if no data
-    const slot = daySlots.find(s => s.time === time);
-    return slot?.available ?? true;
+    const dayBookings = availability[dateStr];
+    if (!dayBookings) return true; // データがなければ空き
+    const bookingCount = dayBookings[time] || 0;
+    return bookingCount < MAX_BOOKINGS_PER_SLOT;
   };
 
   const isCurrentBookingSlot = (day: Date, time: string): boolean => {

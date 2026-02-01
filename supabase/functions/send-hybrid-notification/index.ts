@@ -12,7 +12,7 @@ const corsHeaders = {
 
 interface HybridNotificationRequest {
   bookingId: string;
-  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification';
+  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification' | 'pending';
   adminNotificationType?: 'new_booking' | 'cancelled';
 }
 
@@ -71,7 +71,9 @@ serve(async (req: Request): Promise<Response> => {
         organizations (
           name,
           brand_color,
-          line_channel_token
+          line_channel_token,
+          logo_url,
+          admin_email
         )
       `)
       .eq('id', bookingId)
@@ -228,6 +230,7 @@ async function sendEmailNotification(
 
     const orgName = org?.name || '予約システム';
     const brandColor = org?.brand_color || '#4F46E5';
+    const logoUrl = org?.logo_url;
     const replyToEmail = adminProfile?.email;
 
     // Format date
@@ -245,7 +248,20 @@ async function sendEmailNotification(
     let subject: string;
     let htmlContent: string;
 
-    if (notificationType === 'confirmed') {
+    if (notificationType === 'pending') {
+      subject = `【${orgName}】ご予約リクエストを受け付けました`;
+      htmlContent = buildPendingEmail({
+        customerName: booking.customer_name,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        servicesList,
+        totalPrice: booking.total_price,
+        cancelUrl,
+        logoUrl,
+      });
+    } else if (notificationType === 'confirmed') {
       subject = `【${orgName}】ご予約が確定しました`;
       htmlContent = buildConfirmedEmail({
         customerName: booking.customer_name,
@@ -256,6 +272,7 @@ async function sendEmailNotification(
         servicesList,
         totalPrice: booking.total_price,
         cancelUrl,
+        logoUrl,
       });
     } else if (notificationType === 'cancelled') {
       subject = `【${orgName}】ご予約がキャンセルされました`;
@@ -265,6 +282,7 @@ async function sendEmailNotification(
         brandColor,
         formattedDate,
         selectedTime: booking.selected_time,
+        logoUrl,
       });
     } else if (notificationType === 'admin_notification') {
       const typeLabel = adminNotificationType === 'new_booking' ? '新規予約' : 'キャンセル';
@@ -280,6 +298,7 @@ async function sendEmailNotification(
         servicesList,
         totalPrice: booking.total_price,
         adminNotificationType: adminNotificationType || 'new_booking',
+        logoUrl,
       });
     } else {
       subject = `【${orgName}】明日のご予約リマインダー`;
@@ -291,11 +310,15 @@ async function sendEmailNotification(
         selectedTime: booking.selected_time,
         servicesList,
         cancelUrl,
+        logoUrl,
       });
     }
 
     // Determine recipient
-    const recipientEmail = notificationType === 'admin_notification' ? (replyToEmail || Deno.env.get("ADMIN_EMAIL")) : booking.customer_email;
+    // Priority for admin_notification: 1) org.admin_email, 2) profiles email, 3) ADMIN_EMAIL env var
+    const orgAdminEmail = org?.admin_email;
+    const adminRecipient = orgAdminEmail || replyToEmail || Deno.env.get("ADMIN_EMAIL");
+    const recipientEmail = notificationType === 'admin_notification' ? adminRecipient : booking.customer_email;
 
     if (!recipientEmail) {
       return {
@@ -340,6 +363,19 @@ function buildLineMessage(booking: any, notificationType: string, orgName: strin
   const storeName = orgName || "ハウクリPro";
 
   switch (notificationType) {
+    case 'pending':
+      return `📋 ご予約リクエストを受け付けました
+
+${customerName}様
+
+ご予約リクエストありがとうございます。
+内容を確認し、日程調整のうえご連絡いたします。
+
+📅 ご希望日時: ${dateStr} ${timeStr}〜
+💰 お見積り: ${totalPrice}円
+
+${storeName}`;
+
     case 'confirmed':
       return `✓ ご予約が確定しました
 
@@ -399,10 +435,14 @@ interface EmailParams {
   customerEmail?: string;
   customerPhone?: string;
   adminNotificationType?: string;
+  logoUrl?: string;
 }
 
 // Shared email wrapper
-function emailWrapper(params: { brandColor: string; orgName: string; headerBgColor: string; headerText: string; content: string; showReplyNote?: boolean }): string {
+function emailWrapper(params: { brandColor: string; orgName: string; headerBgColor: string; headerText: string; content: string; showReplyNote?: boolean; logoUrl?: string }): string {
+  // Use organization brand color for header background if not explicitly set to something else (like red for errors)
+  // But strictly follow the params passed.
+
   return `
 <!DOCTYPE html>
 <html lang="ja">
@@ -418,6 +458,11 @@ function emailWrapper(params: { brandColor: string; orgName: string; headerBgCol
           <!-- Header -->
           <tr>
             <td style="background-color: ${params.headerBgColor}; padding: 28px 24px; text-align: center;">
+              ${params.logoUrl ? `
+              <div style="margin-bottom: 16px;">
+                <img src="${params.logoUrl}" alt="${params.orgName}" width="60" height="60" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background-color: #ffffff; padding: 2px;">
+              </div>
+              ` : ''}
               <p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600;">${params.headerText}</p>
             </td>
           </tr>
@@ -447,6 +492,73 @@ function emailWrapper(params: { brandColor: string; orgName: string; headerBgCol
 </body>
 </html>
   `;
+}
+
+function buildPendingEmail(params: EmailParams): string {
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      ご予約リクエストを受け付けました。<br>
+      内容を確認し、日程調整のうえご連絡いたします。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 100px;">ご希望日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">お見積り</td>
+              <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
+                ¥${params.totalPrice.toLocaleString()}
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
+        <strong>📋 今後の流れ</strong><br>
+        ① 担当者が内容を確認いたします<br>
+        ② 日程調整のうえ、確定のご連絡をいたします<br>
+        ③ ご希望に添えない場合は、別日程をご提案いたします
+      </p>
+    </div>
+    
+    ${params.cancelUrl ? `
+    <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+      キャンセルをご希望の場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>
+    </p>
+    ` : ''}
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: params.brandColor,
+    headerText: '📋 ご予約リクエストを受け付けました',
+    content,
+    showReplyNote: true,
+    logoUrl: params.logoUrl,
+  });
 }
 
 function buildConfirmedEmail(params: EmailParams): string {
@@ -503,6 +615,7 @@ function buildConfirmedEmail(params: EmailParams): string {
     headerText: '✓ ご予約が確定しました',
     content,
     showReplyNote: true,
+    logoUrl: params.logoUrl,
   });
 }
 
@@ -534,6 +647,7 @@ function buildCancelledEmail(params: EmailParams): string {
     headerText: 'キャンセル完了',
     content,
     showReplyNote: false,
+    logoUrl: params.logoUrl,
   });
 }
 
@@ -582,6 +696,7 @@ function buildReminderEmail(params: EmailParams): string {
     headerText: '📅 明日のご予約',
     content,
     showReplyNote: true,
+    logoUrl: params.logoUrl,
   });
 }
 
@@ -649,5 +764,6 @@ function buildAdminNotificationEmail(params: EmailParams): string {
     headerText: statusLabel,
     content,
     showReplyNote: false,
+    logoUrl: params.logoUrl,
   });
 }
