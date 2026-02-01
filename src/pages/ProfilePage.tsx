@@ -12,10 +12,11 @@ import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
+import AdminServiceManagement from './AdminServiceManagement';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -639,11 +640,16 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="booking" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="booking" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">予約ページ</span>
               <span className="sm:hidden">予約</span>
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">サービス</span>
+              <span className="sm:hidden">サービス</span>
             </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -822,8 +828,8 @@ export default function ProfilePage() {
                         type="button"
                         onClick={() => setBrandColor(preset.value)}
                         className={`w-10 h-10 rounded-full border-2 transition-all ${brandColor === preset.value
-                            ? 'border-foreground ring-2 ring-foreground ring-offset-2'
-                            : 'border-transparent hover:border-muted-foreground'
+                          ? 'border-foreground ring-2 ring-foreground ring-offset-2'
+                          : 'border-transparent hover:border-muted-foreground'
                           }`}
                         style={{ backgroundColor: preset.value }}
                         title={preset.name}
@@ -866,8 +872,8 @@ export default function ProfilePage() {
                       <label
                         key={option.value}
                         className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${headerLayout === option.value
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-muted-foreground'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-muted-foreground'
                           }`}
                       >
                         <input
@@ -1025,10 +1031,10 @@ export default function ProfilePage() {
                           onChange={(e) => handleSlugChange(e.target.value)}
                           disabled={isLoadingOrganization}
                           className={`pr-10 ${slugStatus === 'taken' || slugStatus === 'invalid'
-                              ? 'border-destructive focus-visible:ring-destructive'
-                              : slugStatus === 'available'
-                                ? 'border-green-500 focus-visible:ring-green-500'
-                                : ''
+                            ? 'border-destructive focus-visible:ring-destructive'
+                            : slugStatus === 'available'
+                              ? 'border-green-500 focus-visible:ring-green-500'
+                              : ''
                             }`}
                           required
                         />
@@ -1218,6 +1224,11 @@ export default function ProfilePage() {
                 </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* サービス管理タブ */}
+          <TabsContent value="services">
+            <AdminServiceManagement />
           </TabsContent>
 
           {/* LINE連携タブ */}
