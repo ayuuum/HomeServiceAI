@@ -190,7 +190,7 @@ ${customerName}様
 📅 ${dateStr} ${timeStr}〜
 💰 ${totalPrice}円
 
-ご来店をお待ちしております。
+当日お伺いいたします。
 
 ※キャンセルをご希望の場合は、お早めにご連絡ください。`;
 
@@ -215,7 +215,7 @@ ${customerName}様
 📅 ${dateStr} ${timeStr}〜
 💰 ${totalPrice}円
 
-ご来店をお待ちしております。`;
+当日お伺いいたします。`;
 
     default:
       return `【${storeName}】ご予約に関するお知らせ

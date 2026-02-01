@@ -127,7 +127,7 @@ ${customerName}様
 📅 ${booking.selected_date} ${booking.selected_time}〜
 💰 ${totalPrice}円
 
-ご来店をお待ちしております。`;
+ご訪問をお待ちください。`;
 
     // Send via LINE API
     const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", {
