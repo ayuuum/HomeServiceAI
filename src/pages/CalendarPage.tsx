@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader } from "@/components/AdminHeader";
+import { motion } from "framer-motion";
+import { CalendarDays, Plus, Clock, AlertCircle } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Booking } from "@/types/booking";
@@ -58,21 +60,27 @@ export default function CalendarPage() {
 
     const { weekTimeSlots, fetchWeekAvailability, clearWeekCache } = useAvailability(organizationId);
 
-    // フィルタリングされた予約
     const filteredBookings = useMemo(() => {
         if (statusFilter.length === 0) return bookings;
         return bookings.filter(b => statusFilter.includes(b.status as BookingStatus));
     }, [bookings, statusFilter]);
 
     const toggleStatusFilter = (status: BookingStatus) => {
-        setStatusFilter(prev => 
-            prev.includes(status) 
+        setStatusFilter(prev =>
+            prev.includes(status)
                 ? prev.filter(s => s !== status)
                 : [...prev, status]
         );
     };
 
-    // Auto-open booking detail from notification deep link
+    // Calculate stats
+    const stats = useMemo(() => {
+        const pending = bookings.filter(b => b.status === 'pending').length;
+        const confirmed = bookings.filter(b => b.status === 'confirmed').length;
+        const todayCount = bookings.filter(b => isSameDay(new Date(b.selectedDate), new Date())).length;
+        return { pending, confirmed, todayCount };
+    }, [bookings]);
+
     useEffect(() => {
         const bookingId = searchParams.get("bookingId");
         if (bookingId && bookings.length > 0) {
@@ -98,7 +106,7 @@ export default function CalendarPage() {
 
     const handleBlockChange = useCallback(() => {
         if (organizationId) {
-            fetchWeekAvailability(weekStart, false, true); // forceRefresh=true, no loading indicator
+            fetchWeekAvailability(weekStart, false, true);
         }
     }, [fetchWeekAvailability, weekStart, organizationId]);
 
@@ -196,235 +204,214 @@ export default function CalendarPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
             <AdminHeader />
             <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
-                <div className="flex flex-col gap-4 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-lg md:text-xl font-bold text-foreground">予約管理</h1>
-                            <p className="text-muted-foreground text-sm mt-1">
-                                予約の確認・承認・管理ができます
-                            </p>
-                        </div>
-                        <Button
-                            onClick={() => {
-                                setInitialBookingDate(undefined);
-                                setNewBookingModalOpen(true);
-                            }}
-                            size="sm"
-                            className="shrink-0 h-8 md:h-9 text-xs md:text-sm px-2.5 md:px-3"
-                        >
-                            <Icon name="add" size={16} className="md:mr-1" />
-                            <span className="hidden md:inline">新規予約</span>
-                            <span className="md:hidden">予約</span>
-                        </Button>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+                            <CalendarDays className="h-5 w-5 text-primary" />
+                            予約管理
+                        </h1>
+                        <p className="text-muted-foreground text-sm mt-0.5">
+                            予約の確認・承認・管理
+                        </p>
                     </div>
-                    <div className="flex flex-col gap-2 w-full md:w-auto md:self-end">
-                        {/* ステータスフィルタ */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">ステータス:</span>
-                            <div className="flex gap-1 flex-wrap">
-                                <Button
-                                    variant={statusFilter.includes('pending') ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => toggleStatusFilter('pending')}
-                                    className={`h-7 px-2 text-xs ${statusFilter.includes('pending') ? 'bg-warning text-warning-foreground hover:bg-warning/90' : ''}`}
-                                >
-                                    承認待ち
-                                </Button>
-                                <Button
-                                    variant={statusFilter.includes('confirmed') ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => toggleStatusFilter('confirmed')}
-                                    className={`h-7 px-2 text-xs ${statusFilter.includes('confirmed') ? 'bg-success text-success-foreground hover:bg-success/90' : ''}`}
-                                >
-                                    確定
-                                </Button>
-                                <Button
-                                    variant={statusFilter.includes('cancelled') ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => toggleStatusFilter('cancelled')}
-                                    className="h-7 px-2 text-xs"
-                                >
-                                    キャンセル
-                                </Button>
-                            </div>
-                        </div>
+                    <Button
+                        onClick={() => {
+                            setInitialBookingDate(undefined);
+                            setNewBookingModalOpen(true);
+                        }}
+                        size="sm"
+                        className="btn-primary shadow-subtle"
+                    >
+                        <Plus className="h-4 w-4 mr-1" />
+                        新規予約
+                    </Button>
+                </div>
 
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                            {/* ビュー切り替え */}
-                            <div className="flex rounded-lg border bg-muted p-0.5 self-center sm:self-auto">
-                                <Button
-                                    variant={viewMode === "month" ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => setViewMode("month")}
-                                    className="h-7 px-3 text-xs"
-                                >
-                                    月
-                                </Button>
-                                <Button
-                                    variant={viewMode === "week" ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => setViewMode("week")}
-                                    className="h-7 px-3 text-xs"
-                                >
-                                    週
-                                </Button>
-                            </div>
-
-                            {/* 月間ナビゲーション（月間ビューのみ） */}
-                            {viewMode === "month" && (
-                                <div className="flex items-center justify-center gap-2 bg-card p-1 rounded-lg shadow-subtle border border-border">
-                                    <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
-                                        <Icon name="chevron_left" size={18} />
-                                    </Button>
-                                    <h2 className="text-base md:text-xl font-bold min-w-[140px] md:min-w-[160px] text-center tabular-nums">
-                                        {format(currentDate, "yyyy年 M月", { locale: ja })}
-                                    </h2>
-                                    <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-muted h-8 w-8 md:h-9 md:w-9">
-                                        <Icon name="chevron_right" size={18} />
-                                    </Button>
-                                    <div className="w-px h-5 bg-border mx-0.5" />
-                                    <Button variant="ghost" onClick={goToToday} className="text-xs md:text-sm font-medium hover:bg-muted px-2 md:px-3 h-8 md:h-9">
-                                        今日
-                                    </Button>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card className="border-none shadow-subtle">
+                            <CardContent className="p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 rounded-md bg-warning/10">
+                                        <AlertCircle className="h-4 w-4 text-warning" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">承認待ち</p>
+                                        <p className="text-lg font-bold text-warning">{stats.pending}</p>
+                                    </div>
                                 </div>
-                            )}
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                        <Card className="border-none shadow-subtle">
+                            <CardContent className="p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 rounded-md bg-success/10">
+                                        <Icon name="check_circle" size={16} className="text-success" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">確定済み</p>
+                                        <p className="text-lg font-bold text-success">{stats.confirmed}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                        <Card className="border-none shadow-subtle">
+                            <CardContent className="p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 rounded-md bg-primary/10">
+                                        <Clock className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">今日の予約</p>
+                                        <p className="text-lg font-bold">{stats.todayCount}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </div>
+
+                {/* Filters and View Toggle */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">表示:</span>
+                        <div className="flex gap-1">
+                            <Button
+                                variant={statusFilter.includes('pending') ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleStatusFilter('pending')}
+                                className={`h-7 px-2.5 text-xs ${statusFilter.includes('pending') ? 'bg-warning text-warning-foreground hover:bg-warning/90' : ''}`}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+                                承認待ち
+                            </Button>
+                            <Button
+                                variant={statusFilter.includes('confirmed') ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleStatusFilter('confirmed')}
+                                className={`h-7 px-2.5 text-xs ${statusFilter.includes('confirmed') ? 'bg-success text-success-foreground hover:bg-success/90' : ''}`}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+                                確定
+                            </Button>
+                            <Button
+                                variant={statusFilter.includes('cancelled') ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleStatusFilter('cancelled')}
+                                className="h-7 px-2.5 text-xs"
+                            >
+                                キャンセル
+                            </Button>
                         </div>
+                    </div>
+
+                    {/* View Toggle & Navigation */}
+                    <div className="flex items-center gap-2">
+                        {/* View Toggle */}
+                        <div className="flex rounded-lg border bg-muted p-0.5">
+                            <Button
+                                variant={viewMode === "week" ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => setViewMode("week")}
+                                className="h-7 px-3 text-xs"
+                            >
+                                週
+                            </Button>
+                            <Button
+                                variant={viewMode === "month" ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => setViewMode("month")}
+                                className="h-7 px-3 text-xs"
+                            >
+                                月
+                            </Button>
+                        </div>
+
+                        {/* Month Navigation */}
+                        {viewMode === "month" && (
+                            <div className="flex items-center gap-1 bg-card rounded-lg border px-1">
+                                <Button variant="ghost" size="icon" onClick={prevMonth} className="h-7 w-7">
+                                    <Icon name="chevron_left" size={16} />
+                                </Button>
+                                <span className="text-sm font-medium min-w-[100px] text-center tabular-nums">
+                                    {format(currentDate, "yyyy年 M月", { locale: ja })}
+                                </span>
+                                <Button variant="ghost" size="icon" onClick={nextMonth} className="h-7 w-7">
+                                    <Icon name="chevron_right" size={16} />
+                                </Button>
+                                <div className="w-px h-4 bg-border" />
+                                <Button variant="ghost" onClick={goToToday} className="h-7 px-2 text-xs">
+                                    今日
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* 今日の予約リスト */}
-                <Card className="mb-6 shadow-subtle border-none">
-                    <CardHeader className="pb-3">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <CardTitle className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
-                                <Icon name="today" size={18} className="text-primary shrink-0" />
-                                <span className="whitespace-nowrap">今日の予約</span>
-                                <Badge variant="secondary" className="text-xs">
-                                    {todayBookings.length}件
-                                </Badge>
-                            </CardTitle>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                    goToToday();
-                                    document.getElementById('calendar-section')?.scrollIntoView({
-                                        behavior: 'smooth'
-                                    });
-                                }}
-                                className="text-xs md:text-sm self-start md:self-auto"
-                            >
-                                <Icon name="calendar_today" size={16} className="mr-1" />
-                                カレンダーで見る
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        {isLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                                <Icon name="progress_activity" size={24} className="animate-spin text-muted-foreground" />
-                            </div>
-                        ) : todayBookings.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Icon name="event_available" size={48} className="mx-auto mb-2 opacity-50" />
-                                <p>今日の予約はありません</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {todayBookings.map((booking) => (
-                                    <button
-                                        key={booking.id}
-                                        onClick={() => handleBookingClick(booking)}
-                                        className={`w-full text-left p-3 md:p-4 rounded-lg border transition-all hover:shadow-md ${booking.status === "confirmed"
-                                            ? "bg-success/5 border-success/20 hover:bg-success/10"
-                                            : booking.status === "cancelled"
-                                                ? "bg-muted border-border opacity-60"
-                                                : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                                            }`}
-                                    >
-                                        {/* Mobile Layout */}
-                                        <div className="md:hidden">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-base font-bold tabular-nums ${booking.status === "confirmed" ? "text-success" :
-                                                        booking.status === "pending" ? "text-warning" : "text-muted-foreground"
-                                                        }`}>
-                                                        {booking.selectedTime}
-                                                    </span>
-                                                    <Badge
-                                                        variant={
-                                                            booking.status === "confirmed" ? "default" :
-                                                                booking.status === "pending" ? "secondary" : "outline"
-                                                        }
-                                                        className={`text-xs ${booking.status === "confirmed" ? "bg-success text-success-foreground" :
-                                                            booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
-                                                            }`}
-                                                    >
-                                                        {booking.status === "confirmed" ? "確定" :
-                                                            booking.status === "pending" ? "承認待ち" : "キャンセル"}
-                                                    </Badge>
+                {/* Today's Bookings (Show when pending exists) */}
+                {stats.pending > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <Card className="mb-4 shadow-subtle border-none border-l-4 border-l-warning">
+                            <CardHeader className="pb-2 pt-3 px-4">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 text-warning" />
+                                    承認待ちの予約
+                                    <Badge variant="secondary" className="text-xs bg-warning/10 text-warning">
+                                        {stats.pending}件
+                                    </Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0 px-4 pb-3">
+                                <div className="space-y-1.5">
+                                    {bookings
+                                        .filter(b => b.status === 'pending')
+                                        .slice(0, 3)
+                                        .map((booking) => (
+                                            <button
+                                                key={booking.id}
+                                                onClick={() => handleBookingClick(booking)}
+                                                className="w-full text-left p-2.5 rounded-lg border bg-warning/5 border-warning/20 hover:bg-warning/10 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="font-bold text-warning tabular-nums text-sm">
+                                                            {format(new Date(booking.selectedDate), 'M/d')} {booking.selectedTime}
+                                                        </span>
+                                                        <span className="font-medium text-sm">{booking.customerName}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold">¥{booking.totalPrice.toLocaleString()}</span>
+                                                        <Icon name="chevron_right" size={16} className="text-muted-foreground" />
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <span className="font-bold text-sm text-foreground">
-                                                        ¥{booking.totalPrice.toLocaleString()}
-                                                    </span>
-                                                    <Icon name="chevron_right" size={18} className="text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-sm text-foreground">{booking.customerName}</p>
-                                                <p className="text-xs text-muted-foreground">{booking.serviceName}</p>
-                                            </div>
-                                        </div>
+                                            </button>
+                                        ))}
+                                    {stats.pending > 3 && (
+                                        <p className="text-xs text-muted-foreground text-center pt-1">
+                                            + 他 {stats.pending - 3}件
+                                        </p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
 
-                                        {/* Desktop Layout */}
-                                        <div className="hidden md:flex items-center justify-between gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`text-lg font-bold tabular-nums ${booking.status === "confirmed" ? "text-success" :
-                                                    booking.status === "pending" ? "text-warning" : "text-muted-foreground"
-                                                    }`}>
-                                                    {booking.selectedTime}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-foreground">
-                                                        {booking.customerName}
-                                                    </span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {booking.serviceName}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-bold text-foreground">
-                                                    ¥{booking.totalPrice.toLocaleString()}
-                                                </span>
-                                                <Badge
-                                                    variant={
-                                                        booking.status === "confirmed" ? "default" :
-                                                            booking.status === "pending" ? "secondary" : "outline"
-                                                    }
-                                                    className={
-                                                        booking.status === "confirmed" ? "bg-success text-success-foreground" :
-                                                            booking.status === "pending" ? "bg-warning text-warning-foreground" : ""
-                                                    }
-                                                >
-                                                    {booking.status === "confirmed" ? "確定" :
-                                                        booking.status === "pending" ? "承認待ち" : "キャンセル"}
-                                                </Badge>
-                                                <Icon name="chevron_right" size={20} className="text-muted-foreground" />
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* カレンダービュー */}
+                {/* Calendar View */}
                 {viewMode === "week" ? (
                     <WeeklyCalendarView
                         weekStart={weekStart}
@@ -466,7 +453,6 @@ export default function CalendarPage() {
                                         <div
                                             key={day.toString()}
                                             onClick={(e) => {
-                                                // Only trigger if clicking on the cell itself, not on a booking
                                                 if (e.target === e.currentTarget || (e.target as HTMLElement).closest('[data-day-cell]')) {
                                                     setInitialBookingDate(day);
                                                     setNewBookingModalOpen(true);
@@ -520,7 +506,6 @@ export default function CalendarPage() {
                                                 {dayBookings.length > 2 && (
                                                     <button
                                                         onClick={() => {
-                                                            // Click first hidden booking to open modal
                                                             handleBookingClick(dayBookings[2]);
                                                         }}
                                                         className="w-full text-center text-[10px] text-muted-foreground hover:text-foreground py-0.5"

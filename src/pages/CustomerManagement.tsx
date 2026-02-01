@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
 import { CustomerBookingHistoryModal } from "@/components/CustomerBookingHistoryModal";
 import { CustomerDetailModal } from "@/components/CustomerDetailModal";
@@ -29,17 +37,21 @@ import { LineChatModal } from "@/components/LineChatModal";
 import { AdminHeader } from "@/components/AdminHeader";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
+import { motion } from "framer-motion";
+import { Users, Repeat, Banknote, MessageSquare, Crown, MoreHorizontal } from "lucide-react";
 import type { Customer } from "@/types/booking";
-import { exportToCSV, formatDateForExport, formatCurrencyForExport, type ColumnConfig } from "@/lib/exportUtils";
+import { exportToCSV, formatCurrencyForExport, type ColumnConfig } from "@/lib/exportUtils";
+
+type SegmentType = 'all' | 'repeater' | 'new' | 'vip' | 'dormant';
 
 export default function CustomerManagement() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+  const [segment, setSegment] = useState<SegmentType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
-
   const [viewingBookingHistory, setViewingBookingHistory] = useState<Customer | null>(null);
   const [chattingCustomer, setChattingCustomer] = useState<Customer | null>(null);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
@@ -49,17 +61,25 @@ export default function CustomerManagement() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customers")
-        .select("*, bookings(id, total_price, customer_name)")
+        .select("*, bookings(id, total_price, customer_name, created_at, status)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
       return (data || []).map((c) => {
         const bookings = c.bookings || [];
         const bookingCount = bookings.length;
         const totalSpend = bookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
-        // 予約に紐づく名前も収集（検索用）
         const bookingNames = bookings.map((b) => b.customer_name).filter(Boolean);
+
+        // Calculate first and last booking dates
+        const bookingDates = bookings.map(b => new Date(b.created_at));
+        const firstBooking = bookingDates.length > 0 ? new Date(Math.min(...bookingDates.map(d => d.getTime()))) : null;
+        const lastBooking = bookingDates.length > 0 ? new Date(Math.max(...bookingDates.map(d => d.getTime()))) : null;
 
         return {
           id: c.id,
@@ -74,10 +94,81 @@ export default function CustomerManagement() {
           totalSpend,
           bookingNames,
           notes: c.notes || undefined,
+          firstBooking,
+          lastBooking,
+          isNew: firstBooking && firstBooking >= thirtyDaysAgo,
+          isDormant: lastBooking && lastBooking < sixtyDaysAgo,
+          isRepeater: bookingCount >= 2,
         };
       });
     },
   });
+
+  // Calculate KPIs
+  const kpis = useMemo(() => {
+    const total = customers.length;
+    const repeaters = customers.filter(c => c.bookingCount >= 2).length;
+    const lineConnected = customers.filter(c => c.lineUserId).length;
+    const totalLTV = customers.reduce((sum, c) => sum + (c.totalSpend || 0), 0);
+
+    // Calculate VIP threshold (top 10%)
+    const sortedBySpend = [...customers].sort((a, b) => (b.totalSpend || 0) - (a.totalSpend || 0));
+    const vipThreshold = sortedBySpend[Math.floor(sortedBySpend.length * 0.1)]?.totalSpend || 0;
+
+    return {
+      total,
+      repeaterRate: total > 0 ? Math.round((repeaters / total) * 100) : 0,
+      averageLTV: total > 0 ? Math.round(totalLTV / total) : 0,
+      lineRate: total > 0 ? Math.round((lineConnected / total) * 100) : 0,
+      vipThreshold,
+    };
+  }, [customers]);
+
+  // Filter customers by segment
+  const segmentedCustomers = useMemo(() => {
+    return customers.map(c => ({
+      ...c,
+      isVip: c.totalSpend >= kpis.vipThreshold && kpis.vipThreshold > 0,
+    }));
+  }, [customers, kpis.vipThreshold]);
+
+  const filteredCustomers = useMemo(() => {
+    let filtered = segmentedCustomers;
+
+    // Apply segment filter
+    switch (segment) {
+      case 'repeater':
+        filtered = filtered.filter(c => c.isRepeater);
+        break;
+      case 'new':
+        filtered = filtered.filter(c => c.isNew);
+        break;
+      case 'vip':
+        filtered = filtered.filter(c => c.isVip);
+        break;
+      case 'dormant':
+        filtered = filtered.filter(c => c.isDormant);
+        break;
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter((customer) => {
+        const matchesBookingName = customer.bookingNames?.some((name: string) =>
+          name?.toLowerCase().includes(search)
+        );
+        return (
+          customer.name?.toLowerCase().includes(search) ||
+          customer.phone?.toLowerCase().includes(search) ||
+          customer.email?.toLowerCase().includes(search) ||
+          matchesBookingName
+        );
+      });
+    }
+
+    return filtered;
+  }, [segmentedCustomers, segment, searchTerm]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -97,20 +188,6 @@ export default function CustomerManagement() {
     onError: (error) => {
       toast.error("削除に失敗しました: " + error.message);
     },
-  });
-
-  const filteredCustomers = customers.filter((customer) => {
-    const search = searchTerm.toLowerCase();
-    // 予約の名前も検索対象に含める
-    const matchesBookingName = customer.bookingNames?.some((name: string) =>
-      name?.toLowerCase().includes(search)
-    );
-    return (
-      customer.name?.toLowerCase().includes(search) ||
-      customer.phone?.toLowerCase().includes(search) ||
-      customer.email?.toLowerCase().includes(search) ||
-      matchesBookingName
-    );
   });
 
   const handleEdit = (customer: Customer) => {
@@ -140,7 +217,6 @@ export default function CustomerManagement() {
       setIsFixing(true);
       let fixedCount = 0;
 
-      // 1. 顧客名を最新の予約名で同期（組織IDでフィルタリング）
       const { data: customersWithBookings } = await supabase
         .from('customers')
         .select('id, name, bookings(customer_name, created_at)')
@@ -151,12 +227,10 @@ export default function CustomerManagement() {
           const bookings = customer.bookings || [];
           if (bookings.length === 0) continue;
 
-          // 最新の予約を取得
           const latestBooking = bookings.sort((a, b) =>
             new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
           )[0];
 
-          // 名前が異なる場合は更新
           if (latestBooking?.customer_name && latestBooking.customer_name !== customer.name) {
             await supabase
               .from('customers')
@@ -168,7 +242,6 @@ export default function CustomerManagement() {
         }
       }
 
-      // 2. customer_id が null の予約を修正（組織IDでフィルタリング）
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
@@ -180,8 +253,6 @@ export default function CustomerManagement() {
       for (const booking of bookings || []) {
         let customerId = null;
 
-        // Try to match by email or phone first if available
-        // Try to match by email or phone first if available
         if (booking.customer_email || booking.customer_phone) {
           const conditions = [];
           if (booking.customer_email) conditions.push(`email.eq.${booking.customer_email}`);
@@ -205,7 +276,6 @@ export default function CustomerManagement() {
           }
         }
 
-        // If not found, try by name
         if (!customerId && booking.customer_name) {
           const { data: existingByName } = await supabase
             .from('customers')
@@ -217,7 +287,6 @@ export default function CustomerManagement() {
           if (existingByName) customerId = existingByName.id;
         }
 
-        // If still not found, create new customer
         if (!customerId) {
           const { data: newCustomer, error: createError } = await supabase
             .from('customers')
@@ -236,7 +305,6 @@ export default function CustomerManagement() {
           }
         }
 
-        // Update booking with customer_id
         if (customerId) {
           await supabase
             .from('bookings')
@@ -260,90 +328,168 @@ export default function CustomerManagement() {
     }
   };
 
+  const segments: { key: SegmentType; label: string; count: number }[] = [
+    { key: 'all', label: '全顧客', count: customers.length },
+    { key: 'repeater', label: 'リピーター', count: customers.filter(c => c.isRepeater).length },
+    { key: 'new', label: '新規', count: customers.filter(c => c.isNew).length },
+    { key: 'vip', label: 'VIP', count: segmentedCustomers.filter(c => c.isVip).length },
+    { key: 'dormant', label: '休眠', count: customers.filter(c => c.isDormant).length },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
       <AdminHeader />
       <div className="container max-w-6xl mx-auto px-4 py-4 md:py-6">
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-lg md:text-xl font-bold text-foreground">顧客管理</h1>
           <p className="text-sm text-muted-foreground mt-1">顧客情報を一覧で管理できます</p>
         </div>
 
-        <div className="bg-card rounded-[10px] shadow-medium border-none">
-          <div className="p-4 sm:p-6 border-b border-border flex flex-col gap-4">
-            <div className="relative w-full sm:max-w-md">
-              <Icon name="search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground sm:w-5 sm:h-5" />
-              <Input
-                placeholder="名前または電話番号で検索..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 sm:h-12 text-base sm:text-lg shadow-subtle border-primary/20 focus-visible:ring-primary"
-              />
-            </div>
-            <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
-              <Button onClick={handleAdd} className="col-span-1 sm:col-span-1 w-full sm:w-auto btn-primary shadow-subtle h-10 sm:h-12 px-4 sm:px-6 text-sm">
-                <Icon name="add" size={18} className="mr-1.5" />
-                新規顧客登録
-              </Button>
-              <Button onClick={fixMissingCustomers} variant="outline" className="col-span-1 sm:col-span-1 w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm" disabled={isFixing}>
-                <Icon name="sync" size={14} className={`mr-1.5 ${isFixing ? "animate-spin" : ""}`} />
-                データ同期
-              </Button>
-              <Button
-                variant="outline"
-                className="col-span-2 sm:col-span-1 w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 text-sm"
-                onClick={() => {
-                  const columns: ColumnConfig[] = [
-                    { key: 'name', header: '顧客名' },
-                    { key: 'phone', header: '電話番号' },
-                    { key: 'email', header: 'メールアドレス' },
-                    { key: 'postalCode', header: '郵便番号' },
-                    { key: 'address', header: '住所' },
-                    { key: 'addressBuilding', header: '建物名' },
-                    { key: 'bookingCount', header: '利用回数' },
-                    { key: 'totalSpend', header: '利用総額', formatter: formatCurrencyForExport },
-                  ];
-                  exportToCSV(filteredCustomers, columns, 'customers');
-                  toast.success('顧客データをエクスポートしました');
-                }}
-                disabled={filteredCustomers.length === 0}
-              >
-                <Icon name="download" size={14} className="mr-1.5" />
-                CSVエクスポート
-              </Button>
-            </div>
-          </div>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          {[
+            { title: '総顧客数', value: kpis.total, format: (v: number) => `${v}人`, icon: Users, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+            { title: 'リピーター率', value: kpis.repeaterRate, format: (v: number) => `${v}%`, icon: Repeat, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
+            { title: '平均LTV', value: kpis.averageLTV, format: (v: number) => `¥${v.toLocaleString()}`, icon: Banknote, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+            { title: 'LINE連携率', value: kpis.lineRate, format: (v: number) => `${v}%`, icon: MessageSquare, color: 'text-[#06C755]', bgColor: 'bg-[#06C755]/10' },
+          ].map((kpi, index) => (
+            <motion.div
+              key={kpi.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card className="border-none shadow-medium">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
+                      <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{kpi.title}</p>
+                      <p className="text-lg md:text-xl font-bold">{kpi.format(kpi.value)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
 
-          {isLoading ? (
+        {/* Main Content Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card className="border-none shadow-medium">
+            {/* Segment Tabs */}
+            <div className="border-b overflow-x-auto">
+              <div className="flex min-w-max">
+                {segments.map((seg) => (
+                  <button
+                    key={seg.key}
+                    onClick={() => setSegment(seg.key)}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${segment === seg.key
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+                      }`}
+                  >
+                    {seg.label}
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {seg.count}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search and Actions */}
+            <div className="p-4 border-b flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Icon name="search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="名前・電話番号・メールで検索..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleAdd} className="btn-primary shadow-subtle">
+                  <Icon name="add" size={18} className="mr-1.5" />
+                  新規登録
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const columns: ColumnConfig[] = [
+                      { key: 'name', header: '顧客名' },
+                      { key: 'phone', header: '電話番号' },
+                      { key: 'email', header: 'メールアドレス' },
+                      { key: 'bookingCount', header: '利用回数' },
+                      { key: 'totalSpend', header: '利用総額', formatter: formatCurrencyForExport },
+                    ];
+                    exportToCSV(filteredCustomers, columns, 'customers');
+                    toast.success('顧客データをエクスポートしました');
+                  }}
+                  disabled={filteredCustomers.length === 0}
+                >
+                  <Icon name="download" size={14} className="mr-1.5" />
+                  CSV
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={fixMissingCustomers} disabled={isFixing}>
+                      <Icon name="sync" size={14} className={`mr-2 ${isFixing ? 'animate-spin' : ''}`} />
+                      データ同期
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Customer List */}
+            {isLoading ? (
               <div className="p-8 text-center text-muted-foreground">
                 読み込み中...
               </div>
             ) : filteredCustomers.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                {searchTerm ? "検索結果がありません" : "顧客データがありません"}
+              <div className="p-12 text-center">
+                <Icon name="people" size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground">
+                  {searchTerm ? "検索結果がありません" : "このセグメントに該当する顧客はいません"}
+                </p>
               </div>
             ) : (
               <>
-                {/* Mobile Card Layout - Tap to open detail */}
+                {/* Mobile Card Layout */}
                 <div className="md:hidden divide-y divide-border">
                   {filteredCustomers.map((customer) => (
-                    <div 
-                      key={customer.id} 
+                    <div
+                      key={customer.id}
                       className="p-4 cursor-pointer hover:bg-muted/50 active:bg-muted/70 transition-colors"
                       onClick={() => setViewingCustomer(customer)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-foreground truncate">{customer.name || "-"}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-foreground truncate">{customer.name || "-"}</p>
+                            {customer.isVip && <Crown className="h-4 w-4 text-amber-500" />}
+                            {customer.lineUserId && <MessageSquare className="h-3 w-3 text-[#06C755]" />}
+                          </div>
                           <p className="text-sm text-muted-foreground truncate">{customer.phone || "-"}</p>
-                          {customer.email && (
-                            <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
-                          )}
                         </div>
                         <div className="flex items-center gap-3 ml-3 shrink-0">
                           <div className="text-right">
                             <p className="font-bold text-foreground tabular-nums">¥{customer.totalSpend?.toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">{customer.bookingCount}回利用</p>
+                            <p className="text-xs text-muted-foreground">{customer.bookingCount}回</p>
                           </div>
                           <Icon name="chevron_right" size={20} className="text-muted-foreground" />
                         </div>
@@ -354,39 +500,35 @@ export default function CustomerManagement() {
 
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
-                  <Table className="min-w-[800px]">
+                  <Table>
                     <TableHeader className="bg-muted/30">
-                      <TableRow className="hover:bg-transparent border-b border-border">
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">名前</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">電話番号</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">メール</TableHead>
-                        <TableHead className="font-semibold text-muted-foreground h-12 px-6 hidden lg:table-cell whitespace-nowrap">住所</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用回数</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 whitespace-nowrap">利用総額</TableHead>
-                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[200px] whitespace-nowrap">アクション</TableHead>
+                      <TableRow className="hover:bg-transparent border-b">
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">名前</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">電話番号</TableHead>
+                        <TableHead className="font-semibold text-muted-foreground h-12 px-6">メール</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用回数</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6">利用総額</TableHead>
+                        <TableHead className="text-right font-semibold text-muted-foreground h-12 px-6 w-[180px]">アクション</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredCustomers.map((customer) => (
-                        <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-16">
-                          <TableCell className="font-bold text-foreground px-6 whitespace-nowrap">
-                            {customer.name || "-"}
-                          </TableCell>
-                          <TableCell className="px-6 text-muted-foreground whitespace-nowrap">{customer.phone || "-"}</TableCell>
-                          <TableCell className="px-6 text-muted-foreground whitespace-nowrap">{customer.email || "-"}</TableCell>
-                          <TableCell className="px-6 text-muted-foreground hidden lg:table-cell max-w-[200px]" title={`${customer.address || ""}${customer.addressBuilding ? ` ${customer.addressBuilding}` : ""}`}>
-                            <div className="truncate">
-                              {customer.postalCode && `〒${customer.postalCode} `}
-                              {customer.address || "-"}
+                        <TableRow key={customer.id} className="hover:bg-muted/20 border-b border-border/50 transition-colors h-14">
+                          <TableCell className="px-6">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground">{customer.name || "-"}</span>
+                              {customer.isVip && (
+                                <Crown className="h-4 w-4 text-amber-500" />
+                              )}
+                              {customer.lineUserId && (
+                                <MessageSquare className="h-3.5 w-3.5 text-[#06C755]" />
+                              )}
                             </div>
-                            {customer.addressBuilding && (
-                              <div className="truncate text-xs">{customer.addressBuilding}</div>
-                            )}
                           </TableCell>
-                          <TableCell className="text-right px-6 font-medium whitespace-nowrap">
-                            {customer.bookingCount}回
-                          </TableCell>
-                          <TableCell className="text-right px-6 whitespace-nowrap">
+                          <TableCell className="px-6 text-muted-foreground">{customer.phone || "-"}</TableCell>
+                          <TableCell className="px-6 text-muted-foreground">{customer.email || "-"}</TableCell>
+                          <TableCell className="text-right px-6 font-medium">{customer.bookingCount}回</TableCell>
+                          <TableCell className="text-right px-6">
                             <span className="font-bold text-foreground tabular-nums text-lg">
                               ¥{customer.totalSpend?.toLocaleString()}
                             </span>
@@ -396,7 +538,7 @@ export default function CustomerManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-9 px-3 text-primary hover:text-primary hover:bg-primary/10"
+                                className="h-8 px-2.5 text-primary hover:text-primary hover:bg-primary/10"
                                 onClick={() => setViewingCustomer(customer)}
                                 title="詳細を見る"
                               >
@@ -406,11 +548,10 @@ export default function CustomerManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className={`h-9 w-9 p-0 rounded-full ${
-                                  customer.lineUserId 
-                                    ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10" 
+                                className={`h-8 w-8 p-0 rounded-full ${customer.lineUserId
+                                    ? "text-[#06C755] hover:text-[#06C755] hover:bg-[#06C755]/10"
                                     : "text-muted-foreground/40 cursor-not-allowed"
-                                }`}
+                                  }`}
                                 onClick={() => customer.lineUserId && setChattingCustomer(customer)}
                                 disabled={!customer.lineUserId}
                                 title={customer.lineUserId ? "LINEチャット" : "LINE未連携"}
@@ -420,7 +561,7 @@ export default function CustomerManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-9 w-9 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
                                 onClick={() => handleEdit(customer)}
                                 title="編集"
                               >
@@ -429,7 +570,7 @@ export default function CustomerManagement() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
                                 onClick={() => setDeletingCustomer(customer)}
                                 title="削除"
                               >
@@ -444,7 +585,8 @@ export default function CustomerManagement() {
                 </div>
               </>
             )}
-        </div>
+          </Card>
+        </motion.div>
       </div>
 
       <CustomerFormModal
