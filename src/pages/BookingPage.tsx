@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { User } from "@supabase/supabase-js";
 import { useBooking } from "@/hooks/useBooking";
 import { useAvailability } from "@/hooks/useAvailability";
 import { BookingServiceSelection } from "@/components/booking/BookingServiceSelection";
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
 import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
-import { BookingSummary } from "@/components/booking/BookingSummary";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -32,8 +30,6 @@ const BookingPage = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
   const [orgError, setOrgError] = useState<string | null>(null);
-  const [bookingUser, setBookingUser] = useState<User | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Wizard step state (1-4)
   const [currentStep, setCurrentStep] = useState(1);
@@ -205,44 +201,6 @@ const BookingPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoggingIn(true);
-    const currentUrl = window.location.href;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: currentUrl,
-      },
-    });
-    if (error) {
-      toast.error("ログインに失敗しました");
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setBookingUser(null);
-    setCustomerLastName("");
-    setCustomerFirstName("");
-    setCustomerEmail("");
-  };
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setBookingUser(session?.user ?? null);
-        setIsLoggingIn(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setBookingUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   if (orgLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -403,14 +361,10 @@ const BookingPage = () => {
               photos={photos}
               onFileSelect={handleFileSelect}
               onRemovePhoto={handleRemovePhoto}
-              isLoggedIn={!!bookingUser}
-              onGoogleLogin={handleGoogleLogin}
-              onLogout={handleLogout}
-              isLoggingIn={isLoggingIn}
             />
           )}
 
-          {/* Step 4: Confirmation/Summary */}
+          {/* Step 4: Confirmation/Summary - 改善3: 編集ボタン追加 */}
           {currentStep === 4 && (
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center gap-2">
@@ -419,12 +373,22 @@ const BookingPage = () => {
               </div>
 
               {/* Service Summary */}
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon name="auto_awesome" size={18} className="text-primary" />
-                  <h3 className="text-base sm:text-lg font-bold">選択サービス</h3>
+              <section className="bg-card rounded-lg border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon name="auto_awesome" size={18} className="text-primary" />
+                    <h3 className="text-base font-bold">選択サービス</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStep(1)}
+                    className="text-primary hover:text-primary/80 h-8 px-2"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1" />
+                    変更
+                  </Button>
                 </div>
-                <Separator className="mb-3" />
                 <div className="space-y-1.5">
                   {selectedServices.map((service) => (
                     <div key={service.serviceId} className="flex justify-between text-sm">
@@ -450,12 +414,22 @@ const BookingPage = () => {
               </section>
 
               {/* Date/Time Summary */}
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon name="calendar_today" size={18} className="text-primary" />
-                  <h3 className="text-base sm:text-lg font-bold">希望日時</h3>
+              <section className="bg-card rounded-lg border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon name="calendar_today" size={18} className="text-primary" />
+                    <h3 className="text-base font-bold">希望日時</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStep(2)}
+                    className="text-primary hover:text-primary/80 h-8 px-2"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1" />
+                    変更
+                  </Button>
                 </div>
-                <Separator className="mb-3" />
                 <div className="space-y-2">
                   {preferences.map((pref, idx) => (
                     pref.date && pref.time && (
@@ -478,12 +452,22 @@ const BookingPage = () => {
               </section>
 
               {/* Customer Summary */}
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon name="person" size={18} className="text-primary" />
-                  <h3 className="text-base sm:text-lg font-bold">お客様情報</h3>
+              <section className="bg-card rounded-lg border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon name="person" size={18} className="text-primary" />
+                    <h3 className="text-base font-bold">お客様情報</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStep(3)}
+                    className="text-primary hover:text-primary/80 h-8 px-2"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1" />
+                    変更
+                  </Button>
                 </div>
-                <Separator className="mb-3" />
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p><span className="text-foreground font-medium">お名前:</span> {customerLastName} {customerFirstName}</p>
                   <p><span className="text-foreground font-medium">電話番号:</span> {customerPhone}</p>
@@ -514,8 +498,8 @@ const BookingPage = () => {
 
         {/* Floating Summary + Navigation - Fixed at bottom */}
         <div className="sticky bottom-0 bg-background border-t border-border safe-area-pb z-50">
-          {/* Floating summary for Step 1 */}
-          {currentStep === 1 && selectedServices.length > 0 && (
+          {/* 改善1: 合計金額を全ステップで常時表示 */}
+          {selectedServices.length > 0 && (
             <div className="px-3 py-2 border-b border-border bg-primary/5">
               <div className="container max-w-4xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-3">
