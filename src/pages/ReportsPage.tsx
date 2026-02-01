@@ -263,10 +263,7 @@ export default function ReportsPage() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="text-muted-foreground text-sm">データを読み込んでいます...</p>
-            </div>
+            <p className="text-muted-foreground animate-pulse">読み込み中...</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -325,8 +322,8 @@ export default function ReportsPage() {
                             <kpi.icon className={`h-4 w-4 md:h-5 md:w-5 ${kpi.color}`} />
                           </div>
                           <div className={`flex items-center gap-1 text-xs font-medium ${change.trend === 'up' ? 'text-emerald-500' :
-                              change.trend === 'down' ? 'text-red-500' :
-                                'text-muted-foreground'
+                            change.trend === 'down' ? 'text-red-500' :
+                              'text-muted-foreground'
                             }`}>
                             <TrendIcon trend={change.trend} />
                             <span>{change.percent}%</span>

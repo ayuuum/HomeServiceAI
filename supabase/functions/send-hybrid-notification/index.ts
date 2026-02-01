@@ -341,48 +341,48 @@ function buildLineMessage(booking: any, notificationType: string, orgName: strin
 
   switch (notificationType) {
     case 'confirmed':
-      return `【${storeName}】ご予約確定のお知らせ
+      return `✓ ご予約が確定しました
 
 ${customerName}様
 
-ご予約が確定いたしました。
+下記の日時にお伺いいたします。
 
 📅 ${dateStr} ${timeStr}〜
 💰 ${totalPrice}円
 
-ご来店をお待ちしております。
-
-※キャンセルをご希望の場合は、お早めにご連絡ください。`;
+${storeName}`;
 
     case 'cancelled':
-      return `【${storeName}】ご予約キャンセルのお知らせ
+      return `キャンセル完了
 
 ${customerName}様
 
-以下のご予約がキャンセルされました。
+以下のご予約をキャンセルしました。
 
 📅 ${dateStr} ${timeStr}〜
 
-またのご利用をお待ちしております。`;
+またのご利用をお待ちしております。
+
+${storeName}`;
 
     case 'reminder':
-      return `【${storeName}】ご予約リマインダー
+      return `📅 明日のご予約
 
 ${customerName}様
 
-明日のご予約のリマインダーです。
+明日お伺いいたします。
 
 📅 ${dateStr} ${timeStr}〜
 💰 ${totalPrice}円
 
-ご来店をお待ちしております。`;
+${storeName}`;
 
     default:
-      return `【${storeName}】ご予約に関するお知らせ
+      return `【${storeName}】
 
 ${customerName}様
 
-ご予約内容: ${dateStr} ${timeStr}〜`;
+ご予約: ${dateStr} ${timeStr}〜`;
   }
 }
 
@@ -401,7 +401,8 @@ interface EmailParams {
   adminNotificationType?: string;
 }
 
-function buildConfirmedEmail(params: EmailParams): string {
+// Shared email wrapper
+function emailWrapper(params: { brandColor: string; orgName: string; headerBgColor: string; headerText: string; content: string; showReplyNote?: boolean }): string {
   return `
 <!DOCTYPE html>
 <html lang="ja">
@@ -409,78 +410,34 @@ function buildConfirmedEmail(params: EmailParams): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f8fafc;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+          <!-- Header -->
           <tr>
-            <td style="background-color: #22c55e; padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">✓ 予約確定</h1>
+            <td style="background-color: ${params.headerBgColor}; padding: 28px 24px; text-align: center;">
+              <p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600;">${params.headerText}</p>
             </td>
           </tr>
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
-                ${params.customerName} 様
-              </p>
-              <p style="margin: 0 0 30px; font-size: 16px; color: #333; line-height: 1.6;">
-                ご予約が確定いたしました。<br>
-                ご来店をお待ちしております。
-              </p>
-              
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; margin-bottom: 30px;">
-                <tr>
-                  <td style="padding: 25px;">
-                    <h2 style="margin: 0 0 20px; font-size: 18px; color: ${params.brandColor}; border-bottom: 2px solid ${params.brandColor}; padding-bottom: 10px;">
-                      ご予約内容
-                    </h2>
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 100px;">日時</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px; font-weight: bold;">
-                          ${params.formattedDate}<br>${params.selectedTime}〜
-                        </td>
-                      </tr>
-                      ${params.servicesList ? `
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;">サービス</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${params.servicesList}</td>
-                      </tr>
-                      ` : ''}
-                      ${params.totalPrice ? `
-                      <tr>
-                        <td style="padding: 12px 0 0; color: #666; font-size: 14px; border-top: 1px solid #ddd;">合計金額</td>
-                        <td style="padding: 12px 0 0; color: ${params.brandColor}; font-size: 20px; font-weight: bold; border-top: 1px solid #ddd;">
-                          ¥${params.totalPrice.toLocaleString()}
-                        </td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              ${params.cancelUrl ? `
-              <div style="text-align: center; padding: 20px 0; border-top: 1px solid #eee;">
-                <p style="margin: 0 0 15px; font-size: 14px; color: #666;">
-                  キャンセルをご希望の場合
-                </p>
-                <a href="${params.cancelUrl}" style="display: inline-block; padding: 12px 30px; background-color: #dc3545; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">
-                  予約をキャンセル
-                </a>
-              </div>
-              ` : ''}
+            <td style="padding: 32px 24px;">
+              ${params.content}
             </td>
           </tr>
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center;">
-              <p style="margin: 0; font-size: 14px; color: #666;">
+            <td style="background-color: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500;">
                 ${params.orgName}
               </p>
-              <p style="margin: 10px 0 0; font-size: 12px; color: #999;">
-                ※このメールに返信いただくと、店舗へ直接お問い合わせができます。
+              ${params.showReplyNote ? `
+              <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">
+                このメールに返信すると、担当者へ直接連絡できます
               </p>
+              ` : ''}
             </td>
           </tr>
         </table>
@@ -490,208 +447,207 @@ function buildConfirmedEmail(params: EmailParams): string {
 </body>
 </html>
   `;
+}
+
+function buildConfirmedEmail(params: EmailParams): string {
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      ご予約が確定しました。<br>
+      下記の日時にお伺いいたします。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
+              <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
+                ¥${params.totalPrice.toLocaleString()}
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    ${params.cancelUrl ? `
+    <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+      ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
+    </p>
+    ` : ''}
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: '#10b981',
+    headerText: '✓ ご予約が確定しました',
+    content,
+    showReplyNote: true,
+  });
 }
 
 function buildCancelledEmail(params: EmailParams): string {
-  return `
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="background-color: #6c757d; padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">キャンセル完了</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
-                ${params.customerName} 様
-              </p>
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333; line-height: 1.6;">
-                以下のご予約がキャンセルされました。
-              </p>
-              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px; color: #666;">
-                  <strong>キャンセルした予約：</strong><br>
-                  ${params.formattedDate} ${params.selectedTime}〜
-                </p>
-              </div>
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                またのご利用をお待ちしております。
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center;">
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                ${params.orgName}
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      以下のご予約をキャンセルいたしました。
+    </p>
+    
+    <!-- Cancelled Booking -->
+    <div style="background-color: #f1f5f9; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 14px; color: #64748b;">
+        ${params.formattedDate} ${params.selectedTime}〜
+      </p>
+    </div>
+    
+    <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+      またのご利用をお待ちしております
+    </p>
   `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: '#64748b',
+    headerText: 'キャンセル完了',
+    content,
+    showReplyNote: false,
+  });
 }
 
 function buildReminderEmail(params: EmailParams): string {
-  return `
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="background-color: ${params.brandColor}; padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">📅 リマインダー</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
-                ${params.customerName} 様
-              </p>
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333; line-height: 1.6;">
-                明日のご予約のリマインダーです。<br>
-                ご来店をお待ちしております。
-              </p>
-              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px; color: #666;">
-                  <strong>ご予約内容：</strong><br>
-                  ${params.formattedDate} ${params.selectedTime}〜
-                  ${params.servicesList ? `<br>${params.servicesList}` : ''}
-                </p>
-              </div>
-              ${params.cancelUrl ? `
-              <div style="text-align: center; padding: 20px 0; border-top: 1px solid #eee;">
-                <p style="margin: 0 0 15px; font-size: 14px; color: #666;">
-                  ご都合が悪くなった場合
-                </p>
-                <a href="${params.cancelUrl}" style="display: inline-block; padding: 12px 30px; background-color: #dc3545; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">
-                  予約をキャンセル
-                </a>
-              </div>
-              ` : ''}
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center;">
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                ${params.orgName}
-              </p>
-              <p style="margin: 10px 0 0; font-size: 12px; color: #999;">
-                ※このメールに返信いただくと、店舗へ直接お問い合わせができます。
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      明日のご予約のお知らせです。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    ${params.cancelUrl ? `
+    <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+      ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
+    </p>
+    ` : ''}
   `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: params.brandColor,
+    headerText: '📅 明日のご予約',
+    content,
+    showReplyNote: true,
+  });
 }
 
 function buildAdminNotificationEmail(params: EmailParams): string {
   const isNew = params.adminNotificationType === 'new_booking';
-  const statusLabel = isNew ? '新規予約申込み' : '予約キャンセル';
-  const statusColor = isNew ? '#4F46E5' : '#dc3545';
+  const statusLabel = isNew ? '新規予約' : 'キャンセル';
+  const statusColor = isNew ? '#4F46E5' : '#dc2626';
 
-  return `
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="background-color: ${statusColor}; padding: 30px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">${statusLabel}</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
-                管理画面より内容を確認してください。
-              </p>
-              
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; border-radius: 8px; margin-bottom: 30px;">
-                <tr>
-                  <td style="padding: 25px;">
-                    <h2 style="margin: 0 0 20px; font-size: 18px; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
-                      予約詳細
-                    </h2>
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px; width: 100px;">顧客名</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px; font-weight: bold;">${params.customerName} 様</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;">連絡先</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">
-                          ${params.customerEmail}<br>${params.customerPhone}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;">日時</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">
-                          ${params.formattedDate}<br>${params.selectedTime}〜
-                        </td>
-                      </tr>
-                      ${params.servicesList ? `
-                      <tr>
-                        <td style="padding: 8px 0; color: #666; font-size: 14px;">サービス</td>
-                        <td style="padding: 8px 0; color: #333; font-size: 14px;">${params.servicesList}</td>
-                      </tr>
-                      ` : ''}
-                      ${params.totalPrice ? `
-                      <tr>
-                        <td style="padding: 12px 0 0; color: #666; font-size: 14px; border-top: 1px solid #ddd;">合計金額</td>
-                        <td style="padding: 12px 0 0; color: #333; font-size: 20px; font-weight: bold; border-top: 1px solid #ddd;">
-                          ¥${params.totalPrice.toLocaleString()}
-                        </td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <div style="text-align: center;">
-                <a href="${Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app"}/admin" style="display: inline-block; padding: 12px 30px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 14px;">
-                  管理画面を開く
-                </a>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      管理画面で確認してください。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">顧客</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">${params.customerName} 様</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">連絡先</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">
+                ${params.customerEmail}<br>${params.customerPhone}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
+              <td style="padding: 10px 0 0; color: #1e293b; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
+                ¥${params.totalPrice.toLocaleString()}
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    <div style="text-align: center;">
+      <a href="${Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app"}/admin" style="display: inline-block; padding: 12px 28px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+        管理画面を開く
+      </a>
+    </div>
   `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: statusColor,
+    headerText: statusLabel,
+    content,
+    showReplyNote: false,
+  });
 }
