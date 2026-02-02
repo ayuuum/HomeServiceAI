@@ -209,7 +209,26 @@ const LiffBookingPage = () => {
         }
     };
 
-    if (orgLoading || !isInitialized || isCustomerLoading) {
+    // LIFF IDが設定されていない場合のエラー表示
+    if (!orgLoading && organization && !organization.line_liff_id) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+                <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                        <Icon name="error" size={32} className="text-destructive" />
+                    </div>
+                    <h2 className="text-lg font-bold text-destructive">設定エラー</h2>
+                    <p className="text-sm text-muted-foreground">
+                        LIFFアプリが設定されていません。<br />
+                        管理者にお問い合わせください。
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // LIFF初期化待ち（LIFF IDがある場合のみ）
+    if (orgLoading || (organization?.line_liff_id && !isInitialized) || isCustomerLoading) {
         return (
             <LiffLoadingScreen
                 organizationName={organization?.name}
