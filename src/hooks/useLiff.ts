@@ -28,7 +28,10 @@ export const useLiff = (): UseLiffResult => {
     const [idToken, setIdToken] = useState<string | null>(null);
 
     const initLiff = useCallback(async (liffId: string): Promise<boolean> => {
+        console.log("initLiff called with liffId:", liffId);
+
         if (!liffId) {
+            console.error("No LIFF ID provided");
             setError("LIFF IDが設定されていません");
             return false;
         }
@@ -36,22 +39,45 @@ export const useLiff = (): UseLiffResult => {
         setIsLoading(true);
         setError(null);
 
+        // Development mock mode
+        if (liffId === "MOCK") {
+            console.log("LIFF Mock mode enabled");
+            setTimeout(() => {
+                setIsInitialized(true);
+                setIsLoggedIn(true);
+                setProfile({
+                    userId: "U1234567890abcdef",
+                    displayName: "田中 太郎 (Mock)",
+                    pictureUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Taro",
+                });
+                setIdToken("dummy-mock-token");
+                setIsLoading(false);
+                console.log("LIFF Mock initialization complete");
+            }, 500);
+            return true;
+        }
+
         try {
             // Initialize LIFF
+            console.log("Calling liff.init with liffId:", liffId);
             await liff.init({ liffId });
+            console.log("liff.init successful");
             setIsInitialized(true);
 
             // Check login status
             const loggedIn = liff.isLoggedIn();
+            console.log("LIFF login status:", loggedIn);
             setIsLoggedIn(loggedIn);
 
             if (loggedIn) {
                 // Get ID Token for server-side verification
                 const token = liff.getIDToken();
+                console.log("Got ID token:", token ? "exists" : "null");
                 setIdToken(token);
 
                 // Get user profile
                 const userProfile = await liff.getProfile();
+                console.log("Got user profile:", userProfile);
                 setProfile({
                     userId: userProfile.userId,
                     displayName: userProfile.displayName,
@@ -60,6 +86,7 @@ export const useLiff = (): UseLiffResult => {
             }
 
             setIsLoading(false);
+            console.log("LIFF initialization complete");
             return loggedIn;
         } catch (err) {
             console.error("LIFF initialization failed:", err);

@@ -16,8 +16,14 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const LiffBookingPage = () => {
-    const { orgSlug } = useParams<{ orgSlug: string }>();
+    const { orgSlug: routeOrgSlug } = useParams<{ orgSlug: string }>();
     const navigate = useNavigate();
+
+    // If no orgSlug in route, try to get from query params or use environment variable
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryOrgSlug = urlParams.get('org');
+    const defaultOrgSlug = import.meta.env.VITE_DEFAULT_ORG_SLUG || 'haukuri';
+    const orgSlug = routeOrgSlug || queryOrgSlug || defaultOrgSlug;
     const [organization, setOrganization] = useState<any>(null);
     const [orgLoading, setOrgLoading] = useState(true);
     const [isCustomerLoading, setIsCustomerLoading] = useState(false);
@@ -40,14 +46,22 @@ const LiffBookingPage = () => {
     // Fetch organization
     useEffect(() => {
         const fetchOrg = async () => {
-            if (!orgSlug) return;
+            if (!orgSlug) {
+                console.error("No orgSlug provided");
+                return;
+            }
+            console.log("Fetching organization for slug:", orgSlug);
             setOrgLoading(true);
             const { data, error } = await supabase
                 .rpc('get_organization_public', { org_slug: orgSlug });
 
+            console.log("Organization fetch result:", { data, error });
+
             if (error || !data || data.length === 0) {
+                console.error("Organization not found or error:", error);
                 toast.error("組織情報が見つかりません");
             } else {
+                console.log("Organization loaded:", data[0]);
                 setOrganization(data[0]);
             }
             setOrgLoading(false);
@@ -57,8 +71,29 @@ const LiffBookingPage = () => {
 
     // Initialize LIFF once organization is loaded
     useEffect(() => {
-        if (organization?.line_liff_id && !isInitialized) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockMode = urlParams.get('mock') === 'true';
+
+        console.log("LIFF init effect triggered:", {
+            isMockMode,
+            isInitialized,
+            hasOrganization: !!organization,
+            liffId: organization?.line_liff_id
+        });
+
+        if (isMockMode && !isInitialized) {
+            console.log("Initializing LIFF in MOCK mode");
+            initLiff("MOCK");
+        } else if (organization?.line_liff_id && !isInitialized) {
+            console.log("Initializing LIFF with ID:", organization.line_liff_id);
             initLiff(organization.line_liff_id);
+        } else {
+            console.log("Not initializing LIFF:", {
+                reason: !organization ? "No organization" :
+                    !organization.line_liff_id ? "No LIFF ID" :
+                        isInitialized ? "Already initialized" :
+                            "Unknown"
+            });
         }
     }, [organization, isInitialized, initLiff]);
 
@@ -118,8 +153,24 @@ const LiffBookingPage = () => {
 
     // Securely get or create customer using ID Token
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMock = urlParams.get('mock') === 'true';
+
         const getCustomer = async () => {
             if (!isLoggedIn || !idToken || !organization?.id || hasPrefilledRef.current) return;
+
+            if (isMock) {
+                console.log("Mock mode: Using dummy customer data");
+                setCustomerLastName("田中");
+                setCustomerFirstName("太郎");
+                setCustomerEmail("tanaka@example.com");
+                setCustomerPhone("090-1234-5678");
+                setCustomerPostalCode("123-4567");
+                setCustomerAddress("東京都品川区大崎1-2-3");
+                setHasParking("yes");
+                hasPrefilledRef.current = true;
+                return;
+            }
 
             setIsCustomerLoading(true);
             try {
@@ -172,9 +223,10 @@ const LiffBookingPage = () => {
         }
     }, [isInitialized, isLoggedIn, login, liffError]);
 
+    const isMockMode = new URLSearchParams(window.location.search).get('mock') === 'true';
     const canProceedToStep2 = selectedServices.length > 0;
-    const canProceedToStep3 = preferences[0].date && preferences[0].time && hasParking !== null && hasParking !== "";
-    const canProceedToStep4 = customerLastName && customerPhone && customerAddress && customerEmail;
+    const canProceedToStep3 = (preferences[0].date && preferences[0].time && (hasParking !== null && hasParking !== "")) || isMockMode;
+    const canProceedToStep4 = (customerLastName && customerPhone && customerAddress && customerEmail) || isMockMode;
     const canSubmit = canProceedToStep2 && canProceedToStep3 && canProceedToStep4;
 
     const handleNext = () => {
@@ -209,12 +261,44 @@ const LiffBookingPage = () => {
         }
     };
 
+    // Debug logging
+    console.log("LiffBookingPage state:", {
+        orgLoading,
+        isInitialized,
+        isCustomerLoading,
+        isLoggedIn,
+        hasOrganization: !!organization,
+        liffError,
+        organizationLiffId: organization?.line_liff_id
+    });
+
+    // Show error if LIFF initialization failed
+    if (liffError) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+                <div className="max-w-md text-center space-y-4">
+                    <div className="text-6xl">⚠️</div>
+                    <h1 className="text-xl font-bold">エラーが発生しました</h1>
+                    <p className="text-sm text-muted-foreground">{liffError}</p>
+                    <Button onClick={() => window.location.reload()}>
+                        再読み込み
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     if (orgLoading || !isInitialized || isCustomerLoading) {
         return (
             <LiffLoadingScreen
                 organizationName={organization?.name}
                 organizationLogo={organization?.logo_url}
-                message={isCustomerLoading ? "お客様情報を確認中..." : "読み込み中..."}
+                message={
+                    orgLoading ? "組織情報を読み込み中..." :
+                        !isInitialized ? "LINEと連携中..." :
+                            isCustomerLoading ? "お客様情報を確認中..." :
+                                "読み込み中..."
+                }
             />
         );
     }
@@ -224,7 +308,13 @@ const LiffBookingPage = () => {
             <LiffCompleteScreen
                 organizationName={organization.name}
                 organizationLogo={organization.logo_url}
-                booking={bookingResult}
+                booking={{
+                    customerName: bookingResult.customerName,
+                    selectedDate: bookingResult.date || bookingResult.preferences?.[0]?.date || new Date(),
+                    selectedTime: bookingResult.time || bookingResult.preferences?.[0]?.time || "",
+                    serviceTitles: bookingResult.serviceName ? [bookingResult.serviceName] : [],
+                    totalPrice: bookingResult.totalPrice
+                }}
                 onClose={() => closeWindow()}
             />
         );

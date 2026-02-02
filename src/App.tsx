@@ -40,6 +40,7 @@ const App = () => (
             {/* Public booking page with organization slug */}
             <Route path="/booking/:orgSlug" element={<BookingPage />} />
             <Route path="/liff/booking/:orgSlug" element={<LiffBookingPage />} />
+            <Route path="/liff/booking" element={<LiffBookingPage />} /> {/* LIFF default route */}
             <Route path="/booking/:orgSlug/my-bookings" element={<MyBookingsPage />} />
             {/* Default booking page */}
             <Route path="/booking" element={<BookingPage />} />
