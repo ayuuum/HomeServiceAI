@@ -50,9 +50,12 @@ const MyBookingsPage = () => {
                 const liffId = (org as any).line_liff_id;
                 
                 if (liffId) {
+                    console.log("[LIFF] Initializing with ID:", liffId);
                     await liff.init({ liffId });
+                    console.log("[LIFF] Initialized, isLoggedIn:", liff.isLoggedIn());
                     if (!liff.isLoggedIn()) {
-                        liff.login();
+                        console.log("[LIFF] Logging in with redirectUri:", window.location.href);
+                        liff.login({ redirectUri: window.location.href });
                         return;
                     }
                     const profile = await liff.getProfile();
@@ -126,6 +129,24 @@ const MyBookingsPage = () => {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Icon name="sync" className="animate-spin text-primary" size={40} />
+            </div>
+        );
+    }
+
+    // LIFF IDが設定されていない場合のエラー表示
+    if (organization && !organization.line_liff_id) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+                <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                        <Icon name="error" size={32} className="text-destructive" />
+                    </div>
+                    <h2 className="text-lg font-bold text-destructive">設定エラー</h2>
+                    <p className="text-sm text-muted-foreground">
+                        LIFFアプリが設定されていません。<br />
+                        管理者にお問い合わせください。
+                    </p>
+                </div>
             </div>
         );
     }

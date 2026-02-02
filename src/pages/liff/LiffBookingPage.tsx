@@ -272,15 +272,39 @@ const LiffBookingPage = () => {
         organizationLiffId: organization?.line_liff_id
     });
 
-    // Show error if LIFF initialization failed
-    if (liffError) {
+    // LIFF IDが設定されていない場合のエラー表示
+    if (!orgLoading && organization && !organization.line_liff_id) {
         return (
             <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
-                <div className="max-w-md text-center space-y-4">
-                    <div className="text-6xl">⚠️</div>
-                    <h1 className="text-xl font-bold">エラーが発生しました</h1>
-                    <p className="text-sm text-muted-foreground">{liffError}</p>
-                    <Button onClick={() => window.location.reload()}>
+                <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                        <Icon name="error" size={32} className="text-destructive" />
+                    </div>
+                    <h2 className="text-lg font-bold text-destructive">設定エラー</h2>
+                    <p className="text-sm text-muted-foreground">
+                        LIFFアプリが設定されていません。<br />
+                        管理者にお問い合わせください。
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // LIFFエラーの表示（初期化失敗時）
+    if (!orgLoading && liffError) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+                <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                        <Icon name="error" size={32} className="text-destructive" />
+                    </div>
+                    <h2 className="text-lg font-bold text-destructive">接続エラー</h2>
+                    <p className="text-sm text-muted-foreground">
+                        LINEへの接続に失敗しました。<br />
+                        ブラウザを閉じて、もう一度お試しください。
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-2">{liffError}</p>
+                    <Button variant="outline" onClick={() => window.location.reload()}>
                         再読み込み
                     </Button>
                 </div>
@@ -288,7 +312,8 @@ const LiffBookingPage = () => {
         );
     }
 
-    if (orgLoading || !isInitialized || isCustomerLoading) {
+    // LIFF初期化待ち（LIFF IDがあり、エラーがない場合のみ）
+    if (orgLoading || (organization?.line_liff_id && !isInitialized && !liffError) || isCustomerLoading) {
         return (
             <LiffLoadingScreen
                 organizationName={organization?.name}
