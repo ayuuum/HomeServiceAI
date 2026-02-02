@@ -99,7 +99,8 @@ export const useLiff = (): UseLiffResult => {
 
     const login = useCallback(() => {
         if (isInitialized && !isLoggedIn) {
-            liff.login();
+            console.log("Calling liff.login with redirectUri:", window.location.href);
+            liff.login({ redirectUri: window.location.href });
         }
     }, [isInitialized, isLoggedIn]);
 
