@@ -1,68 +1,90 @@
 
-# LIFFアプリ修正プラン
 
-## 概要
-LIFFアプリが正常に動作しない原因は、組織情報を取得するRPC関数に`line_liff_id`が含まれていないことです。このフィールドを追加し、LIFFアプリが正しく初期化できるようにします。
+# LIFFアプリ読み込みエラー修正プラン
+
+## 問題の診断
+
+### 根本原因
+1. **LIFF ID未設定**: `tanaka` 組織の `line_liff_id` が `null` になっている
+2. **コードの問題**: LIFF IDが未設定の場合のハンドリングが不足している
+
+### コードの問題箇所
+```typescript
+// LiffBookingPage.tsx 212行目
+if (orgLoading || !isInitialized || isCustomerLoading) {
+    return <LiffLoadingScreen ... />;
+}
+```
+- `line_liff_id` が `null` の場合、`initLiff()` が呼ばれない
+- `isInitialized` が永久に `false` のままになる
+- 結果：ローディング画面から抜け出せない
 
 ## 修正内容
 
-### 1. データベース：RPC関数の修正
-`get_organization_public`関数を更新して`line_liff_id`を返すようにする
+### 1. LiffBookingPage.tsx の修正
 
-**変更前：**
-```sql
-SELECT id, name, slug, logo_url, brand_color, welcome_message, header_layout, booking_headline, created_at, updated_at
-FROM public.organizations
-WHERE slug = org_slug
+LIFF IDが未設定の場合にエラーメッセージを表示するように修正
+
+**変更箇所**:
+
+1. **新しいstate追加** (26行目付近):
+```typescript
+const [liffRequired, setLiffRequired] = useState(true);
 ```
 
-**変更後：**
-```sql
-SELECT id, name, slug, logo_url, brand_color, welcome_message, header_layout, booking_headline, line_liff_id, created_at, updated_at
-FROM public.organizations
-WHERE slug = org_slug
+2. **組織取得後のLIFF ID確認** (50行目付近):
+```typescript
+if (data[0] && !data[0].line_liff_id) {
+    setLiffRequired(false);
+}
 ```
 
-### 2. 管理画面でLIFF IDを設定
-組織の設定画面（ProfilePage）でLIFF IDを入力する必要があります。LINE DevelopersコンソールでLIFFアプリを作成後、そのIDを設定します。
+3. **LIFF未設定時のエラー表示** (212行目付近):
+```typescript
+// LIFF IDが設定されていない場合のエラー表示
+if (!orgLoading && organization && !organization.line_liff_id) {
+    return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+            <div className="text-center space-y-4">
+                <h2 className="text-lg font-bold text-destructive">設定エラー</h2>
+                <p className="text-sm text-muted-foreground">
+                    LIFFアプリが設定されていません。<br/>
+                    管理者にお問い合わせください。
+                </p>
+            </div>
+        </div>
+    );
+}
 
----
+// LIFF初期化待ち（LIFF IDがある場合のみ）
+if (orgLoading || (organization?.line_liff_id && !isInitialized) || isCustomerLoading) {
+    return <LiffLoadingScreen ... />;
+}
+```
 
-## LIFFアプリのテスト手順
+### 2. ユーザー側の設定作業
 
-### 事前準備（LINE Developers Console）
-1. LINE Developersコンソールにログイン
-2. **LINE Login**チャネルを作成（Messaging APIではなく）
-3. LIFF > 「Add」からLIFFアプリを追加
-   - サイズ: Full
-   - Endpoint URL: `https://cleaning-booking.lovable.app/liff/booking/{orgSlug}`
-4. 生成されたLIFF ID（例：`2006677890-abcdXYZ`）をコピー
+LINE DevelopersコンソールでLIFFアプリを作成し、LIFF IDを設定する必要があります。
 
-### システム設定
-1. 管理画面 > 設定 > LINE設定
-2. 「LINE LIFF ID」フィールドにコピーしたIDを貼り付け
-3. 保存
-
-### テスト方法
-1. LINEアプリで `https://liff.line.me/{LIFF_ID}` にアクセス
-2. または、リッチメニューにこのURLを設定
-
----
+**手順**:
+1. LINE Developersコンソール → LINE Loginチャネル作成
+2. LIFF → Add → サイズ「Full」
+3. Endpoint URL: `https://haukuripro.com/liff/booking/tanaka`
+4. LIFF IDをコピー
+5. 管理画面 → プロフィール設定 → LINE LIFF IDに貼り付け
 
 ## 技術的な補足
 
-### LIFFの動作条件
-- `line_liff_id`が組織に設定されていること
-- LINE Login チャネルでLIFFアプリが作成されていること
-- LIFF SDKの初期化が成功すること
+### なぜ haukuripro.com なのか
+- ユーザーが独自ドメインを使用している
+- LIFFのEndpoint URLは独自ドメインに合わせる必要がある
+- `cleaning-booking.lovable.app` ではなく `haukuripro.com` を使用
 
-### 現在のコード品質
-- `useLiff.ts`: 適切に実装されている
-- `LiffBookingPage.tsx`: ロジックは正しいが、LIFF IDが取得できないため初期化に失敗
-- `get-or-create-line-customer`: ID Token検証ロジックは正しく実装済み
+### コード修正の影響範囲
+- `src/pages/liff/LiffBookingPage.tsx` のみ
+- MyBookingsPage.tsx も同様の修正が必要な可能性あり
 
-## 実装の優先順位
-1. RPC関数に`line_liff_id`を追加（必須）
-2. テスト組織にLIFF IDを設定（運用）
-3. 動作確認
+## 修正後の検証手順
+1. LIFF ID未設定の状態でアクセス → エラーメッセージ表示を確認
+2. LIFF IDを設定後、LINEアプリからアクセス → 正常に動作を確認
 
