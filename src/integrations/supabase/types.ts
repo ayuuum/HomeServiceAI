@@ -775,6 +775,7 @@ export type Database = {
           created_at: string
           header_layout: string
           id: string
+          line_liff_id: string
           logo_url: string
           name: string
           slug: string
