@@ -23,6 +23,7 @@ import RescheduleBookingPage from "./pages/RescheduleBookingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MyBookingsPage from "./pages/liff/MyBookingsPage";
+import LiffBookingPage from "./pages/liff/LiffBookingPage";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             {/* Public booking page with organization slug */}
             <Route path="/booking/:orgSlug" element={<BookingPage />} />
+            <Route path="/liff/booking/:orgSlug" element={<LiffBookingPage />} />
             <Route path="/booking/:orgSlug/my-bookings" element={<MyBookingsPage />} />
             {/* Default booking page */}
             <Route path="/booking" element={<BookingPage />} />
