@@ -70,9 +70,10 @@ export const useLiff = (): UseLiffResult => {
         }
     }, []);
 
-    const login = useCallback(() => {
+    const login = useCallback((redirectUri?: string) => {
         if (isInitialized && !isLoggedIn) {
-            liff.login();
+            console.log("[LIFF] Logging in with redirectUri:", redirectUri || window.location.href);
+            liff.login({ redirectUri: redirectUri || window.location.href });
         }
     }, [isInitialized, isLoggedIn]);
 

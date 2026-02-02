@@ -50,9 +50,12 @@ const MyBookingsPage = () => {
                 const liffId = (org as any).line_liff_id;
                 
                 if (liffId) {
+                    console.log("[LIFF] Initializing with ID:", liffId);
                     await liff.init({ liffId });
+                    console.log("[LIFF] Initialized, isLoggedIn:", liff.isLoggedIn());
                     if (!liff.isLoggedIn()) {
-                        liff.login();
+                        console.log("[LIFF] Logging in with redirectUri:", window.location.href);
+                        liff.login({ redirectUri: window.location.href });
                         return;
                     }
                     const profile = await liff.getProfile();

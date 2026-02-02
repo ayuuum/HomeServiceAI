@@ -227,8 +227,30 @@ const LiffBookingPage = () => {
         );
     }
 
-    // LIFF初期化待ち（LIFF IDがある場合のみ）
-    if (orgLoading || (organization?.line_liff_id && !isInitialized) || isCustomerLoading) {
+    // LIFFエラーの表示（初期化失敗時）
+    if (!orgLoading && liffError) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-background p-4">
+                <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                        <Icon name="error" size={32} className="text-destructive" />
+                    </div>
+                    <h2 className="text-lg font-bold text-destructive">接続エラー</h2>
+                    <p className="text-sm text-muted-foreground">
+                        LINEへの接続に失敗しました。<br />
+                        ブラウザを閉じて、もう一度お試しください。
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-2">{liffError}</p>
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                        再読み込み
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // LIFF初期化待ち（LIFF IDがあり、エラーがない場合のみ）
+    if (orgLoading || (organization?.line_liff_id && !isInitialized && !liffError) || isCustomerLoading) {
         return (
             <LiffLoadingScreen
                 organizationName={organization?.name}
