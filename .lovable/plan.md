@@ -1,54 +1,68 @@
 
-# 訪問型サービス向けメール文言修正プラン
+# LIFFアプリ修正プラン
 
 ## 概要
-リマインダーメールの「ご来店をお待ちしております」という店舗向け表現を「当日お伺いいたします」という訪問サービス向け表現に統一します。
+LIFFアプリが正常に動作しない原因は、組織情報を取得するRPC関数に`line_liff_id`が含まれていないことです。このフィールドを追加し、LIFFアプリが正しく初期化できるようにします。
 
-## 修正対象ファイル
+## 修正内容
 
-### 1. send-hybrid-notification/index.ts
-リマインダーメールテンプレートの修正
+### 1. データベース：RPC関数の修正
+`get_organization_public`関数を更新して`line_liff_id`を返すようにする
 
-**変更内容：**
-- `buildReminderEmail` 関数（659-660行目付近）
-  - 変更前：「明日のご予約のお知らせです。」
-  - 変更後：「明日のご予約のリマインダーです。<br>当日お伺いいたします。」
-- ヘッダーテキスト（696行目）
-  - 変更前：「📅 明日のご予約」
-  - 変更後：「📅 リマインダー」
+**変更前：**
+```sql
+SELECT id, name, slug, logo_url, brand_color, welcome_message, header_layout, booking_headline, created_at, updated_at
+FROM public.organizations
+WHERE slug = org_slug
+```
 
-### 2. send-booking-email/index.ts
-リマインダーメールテンプレートの修正
+**変更後：**
+```sql
+SELECT id, name, slug, logo_url, brand_color, welcome_message, header_layout, booking_headline, line_liff_id, created_at, updated_at
+FROM public.organizations
+WHERE slug = org_slug
+```
 
-**変更内容：**
-- `buildReminderEmail` 関数（708-710行目付近）
-  - 変更前：「明日のご予約のお知らせです。」
-  - 変更後：「明日のご予約のリマインダーです。<br>当日お伺いいたします。」
-- ヘッダーテキスト（749行目）
-  - 変更前：「明日のご予約」
-  - 変更後：「📅 リマインダー」
+### 2. 管理画面でLIFF IDを設定
+組織の設定画面（ProfilePage）でLIFF IDを入力する必要があります。LINE DevelopersコンソールでLIFFアプリを作成後、そのIDを設定します。
 
-## 統一する文言
+---
 
-全通知チャネルで以下の表現を使用：
+## LIFFアプリのテスト手順
 
-| 通知タイプ | LINE | メール |
-|-----------|------|--------|
-| 確認 | 「下記の日時にお伺いいたします」 | 「下記の日時にお伺いいたします」 |
-| リマインダー | 「明日お伺いいたします」 | 「当日お伺いいたします」 |
-| キャンセル | 「またのご利用をお待ちしております」 | 同左（店舗表現なし） |
+### 事前準備（LINE Developers Console）
+1. LINE Developersコンソールにログイン
+2. **LINE Login**チャネルを作成（Messaging APIではなく）
+3. LIFF > 「Add」からLIFFアプリを追加
+   - サイズ: Full
+   - Endpoint URL: `https://cleaning-booking.lovable.app/liff/booking/{orgSlug}`
+4. 生成されたLIFF ID（例：`2006677890-abcdXYZ`）をコピー
+
+### システム設定
+1. 管理画面 > 設定 > LINE設定
+2. 「LINE LIFF ID」フィールドにコピーしたIDを貼り付け
+3. 保存
+
+### テスト方法
+1. LINEアプリで `https://liff.line.me/{LIFF_ID}` にアクセス
+2. または、リッチメニューにこのURLを設定
+
+---
 
 ## 技術的な補足
 
-### なぜ「ご来店」表現が残っていたか
-- 複数のEdge Functionに分散したテンプレートが存在
-- LINE通知は修正済みだったが、メールテンプレートは未修正
-- `send-hybrid-notification`と`send-booking-email`の両方にリマインダーテンプレートがあり、整合性が取れていなかった
+### LIFFの動作条件
+- `line_liff_id`が組織に設定されていること
+- LINE Login チャネルでLIFFアプリが作成されていること
+- LIFF SDKの初期化が成功すること
 
-### デプロイについて
-Edge Functionの変更は自動デプロイされますが、キャッシュの影響で反映に時間がかかる場合があります。修正後、テストリマインダーを送信して確認することを推奨します。
+### 現在のコード品質
+- `useLiff.ts`: 適切に実装されている
+- `LiffBookingPage.tsx`: ロジックは正しいが、LIFF IDが取得できないため初期化に失敗
+- `get-or-create-line-customer`: ID Token検証ロジックは正しく実装済み
 
-## 完了後の検証手順
-1. 管理画面から手動リマインダー送信をテスト
-2. メールの文言が「当日お伺いいたします」になっていることを確認
-3. LINEリマインダーも同様に確認
+## 実装の優先順位
+1. RPC関数に`line_liff_id`を追加（必須）
+2. テスト組織にLIFF IDを設定（運用）
+3. 動作確認
+
