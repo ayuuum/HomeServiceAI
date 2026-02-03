@@ -349,6 +349,27 @@ export const useAvailability = (organizationId?: string) => {
     fetchMonthAvailability(date);
   }, [fetchMonthAvailability]);
 
+  // 組織IDが取得されたら即座に営業時間をフェッチ（初期ロード用）
+  useEffect(() => {
+    const fetchInitialBusinessHours = async () => {
+      if (!organizationId || businessHours) return;
+      
+      try {
+        const { data, error } = await supabase.functions.invoke("get-availability", {
+          body: { organizationId },
+        });
+        
+        if (!error && data?.businessHours) {
+          setBusinessHours(data.businessHours);
+        }
+      } catch (err) {
+        console.error("Error fetching initial business hours:", err);
+      }
+    };
+    
+    fetchInitialBusinessHours();
+  }, [organizationId]);
+
   // 初期ロード
   useEffect(() => {
     if (organizationId) {

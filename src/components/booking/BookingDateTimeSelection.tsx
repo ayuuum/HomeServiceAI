@@ -9,7 +9,7 @@ import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DayAvailability, TimeSlotAvailability, WeekTimeSlotAvailability } from "@/hooks/useAvailability";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export interface DateTimePreference {
     date: Date | undefined;
@@ -67,6 +67,19 @@ export const BookingDateTimeSelection = ({
 
     // 週内の日付（7日分）
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    // weekTimeSlotsから動的に時間スロットを導出
+    const derivedTimeSlots = useMemo(() => {
+        const allTimes = new Set<string>();
+        Object.values(weekTimeSlots).forEach(daySlots => {
+            daySlots.forEach(slot => allTimes.add(slot.time));
+        });
+        
+        // weekTimeSlotsが空の場合はフォールバック
+        if (allTimes.size === 0) return timeSlots;
+        
+        return Array.from(allTimes).sort();
+    }, [weekTimeSlots, timeSlots]);
 
     // 週ナビゲーション
     const goToPreviousWeek = () => {
@@ -296,44 +309,53 @@ export const BookingDateTimeSelection = ({
                                 const isToday = isSameDay(day, new Date());
                                 const isSaturday = day.getDay() === 6;
                                 const isSunday = day.getDay() === 0;
+                                const dateStr = format(day, "yyyy-MM-dd");
+                                const isClosed = weekTimeSlots[dateStr]?.length === 0 && !loadingWeek && weekTimeSlots[dateStr] !== undefined;
                                 return (
                                     <div
                                         key={idx}
                                         className={cn(
                                             "p-1 text-center border-r last:border-r-0",
-                                            isSaturday && "bg-blue-50",
-                                            isSunday && "bg-pink-50"
+                                            isSaturday && !isClosed && "bg-blue-50",
+                                            isSunday && !isClosed && "bg-pink-50",
+                                            isClosed && "bg-muted"
                                         )}
                                     >
                                         <div className={cn(
                                             "text-[10px] font-bold",
-                                            isSaturday && "text-blue-600",
-                                            isSunday && "text-red-600",
-                                            isPast && "text-muted-foreground/40"
+                                            isSaturday && !isClosed && "text-blue-600",
+                                            isSunday && !isClosed && "text-red-600",
+                                            isPast && "text-muted-foreground/40",
+                                            isClosed && "text-muted-foreground"
                                         )}>
                                             {DAY_NAMES[day.getDay()]}
                                         </div>
                                         <div className={cn(
                                             "text-sm font-bold",
                                             isToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center mx-auto",
-                                            isPast && !isToday && "text-muted-foreground/40"
+                                            isPast && !isToday && "text-muted-foreground/40",
+                                            isClosed && !isToday && "text-muted-foreground"
                                         )}>
                                             {day.getDate()}
                                         </div>
+                                        {isClosed && (
+                                            <div className="text-[8px] text-muted-foreground">定休日</div>
+                                        )}
                                     </div>
                                 );
                             })}
                         </div>
 
                         {/* 時間行 */}
-                        {timeSlots.map((time, timeIdx) => (
-                            <div key={time} className={cn("grid grid-cols-8", timeIdx !== timeSlots.length - 1 && "border-b")}>
+                        {derivedTimeSlots.map((time, timeIdx) => (
+                            <div key={time} className={cn("grid grid-cols-8", timeIdx !== derivedTimeSlots.length - 1 && "border-b")}>
                                 <div className="p-1 text-center text-xs font-medium border-r bg-muted/30 flex items-center justify-center">
                                     {time}
                                 </div>
                                 {weekDays.map((day, dayIdx) => {
                                     const dateStr = format(day, "yyyy-MM-dd");
                                     const hasData = weekTimeSlots[dateStr] !== undefined;
+                                    const isClosed = weekTimeSlots[dateStr]?.length === 0 && hasData;
                                     const { available, isSelected, isBooked, isBlocked, selectedByOther } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
                                     const isSaturday = day.getDay() === 6;
@@ -351,12 +373,14 @@ export const BookingDateTimeSelection = ({
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isBooked || isBlocked || selectedByOther || (loadingWeek && !hasData)}
+                                            disabled={isPast || isClosed || isBooked || isBlocked || selectedByOther || (loadingWeek && !hasData)}
                                             className={cn(
                                                 "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
+                                                // 定休日
+                                                isClosed && "bg-muted/50 cursor-not-allowed",
                                                 // 土日の背景色
-                                                isSaturday && !isSelected && !selectedByOther && "bg-blue-50/50",
-                                                isSunday && !isSelected && !selectedByOther && "bg-pink-50/50",
+                                                !isClosed && isSaturday && !isSelected && !selectedByOther && "bg-blue-50/50",
+                                                !isClosed && isSunday && !isSelected && !selectedByOther && "bg-pink-50/50",
                                                 // 選択中
                                                 isSelected && "bg-primary text-primary-foreground",
                                                 // 他の希望で選択済み
@@ -378,10 +402,11 @@ export const BookingDateTimeSelection = ({
                                                     {otherPreferenceIndex + 1}
                                                 </span>
                                             )}
-                                            {hasData && (isBooked || isBlocked) && !isPast && !isSelected && !selectedByOther && (
+                                            {/* 定休日は何も表示しない */}
+                                            {hasData && !isClosed && (isBooked || isBlocked) && !isPast && !isSelected && !selectedByOther && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
                                             )}
-                                            {hasData && available && !isPast && !isSelected && (
+                                            {hasData && !isClosed && available && !isPast && !isSelected && (
                                                 <span className="text-green-600 font-bold">○</span>
                                             )}
                                         </button>
