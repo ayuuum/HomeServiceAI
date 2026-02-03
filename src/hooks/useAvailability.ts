@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays, startOfWeek, isBefore } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays, startOfWeek, isBefore, getDay } from "date-fns";
+import { 
+  BusinessHours, 
+  DEFAULT_BUSINESS_HOURS, 
+  generateTimeSlotsForDay, 
+  getAllTimeSlots,
+  isClosedDay
+} from "@/types/businessHours";
 
 export interface DayAvailability {
   date: string;
   bookedSlots: number;
   status: "available" | "partial" | "full";
+  isClosed?: boolean;
 }
 
 export interface TimeSlotAvailability {
@@ -36,7 +44,8 @@ export interface WeekBlocks {
   [dateStr: string]: BlockInfo[];
 }
 
-const TIME_SLOTS = [
+// Default time slots (fallback when no business hours are set)
+const DEFAULT_TIME_SLOTS = [
   "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
 ];
 
@@ -51,11 +60,29 @@ export const useAvailability = (organizationId?: string) => {
   const [loadingMonth, setLoadingMonth] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
+  const [businessHours, setBusinessHours] = useState<BusinessHours | null>(null);
 
   // キャッシュ: 週データを保存して再利用
   const [weekAvailabilityCache, setWeekAvailabilityCache] = useState<
-    Record<string, { slots: WeekTimeSlotAvailability; blocks: WeekBlocks }>
+    Record<string, { slots: WeekTimeSlotAvailability; blocks: WeekBlocks; businessHours: BusinessHours | null }>
   >({});
+
+  // Get time slots for a specific day based on business hours
+  const getTimeSlotsForDay = useCallback((date: Date): string[] => {
+    const dayOfWeek = getDay(date);
+    return generateTimeSlotsForDay(businessHours, dayOfWeek);
+  }, [businessHours]);
+
+  // Get all possible time slots (union of all days)
+  const getAllAvailableTimeSlots = useCallback((): string[] => {
+    return getAllTimeSlots(businessHours);
+  }, [businessHours]);
+
+  // Check if a day is closed
+  const isDayClosed = useCallback((date: Date): boolean => {
+    const dayOfWeek = getDay(date);
+    return isClosedDay(businessHours, dayOfWeek);
+  }, [businessHours]);
 
   // 月ごとの空き状況を取得
   const fetchMonthAvailability = useCallback(async (date: Date) => {
@@ -91,21 +118,22 @@ export const useAvailability = (organizationId?: string) => {
     const availability: DayAvailability[] = days.map((day) => {
       const dateStr = format(day, "yyyy-MM-dd");
       const bookedSlots = bookingsByDate[dateStr] || 0;
-      const totalSlots = TIME_SLOTS.length;
+      const isClosed = isDayClosed(day);
+      const totalSlots = isClosed ? 0 : getTimeSlotsForDay(day).length;
 
       let status: DayAvailability["status"] = "available";
-      if (bookedSlots >= totalSlots) {
+      if (isClosed || totalSlots === 0 || bookedSlots >= totalSlots) {
         status = "full";
       } else if (bookedSlots > 0 && bookedSlots >= totalSlots * 0.6) {
         status = "partial";
       }
 
-      return { date: dateStr, bookedSlots, status };
+      return { date: dateStr, bookedSlots, status, isClosed };
     });
 
     setMonthAvailability(availability);
     setLoadingMonth(false);
-  }, [organizationId]);
+  }, [organizationId, isDayClosed, getTimeSlotsForDay]);
 
   // 特定日の時間帯別空き状況を取得
   const fetchDayAvailability = useCallback(async (date: Date) => {
@@ -134,7 +162,8 @@ export const useAvailability = (organizationId?: string) => {
         (bookingsByTime[booking.selected_time] || 0) + 1;
     });
 
-    const slots: TimeSlotAvailability[] = TIME_SLOTS.map((time) => ({
+    const timeSlots = getTimeSlotsForDay(date);
+    const slots: TimeSlotAvailability[] = timeSlots.map((time) => ({
       time,
       isBooked: (bookingsByTime[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
       isBlocked: false,
@@ -142,7 +171,7 @@ export const useAvailability = (organizationId?: string) => {
 
     setDayTimeSlots(slots);
     setLoadingDay(false);
-  }, [organizationId]);
+  }, [organizationId, getTimeSlotsForDay]);
 
   // 週単位で全時間スロットの空き状況を取得（Edge Function経由で安全に取得）
   const fetchWeekAvailability = useCallback(async (weekStart: Date, showLoading = true, forceRefresh = false) => {
@@ -154,6 +183,9 @@ export const useAvailability = (organizationId?: string) => {
     if (!forceRefresh && weekAvailabilityCache[cacheKey]) {
       setWeekTimeSlots(weekAvailabilityCache[cacheKey].slots);
       setWeekBlocks(weekAvailabilityCache[cacheKey].blocks);
+      if (weekAvailabilityCache[cacheKey].businessHours) {
+        setBusinessHours(weekAvailabilityCache[cacheKey].businessHours);
+      }
       return;
     }
 
@@ -182,6 +214,12 @@ export const useAvailability = (organizationId?: string) => {
 
       const bookingsByDateTime: Record<string, Record<string, number>> = data?.availability || {};
       const blocksData: Record<string, BlockInfo[]> = data?.blocks || {};
+      const fetchedBusinessHours: BusinessHours | null = data?.businessHours || null;
+
+      // Update business hours from API response
+      if (fetchedBusinessHours) {
+        setBusinessHours(fetchedBusinessHours);
+      }
 
       // 週内の全日付に対してスロット情報を作成
       const weekSlots: WeekTimeSlotAvailability = {};
@@ -190,33 +228,43 @@ export const useAvailability = (organizationId?: string) => {
         const dateStr = format(day, "yyyy-MM-dd");
         const dayBookings = bookingsByDateTime[dateStr] || {};
         const dayBlocks = blocksData[dateStr] || [];
+        const dayOfWeek = getDay(day);
 
+        // Get time slots for this specific day based on business hours
+        const dayTimeSlotsList = generateTimeSlotsForDay(fetchedBusinessHours, dayOfWeek);
+        
         // Check for all-day block
         const allDayBlock = dayBlocks.find(b => b.time === null);
+        const isClosed = isClosedDay(fetchedBusinessHours, dayOfWeek);
 
-        weekSlots[dateStr] = TIME_SLOTS.map((time) => {
-          // Check if this specific time is blocked
-          const timeBlock = dayBlocks.find(b => b.time === time);
-          const isBlocked = !!allDayBlock || !!timeBlock;
-          const blockInfo = timeBlock || allDayBlock;
+        // If the day is closed (定休日), return empty slots or blocked slots
+        if (isClosed) {
+          weekSlots[dateStr] = [];
+        } else {
+          weekSlots[dateStr] = dayTimeSlotsList.map((time) => {
+            // Check if this specific time is blocked
+            const timeBlock = dayBlocks.find(b => b.time === time);
+            const isBlocked = !!allDayBlock || !!timeBlock;
+            const blockInfo = timeBlock || allDayBlock;
 
-          return {
-            time,
-            isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
-            isBlocked,
-            blockInfo: isBlocked && blockInfo ? {
-              id: blockInfo.id,
-              type: blockInfo.type,
-              title: blockInfo.title,
-            } : undefined,
-          };
-        });
+            return {
+              time,
+              isBooked: (dayBookings[time] || 0) >= MAX_BOOKINGS_PER_SLOT,
+              isBlocked,
+              blockInfo: isBlocked && blockInfo ? {
+                id: blockInfo.id,
+                type: blockInfo.type,
+                title: blockInfo.title,
+              } : undefined,
+            };
+          });
+        }
       }
 
       // キャッシュに保存
       setWeekAvailabilityCache(prev => ({
         ...prev,
-        [cacheKey]: { slots: weekSlots, blocks: blocksData }
+        [cacheKey]: { slots: weekSlots, blocks: blocksData, businessHours: fetchedBusinessHours }
       }));
 
       setWeekTimeSlots(weekSlots);
@@ -263,6 +311,9 @@ export const useAvailability = (organizationId?: string) => {
   ): Promise<boolean> => {
     if (!organizationId) return false;
 
+    // First check if the day is closed
+    if (isDayClosed(date)) return false;
+
     const dateStr = format(date, "yyyy-MM-dd");
     const { data, error } = await supabase
       .from("bookings")
@@ -278,7 +329,7 @@ export const useAvailability = (organizationId?: string) => {
     }
 
     return (data?.length || 0) < MAX_BOOKINGS_PER_SLOT;
-  }, [organizationId]);
+  }, [organizationId, isDayClosed]);
 
   // 日付の空き状況を取得するヘルパー
   const getAvailabilityForDate = useCallback((date: Date): DayAvailability | undefined => {
@@ -350,6 +401,9 @@ export const useAvailability = (organizationId?: string) => {
     };
   }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache]);
 
+  // Export TIME_SLOTS as the dynamic version based on business hours
+  const TIME_SLOTS = getAllAvailableTimeSlots();
+
   return {
     monthAvailability,
     dayTimeSlots,
@@ -368,5 +422,8 @@ export const useAvailability = (organizationId?: string) => {
     handleMonthChange,
     clearWeekCache,
     TIME_SLOTS,
+    businessHours,
+    getTimeSlotsForDay,
+    isDayClosed,
   };
 };
