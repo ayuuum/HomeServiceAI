@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface DayHours {
   open: string | null;
@@ -71,6 +72,7 @@ interface BusinessHoursSettingsProps {
 export function BusinessHoursSettings({ organizationId }: BusinessHoursSettingsProps) {
   const { toast } = useToast();
   const { refreshOrganization } = useAuth();
+  const queryClient = useQueryClient();
   const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -156,6 +158,10 @@ export function BusinessHoursSettings({ organizationId }: BusinessHoursSettingsP
 
       if (error) throw error;
 
+      // Clear all availability-related caches so changes reflect immediately
+      queryClient.invalidateQueries({ queryKey: ["availability"] });
+      queryClient.invalidateQueries({ queryKey: ["businessHours"] });
+      
       await refreshOrganization();
       toast({
         title: "保存完了",
