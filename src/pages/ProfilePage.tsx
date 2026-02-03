@@ -12,11 +12,12 @@ import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench, Clock } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
 import AdminServiceManagement from './AdminServiceManagement';
+import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -640,11 +641,16 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="booking" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="booking" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">予約ページ</span>
               <span className="sm:hidden">予約</span>
+            </TabsTrigger>
+            <TabsTrigger value="hours" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">営業時間</span>
+              <span className="sm:hidden">時間</span>
             </TabsTrigger>
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
@@ -1073,6 +1079,24 @@ export default function ProfilePage() {
                     )}
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 営業時間タブ */}
+          <TabsContent value="hours" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  営業時間設定
+                </CardTitle>
+                <CardDescription>
+                  曜日ごとの営業時間を設定できます。定休日も指定できます。
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BusinessHoursSettings organizationId={organization?.id} />
               </CardContent>
             </Card>
           </TabsContent>

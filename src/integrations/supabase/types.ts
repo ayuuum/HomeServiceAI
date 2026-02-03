@@ -469,6 +469,7 @@ export type Database = {
           admin_email: string | null
           booking_headline: string | null
           brand_color: string | null
+          business_hours: Json | null
           created_at: string | null
           header_layout: string | null
           id: string
@@ -490,6 +491,7 @@ export type Database = {
           admin_email?: string | null
           booking_headline?: string | null
           brand_color?: string | null
+          business_hours?: Json | null
           created_at?: string | null
           header_layout?: string | null
           id?: string
@@ -511,6 +513,7 @@ export type Database = {
           admin_email?: string | null
           booking_headline?: string | null
           brand_color?: string | null
+          business_hours?: Json | null
           created_at?: string | null
           header_layout?: string | null
           id?: string
@@ -772,6 +775,7 @@ export type Database = {
         Returns: {
           booking_headline: string
           brand_color: string
+          business_hours: Json
           created_at: string
           header_layout: string
           id: string

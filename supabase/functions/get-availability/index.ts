@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch bookings and blocks in parallel
+    // Fetch bookings, blocks, and organization in parallel
     let bookingsQuery = supabase
       .from("bookings")
       .select("selected_date, selected_time")
@@ -39,6 +39,12 @@ serve(async (req) => {
       .select("id, block_date, block_time, block_type, title")
       .eq("organization_id", organizationId);
 
+    const orgQuery = supabase
+      .from("organizations")
+      .select("business_hours")
+      .eq("id", organizationId)
+      .single();
+
     if (startDate) {
       bookingsQuery = bookingsQuery.gte("selected_date", startDate);
       blocksQuery = blocksQuery.gte("block_date", startDate);
@@ -48,9 +54,10 @@ serve(async (req) => {
       blocksQuery = blocksQuery.lte("block_date", endDate);
     }
 
-    const [bookingsResult, blocksResult] = await Promise.all([
+    const [bookingsResult, blocksResult, orgResult] = await Promise.all([
       bookingsQuery,
       blocksQuery,
+      orgQuery,
     ]);
 
     if (bookingsResult.error) {
@@ -64,6 +71,11 @@ serve(async (req) => {
     if (blocksResult.error) {
       console.error("Error fetching blocks:", blocksResult.error);
       // Continue without blocks if there's an error
+    }
+
+    if (orgResult.error) {
+      console.error("Error fetching organization:", orgResult.error);
+      // Continue without business hours if there's an error
     }
 
     // Return only slot counts per date/time (no raw booking data)
@@ -100,7 +112,11 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ availability, blocks }),
+      JSON.stringify({ 
+        availability, 
+        blocks,
+        businessHours: orgResult.data?.business_hours || null
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

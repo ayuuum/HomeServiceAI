@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { SlotActionPopover } from "./SlotActionPopover";
 import { useScheduleBlocks } from "@/hooks/useScheduleBlocks";
 import { TimeSlotAvailability } from "@/hooks/useAvailability";
+import { BusinessHours, getAllTimeSlots, isClosedDay } from "@/types/businessHours";
 
 interface WeeklyCalendarViewProps {
   weekStart: Date;
@@ -29,13 +30,8 @@ interface WeeklyCalendarViewProps {
   onDayClick: (day: Date, time?: string) => void;
   weekTimeSlots?: Record<string, TimeSlotAvailability[]>;
   onBlockChange?: () => void;
+  businessHours?: BusinessHours | null;
 }
-
-// 営業時間帯（9:00〜18:00）
-const TIME_SLOTS = Array.from({ length: 10 }, (_, i) => {
-  const hour = 9 + i;
-  return `${hour.toString().padStart(2, "0")}:00`;
-});
 
 export function WeeklyCalendarView({
   weekStart,
@@ -45,10 +41,16 @@ export function WeeklyCalendarView({
   onDayClick,
   weekTimeSlots,
   onBlockChange,
+  businessHours,
 }: WeeklyCalendarViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const { createBlock, deleteBlock, loading: blockLoading } = useScheduleBlocks();
+
+  // Get all time slots based on business hours (union of all days)
+  const TIME_SLOTS = useMemo(() => {
+    return getAllTimeSlots(businessHours);
+  }, [businessHours]);
 
   // 現在時刻の更新（1分ごと）
   useEffect(() => {
@@ -92,16 +94,37 @@ export function WeeklyCalendarView({
     return daySlots?.find(s => s.time === time);
   };
 
+  // Check if a day is closed based on business hours
+  const isDayClosed = (day: Date): boolean => {
+    return isClosedDay(businessHours, getDay(day));
+  };
+
+  // Check if a time slot exists for a given day (based on business hours)
+  const isSlotInBusinessHours = (day: Date, time: string): boolean => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    const daySlots = weekTimeSlots?.[dateStr];
+    if (!daySlots) return true; // Default to showing if no data yet
+    return daySlots.some(s => s.time === time);
+  };
+
   // 現在時刻のインジケーター位置を計算
   const getCurrentTimePosition = () => {
+    if (TIME_SLOTS.length === 0) return null;
+    
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
 
-    if (hours < 9 || hours >= 19) return null;
+    // Parse first and last time slot
+    const [firstHour] = TIME_SLOTS[0].split(":").map(Number);
+    const [lastHour] = TIME_SLOTS[TIME_SLOTS.length - 1].split(":").map(Number);
+    const endHour = lastHour + 1; // Assuming 1 hour slots
 
-    // 9時を0%、19時を100%として位置を計算
-    const totalMinutes = (hours - 9) * 60 + minutes;
-    const percentage = (totalMinutes / (10 * 60)) * 100;
+    if (hours < firstHour || hours >= endHour) return null;
+
+    // Calculate position as percentage
+    const totalMinutes = (hours - firstHour) * 60 + minutes;
+    const totalRange = (endHour - firstHour) * 60;
+    const percentage = (totalMinutes / totalRange) * 100;
 
     return percentage;
   };
@@ -183,28 +206,33 @@ export function WeeklyCalendarView({
             const isSunday = dayOfWeek === 0;
             const isSaturday = dayOfWeek === 6;
             const isTodayDate = isToday(day);
+            const isClosed = isDayClosed(day);
 
             return (
               <div
                 key={day.toString()}
                 className={cn(
                   "py-2 px-1 text-center border-r last:border-r-0",
-                  isSunday && "bg-destructive/5",
-                  isSaturday && "bg-primary/5",
-                  isTodayDate && "bg-primary/10"
+                  isClosed && "bg-muted/50",
+                  isSunday && !isClosed && "bg-destructive/5",
+                  isSaturday && !isClosed && "bg-primary/5",
+                  isTodayDate && !isClosed && "bg-primary/10"
                 )}
               >
                 <div className={cn(
                   "text-xs font-bold",
-                  isSunday && "text-destructive",
-                  isSaturday && "text-primary",
-                  !isSunday && !isSaturday && "text-muted-foreground"
+                  isClosed && "text-muted-foreground",
+                  isSunday && !isClosed && "text-destructive",
+                  isSaturday && !isClosed && "text-primary",
+                  !isSunday && !isSaturday && !isClosed && "text-muted-foreground"
                 )}>
                   {["日", "月", "火", "水", "木", "金", "土"][dayOfWeek]}
+                  {isClosed && <span className="ml-1 text-[10px]">休</span>}
                 </div>
                 <div className={cn(
                   "text-sm md:text-base font-bold",
-                  isTodayDate && "text-primary"
+                  isTodayDate && "text-primary",
+                  isClosed && "text-muted-foreground"
                 )}>
                   {isTodayDate ? (
                     <span className="inline-flex items-center justify-center w-6 h-6 md:w-7 md:h-7 rounded-full bg-primary text-primary-foreground">
@@ -258,6 +286,21 @@ export function WeeklyCalendarView({
                 const isBlocked = slotInfo?.isBlocked ?? false;
                 const popoverKey = `${format(day, "yyyy-MM-dd")}_${time}`;
                 const hasBookings = slotBookings.length > 0;
+                const isClosed = isDayClosed(day);
+                const isOutsideBusinessHours = !isSlotInBusinessHours(day, time);
+
+                // 定休日または営業時間外のセル表示
+                if (isClosed || isOutsideBusinessHours) {
+                  return (
+                    <div
+                      key={popoverKey}
+                      className="p-0.5 border-r last:border-r-0 bg-muted/40"
+                      style={{
+                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 4px, hsl(var(--muted-foreground) / 0.05) 4px, hsl(var(--muted-foreground) / 0.05) 8px)",
+                      }}
+                    />
+                  );
+                }
 
                 // ブロック済みセルの表示（クリックで解除可能）
                 if (isBlocked && !hasBookings) {
