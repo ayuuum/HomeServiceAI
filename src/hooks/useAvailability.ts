@@ -302,6 +302,7 @@ export const useAvailability = (organizationId?: string) => {
   // キャッシュをクリア（リアルタイム更新時に使用）
   const clearWeekCache = useCallback(() => {
     setWeekAvailabilityCache({});
+    setBusinessHours(null); // Also reset business hours to force refetch
   }, []);
 
   // リアルタイム空き確認（送信前チェック用）
@@ -395,9 +396,29 @@ export const useAvailability = (organizationId?: string) => {
       )
       .subscribe();
 
+    // 営業時間変更を監視
+    const organizationChannel = supabase
+      .channel(`organization-hours-${organizationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "organizations",
+          filter: `id=eq.${organizationId}`,
+        },
+        () => {
+          // 営業時間が変更されたらキャッシュをクリアして再取得
+          clearWeekCache();
+          fetchMonthAvailability(currentMonth);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(blocksChannel);
+      supabase.removeChannel(organizationChannel);
     };
   }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache]);
 
