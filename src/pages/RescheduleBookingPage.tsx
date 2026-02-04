@@ -8,6 +8,12 @@ import { format, addDays, getDay, isSameDay, isToday } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { 
+  BusinessHours, 
+  generateTimeSlotsForDay, 
+  getAllTimeSlots, 
+  isClosedDay 
+} from "@/types/businessHours";
 
 type PageStatus = 'loading' | 'found' | 'not_found' | 'already_cancelled' | 'success';
 
@@ -25,11 +31,6 @@ interface BookingInfo {
 
 // MAX_BOOKINGS_PER_SLOT: 1つの時間帯に1件のみ予約可能
 const MAX_BOOKINGS_PER_SLOT = 1;
-
-const TIME_SLOTS = Array.from({ length: 10 }, (_, i) => {
-  const hour = 9 + i;
-  return `${hour.toString().padStart(2, "0")}:00`;
-});
 
 export default function RescheduleBookingPage() {
   const { token } = useParams<{ token: string }>();
@@ -49,10 +50,16 @@ export default function RescheduleBookingPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [availability, setAvailability] = useState<Record<string, Record<string, number>>>({});
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [businessHours, setBusinessHours] = useState<BusinessHours | null>(null);
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   }, [weekStart]);
+
+  // 営業時間に基づいて動的に時間スロットを生成
+  const TIME_SLOTS = useMemo(() => {
+    return getAllTimeSlots(businessHours);
+  }, [businessHours]);
 
   useEffect(() => {
     fetchBooking();
@@ -114,6 +121,10 @@ export default function RescheduleBookingPage() {
       if (error) throw error;
       if (data?.availability) {
         setAvailability(data.availability);
+      }
+      // businessHours を取得・保存
+      if (data?.businessHours) {
+        setBusinessHours(data.businessHours);
       }
     } catch (error) {
       console.error("Error fetching availability:", error);
@@ -374,10 +385,44 @@ export default function RescheduleBookingPage() {
                           {time}
                         </div>
                         {weekDays.map((day) => {
-                          const isAvailable = getSlotAvailability(day, time);
+                          const dayOfWeek = getDay(day);
+                          const isClosed = businessHours ? isClosedDay(businessHours, dayOfWeek) : false;
+                          
+                          // その曜日の営業時間内のスロットを取得
+                          const dayTimeSlots = businessHours 
+                            ? generateTimeSlotsForDay(businessHours, dayOfWeek)
+                            : TIME_SLOTS; // フォールバック
+                          
+                          // この時間がその曜日の営業時間内かチェック
+                          const isInBusinessHours = dayTimeSlots.includes(time);
+                          const isAvailable = !isClosed && isInBusinessHours && getSlotAvailability(day, time);
                           const isCurrent = isCurrentBookingSlot(day, time);
                           const isSelected = selectedDate && isSameDay(selectedDate, day) && selectedTime === time;
                           const isPast = day < new Date() && !isToday(day);
+
+                          // 定休日の場合は「定休日」ラベルを表示
+                          if (isClosed) {
+                            return (
+                              <div
+                                key={`${day.toString()}_${time}`}
+                                className="p-2 border-r last:border-r-0 bg-muted/30 text-muted-foreground text-xs text-center min-h-[44px] flex items-center justify-center"
+                              >
+                                定休日
+                              </div>
+                            );
+                          }
+
+                          // 営業時間外の場合は×表示
+                          if (!isInBusinessHours) {
+                            return (
+                              <div
+                                key={`${day.toString()}_${time}`}
+                                className="p-2 border-r last:border-r-0 bg-muted/30 text-muted-foreground text-xs text-center min-h-[44px] flex items-center justify-center"
+                              >
+                                ×
+                              </div>
+                            );
+                          }
 
                           return (
                             <button

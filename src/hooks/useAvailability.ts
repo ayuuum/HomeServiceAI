@@ -61,6 +61,7 @@ export const useAvailability = (organizationId?: string) => {
   const [loadingDay, setLoadingDay] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
   const [businessHours, setBusinessHours] = useState<BusinessHours | null>(null);
+  const [lastFetchedWeekStart, setLastFetchedWeekStart] = useState<Date | null>(null);
 
   // キャッシュ: 週データを保存して再利用
   const [weekAvailabilityCache, setWeekAvailabilityCache] = useState<
@@ -269,6 +270,8 @@ export const useAvailability = (organizationId?: string) => {
 
       setWeekTimeSlots(weekSlots);
       setWeekBlocks(blocksData);
+      // 最後に取得した週の開始日を記録
+      setLastFetchedWeekStart(weekStart);
     } catch (err) {
       console.error("Error fetching week availability:", err);
     } finally {
@@ -429,9 +432,38 @@ export const useAvailability = (organizationId?: string) => {
           filter: `id=eq.${organizationId}`,
         },
         () => {
-          // 営業時間が変更されたらキャッシュをクリアして再取得
+          // キャッシュをクリア
           clearWeekCache();
+          
+          // 月の空き状況を再取得
           fetchMonthAvailability(currentMonth);
+          
+          // 最後に表示していた週があれば、その週を強制再取得して新しい businessHours を取得
+          if (lastFetchedWeekStart) {
+            fetchWeekAvailability(lastFetchedWeekStart, false, true);
+          } else {
+            // 週がまだ取得されていない場合は、初期営業時間を取得
+            const fetchInitialBusinessHours = async () => {
+              try {
+                const today = new Date();
+                const weekEnd = addDays(today, 6);
+                const { data, error } = await supabase.functions.invoke("get-availability", {
+                  body: { 
+                    organizationId,
+                    startDate: format(today, "yyyy-MM-dd"),
+                    endDate: format(weekEnd, "yyyy-MM-dd"),
+                  },
+                });
+                
+                if (!error && data?.businessHours) {
+                  setBusinessHours(data.businessHours);
+                }
+              } catch (err) {
+                console.error("Error fetching business hours:", err);
+              }
+            };
+            fetchInitialBusinessHours();
+          }
         }
       )
       .subscribe();
@@ -441,7 +473,7 @@ export const useAvailability = (organizationId?: string) => {
       supabase.removeChannel(blocksChannel);
       supabase.removeChannel(organizationChannel);
     };
-  }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache]);
+  }, [organizationId, currentMonth, fetchMonthAvailability, clearWeekCache, lastFetchedWeekStart, fetchWeekAvailability]);
 
   // Export TIME_SLOTS as the dynamic version based on business hours
   const TIME_SLOTS = getAllAvailableTimeSlots();

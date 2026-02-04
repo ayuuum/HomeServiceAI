@@ -157,16 +157,20 @@ export const BookingDateTimeSelection = ({
         isBooked: boolean;
         isBlocked: boolean;
         selectedByOther: boolean;
+        isOutsideBusinessHours: boolean;
     } => {
         const isPast = isBefore(day, startOfDay(new Date()));
         const dateStr = format(day, "yyyy-MM-dd");
 
         if (isPast) {
-            return { available: false, isSelected: false, isBooked: false, isBlocked: false, selectedByOther: false };
+            return { available: false, isSelected: false, isBooked: false, isBlocked: false, selectedByOther: false, isOutsideBusinessHours: false };
         }
 
         // weekTimeSlotsから予約状況を取得
         const slotInfo = weekTimeSlots[dateStr]?.find(s => s.time === time);
+        
+        // slotInfoがundefinedの場合、営業時間外
+        const isOutsideBusinessHours = weekTimeSlots[dateStr] !== undefined && !slotInfo;
         const isBooked = slotInfo?.isBooked ?? false;
         const isBlocked = slotInfo?.isBlocked ?? false;
 
@@ -182,7 +186,15 @@ export const BookingDateTimeSelection = ({
             pref.time === time
         );
 
-        return { available: !isBooked && !isBlocked && !selectedByOther, isSelected: !!isSelected, isBooked, isBlocked, selectedByOther };
+        // 営業時間外の場合も available: false
+        return { 
+            available: !isBooked && !isBlocked && !selectedByOther && !isOutsideBusinessHours, 
+            isSelected: !!isSelected, 
+            isBooked, 
+            isBlocked, 
+            selectedByOther,
+            isOutsideBusinessHours
+        };
     };
 
     // 週の範囲表示
@@ -356,7 +368,7 @@ export const BookingDateTimeSelection = ({
                                     const dateStr = format(day, "yyyy-MM-dd");
                                     const hasData = weekTimeSlots[dateStr] !== undefined;
                                     const isClosed = weekTimeSlots[dateStr]?.length === 0 && hasData;
-                                    const { available, isSelected, isBooked, isBlocked, selectedByOther } = getSlotStatus(day, time);
+                                    const { available, isSelected, isBooked, isBlocked, selectedByOther, isOutsideBusinessHours } = getSlotStatus(day, time);
                                     const isPast = isBefore(day, startOfDay(new Date()));
                                     const isSaturday = day.getDay() === 6;
                                     const isSunday = day.getDay() === 0;
@@ -373,14 +385,16 @@ export const BookingDateTimeSelection = ({
                                         <button
                                             key={dayIdx}
                                             onClick={() => handleSlotSelect(day, time)}
-                                            disabled={isPast || isClosed || isBooked || isBlocked || selectedByOther || (loadingWeek && !hasData)}
+                                            disabled={isPast || isClosed || isBooked || isBlocked || selectedByOther || isOutsideBusinessHours || (loadingWeek && !hasData)}
                                             className={cn(
                                                 "h-8 border-r last:border-r-0 transition-all touch-manipulation flex items-center justify-center text-sm",
                                                 // 定休日
                                                 isClosed && "bg-muted/50 cursor-not-allowed",
+                                                // 営業時間外
+                                                isOutsideBusinessHours && "bg-muted/30 cursor-not-allowed",
                                                 // 土日の背景色
-                                                !isClosed && isSaturday && !isSelected && !selectedByOther && "bg-blue-50/50",
-                                                !isClosed && isSunday && !isSelected && !selectedByOther && "bg-pink-50/50",
+                                                !isClosed && !isOutsideBusinessHours && isSaturday && !isSelected && !selectedByOther && "bg-blue-50/50",
+                                                !isClosed && !isOutsideBusinessHours && isSunday && !isSelected && !selectedByOther && "bg-pink-50/50",
                                                 // 選択中
                                                 isSelected && "bg-primary text-primary-foreground",
                                                 // 他の希望で選択済み
@@ -403,7 +417,7 @@ export const BookingDateTimeSelection = ({
                                                 </span>
                                             )}
                                             {/* 定休日は何も表示しない */}
-                                            {hasData && !isClosed && (isBooked || isBlocked) && !isPast && !isSelected && !selectedByOther && (
+                                            {hasData && !isClosed && (isBooked || isBlocked || isOutsideBusinessHours) && !isPast && !isSelected && !selectedByOther && (
                                                 <span className="text-[10px] text-muted-foreground">×</span>
                                             )}
                                             {hasData && !isClosed && available && !isPast && !isSelected && (
