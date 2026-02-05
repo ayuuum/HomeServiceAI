@@ -12,8 +12,9 @@ const corsHeaders = {
 
 interface HybridNotificationRequest {
   bookingId: string;
-  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification' | 'pending';
+  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification' | 'pending' | 'payment_request' | 'payment_completed' | 'payment_reminder' | 'payment_expired';
   adminNotificationType?: 'new_booking' | 'cancelled';
+  checkoutUrl?: string;
 }
 
 interface NotificationResult {
@@ -31,6 +32,8 @@ serve(async (req: Request): Promise<Response> => {
 
   try {
     const { bookingId, notificationType, adminNotificationType }: HybridNotificationRequest = await req.json();
+    const body = await req.clone().json();
+    const checkoutUrl = body.checkoutUrl;
 
     if (!bookingId || !notificationType) {
       return new Response(
@@ -62,6 +65,8 @@ serve(async (req: Request): Promise<Response> => {
         cancel_token,
         organization_id,
         cancelled_at,
+        checkout_expires_at,
+        stripe_checkout_session_id,
         customers (
           id,
           name,
@@ -102,11 +107,25 @@ serve(async (req: Request): Promise<Response> => {
     if (notificationType === 'admin_notification') {
       result = await sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType);
     }
-    // Priority 2: LINE (if customer has line_user_id AND org has LINE configured)
+    // Priority 2: Payment notifications (LINE preferred, fallback to email)
+    else if (['payment_request', 'payment_completed', 'payment_reminder', 'payment_expired'].includes(notificationType)) {
+      if (hasLine && hasLineConfig) {
+        result = await sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase, checkoutUrl);
+      } else if (hasEmail) {
+        result = await sendEmailNotification(booking, org, notificationType, supabase, undefined, checkoutUrl);
+      } else {
+        result = {
+          success: true,
+          channel: 'none',
+          message: "No notification channel available for payment notification"
+        };
+      }
+    }
+    // Priority 3: LINE (if customer has line_user_id AND org has LINE configured)
     else if (hasLine && hasLineConfig) {
       result = await sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase);
     }
-    // Priority 3: Email (if customer has email)
+    // Priority 4: Email (if customer has email)
     else if (hasEmail) {
       result = await sendEmailNotification(booking, org, notificationType, supabase);
     }
@@ -140,12 +159,13 @@ async function sendLineNotification(
   lineUserId: string,
   org: any,
   notificationType: string,
-  supabase: any
+  supabase: any,
+  checkoutUrl?: string
 ): Promise<NotificationResult> {
   try {
     console.log(`[send-hybrid-notification] Sending LINE notification to ${lineUserId}`);
 
-    const message = buildLineMessage(booking, notificationType, org.name);
+    const message = buildLineMessage(booking, notificationType, org.name, checkoutUrl);
 
     const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
@@ -203,7 +223,8 @@ async function sendEmailNotification(
   org: any,
   notificationType: string,
   supabase: any,
-  adminNotificationType?: string
+  adminNotificationType?: string,
+  checkoutUrl?: string
 ): Promise<NotificationResult> {
   try {
     console.log(`[send-hybrid-notification] Sending email notification to ${booking.customer_email}`);
@@ -300,6 +321,56 @@ async function sendEmailNotification(
         adminNotificationType: adminNotificationType || 'new_booking',
         logoUrl,
       });
+    } else if (notificationType === 'payment_request') {
+      subject = `【${orgName}】お支払いのお願い`;
+      htmlContent = buildPaymentRequestEmail({
+        customerName: booking.customer_name,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        servicesList,
+        totalPrice: booking.total_price,
+        checkoutUrl: checkoutUrl || '',
+        expiresAt: booking.checkout_expires_at,
+        logoUrl,
+      });
+    } else if (notificationType === 'payment_completed') {
+      subject = `【${orgName}】お支払いが完了しました`;
+      htmlContent = buildPaymentCompletedEmail({
+        customerName: booking.customer_name,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        servicesList,
+        totalPrice: booking.total_price,
+        cancelUrl,
+        logoUrl,
+      });
+    } else if (notificationType === 'payment_reminder') {
+      subject = `【${orgName}】お支払い期限が近づいています`;
+      htmlContent = buildPaymentReminderEmail({
+        customerName: booking.customer_name,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        totalPrice: booking.total_price,
+        checkoutUrl: checkoutUrl || '',
+        expiresAt: booking.checkout_expires_at,
+        logoUrl,
+      });
+    } else if (notificationType === 'payment_expired') {
+      subject = `【${orgName}】決済リンクの有効期限が切れました`;
+      htmlContent = buildPaymentExpiredEmail({
+        customerName: booking.customer_name,
+        orgName,
+        brandColor,
+        formattedDate,
+        selectedTime: booking.selected_time,
+        logoUrl,
+      });
     } else {
       subject = `【${orgName}】明日のご予約リマインダー`;
       htmlContent = buildReminderEmail({
@@ -355,7 +426,7 @@ async function sendEmailNotification(
 }
 
 // Build LINE message
-function buildLineMessage(booking: any, notificationType: string, orgName: string): string {
+function buildLineMessage(booking: any, notificationType: string, orgName: string, checkoutUrl?: string): string {
   const dateStr = booking.selected_date;
   const timeStr = booking.selected_time;
   const customerName = booking.customer_name || "お客様";
@@ -413,6 +484,65 @@ ${customerName}様
 
 ${storeName}`;
 
+    case 'payment_request':
+      return `💳 お支払いのお願い
+
+${customerName}様
+
+ご予約が承認されました。
+下記リンクよりお支払いをお願いいたします。
+
+📅 ${dateStr} ${timeStr}〜
+💰 ${totalPrice}円
+
+🔗 お支払いはこちら:
+${checkoutUrl || ''}
+
+⏰ 有効期限: 72時間
+
+${storeName}`;
+
+    case 'payment_completed':
+      return `✅ お支払い完了
+
+${customerName}様
+
+お支払いありがとうございます。
+ご予約が確定しました。
+
+📅 ${dateStr} ${timeStr}〜
+💰 ${totalPrice}円
+
+${storeName}`;
+
+    case 'payment_reminder':
+      return `⏰ お支払い期限が近づいています
+
+${customerName}様
+
+お支払いがまだ完了していません。
+期限切れになる前にお支払いをお願いいたします。
+
+📅 ${dateStr} ${timeStr}〜
+💰 ${totalPrice}円
+
+🔗 お支払いはこちら:
+${checkoutUrl || ''}
+
+${storeName}`;
+
+    case 'payment_expired':
+      return `❌ 決済期限切れ
+
+${customerName}様
+
+決済リンクの有効期限が切れました。
+ご予約を継続される場合は、お手数ですがお問い合わせください。
+
+📅 ${dateStr} ${timeStr}〜
+
+${storeName}`;
+
     default:
       return `【${storeName}】
 
@@ -436,6 +566,8 @@ interface EmailParams {
   customerPhone?: string;
   adminNotificationType?: string;
   logoUrl?: string;
+  checkoutUrl?: string;
+  expiresAt?: string;
 }
 
 // Shared email wrapper
@@ -555,6 +687,241 @@ function buildPendingEmail(params: EmailParams): string {
     orgName: params.orgName,
     headerBgColor: params.brandColor,
     headerText: '📋 ご予約リクエストを受け付けました',
+    content,
+    showReplyNote: true,
+    logoUrl: params.logoUrl,
+  });
+}
+
+function buildPaymentRequestEmail(params: EmailParams): string {
+  const expiresAtFormatted = params.expiresAt 
+    ? new Date(params.expiresAt).toLocaleString('ja-JP', { 
+        year: 'numeric', month: 'long', day: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+      })
+    : '72時間後';
+
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      ご予約が承認されました。<br>
+      下記リンクよりお支払いをお願いいたします。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
+              <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
+                ¥${params.totalPrice.toLocaleString()}
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    <!-- Payment CTA -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="${params.checkoutUrl}" style="display: inline-block; padding: 16px 40px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+        💳 お支払いへ進む
+      </a>
+    </div>
+    
+    <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
+        <strong>⏰ お支払い期限</strong><br>
+        ${expiresAtFormatted}まで<br>
+        期限を過ぎると決済リンクが無効になります。
+      </p>
+    </div>
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: params.brandColor,
+    headerText: '💳 お支払いのお願い',
+    content,
+    showReplyNote: true,
+    logoUrl: params.logoUrl,
+  });
+}
+
+function buildPaymentCompletedEmail(params: EmailParams): string {
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      お支払いありがとうございます。<br>
+      ご予約が確定しました。下記の日時にお伺いいたします。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.servicesList ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
+            </tr>
+            ` : ''}
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">お支払い済み</td>
+              <td style="padding: 10px 0 0; color: #10b981; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
+                ¥${params.totalPrice.toLocaleString()} ✓
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    ${params.cancelUrl ? `
+    <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+      ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
+    </p>
+    ` : ''}
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: '#10b981',
+    headerText: '✅ お支払い完了・ご予約確定',
+    content,
+    showReplyNote: true,
+    logoUrl: params.logoUrl,
+  });
+}
+
+function buildPaymentReminderEmail(params: EmailParams): string {
+  const expiresAtFormatted = params.expiresAt 
+    ? new Date(params.expiresAt).toLocaleString('ja-JP', { 
+        year: 'numeric', month: 'long', day: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+      })
+    : '間もなく';
+
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      お支払いがまだ完了していません。<br>
+      期限切れになる前にお支払いをお願いいたします。
+    </p>
+    
+    <!-- Booking Details Card -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px; width: 80px;">日時</td>
+              <td style="padding: 6px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
+                ${params.formattedDate}<br>${params.selectedTime}〜
+              </td>
+            </tr>
+            ${params.totalPrice ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-size: 13px;">金額</td>
+              <td style="padding: 6px 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700;">
+                ¥${params.totalPrice.toLocaleString()}
+              </td>
+            </tr>
+            ` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    <!-- Warning Box -->
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 14px; color: #dc2626; font-weight: 600;">
+        ⚠️ お支払い期限: ${expiresAtFormatted}
+      </p>
+      <p style="margin: 8px 0 0; font-size: 13px; color: #991b1b;">
+        期限を過ぎると決済リンクが無効になります。
+      </p>
+    </div>
+    
+    <!-- Payment CTA -->
+    <div style="text-align: center;">
+      <a href="${params.checkoutUrl}" style="display: inline-block; padding: 16px 40px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+        今すぐお支払い
+      </a>
+    </div>
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: '#f59e0b',
+    headerText: '⏰ お支払い期限が近づいています',
+    content,
+    showReplyNote: true,
+    logoUrl: params.logoUrl,
+  });
+}
+
+function buildPaymentExpiredEmail(params: EmailParams): string {
+  const content = `
+    <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
+      ${params.customerName} 様
+    </p>
+    <p style="margin: 0 0 28px; font-size: 15px; color: #334155; line-height: 1.7;">
+      決済リンクの有効期限が切れました。<br>
+      ご予約を継続される場合は、お手数ですがお問い合わせください。
+    </p>
+    
+    <!-- Expired Booking -->
+    <div style="background-color: #f1f5f9; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 14px; color: #64748b;">
+        <span style="text-decoration: line-through;">${params.formattedDate} ${params.selectedTime}〜</span>
+      </p>
+    </div>
+    
+    <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+      ご不明な点がございましたら、このメールに返信してお問い合わせください。
+    </p>
+  `;
+
+  return emailWrapper({
+    brandColor: params.brandColor,
+    orgName: params.orgName,
+    headerBgColor: '#64748b',
+    headerText: '❌ 決済期限切れ',
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,

@@ -11,8 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { AdminHeader } from '@/components/AdminHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
-import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench, Clock, CreditCard, Copy, ExternalLink } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
@@ -81,6 +82,10 @@ export default function ProfilePage() {
   // Admin notification email state
   const [adminEmail, setAdminEmail] = useState('');
 
+  // Payment settings state
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
+
   // QR Code ref
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +114,8 @@ export default function ProfilePage() {
       setHeaderLayout((organization.header_layout as 'logo_only' | 'logo_and_name' | 'name_only') || 'logo_and_name');
       // Load admin notification email
       setAdminEmail((organization as any).admin_email || '');
+      // Load payment settings
+      setPaymentEnabled((organization as any).payment_enabled || false);
     }
   }, [organization]);
 
@@ -500,6 +507,37 @@ export default function ProfilePage() {
     }
   };
 
+  const handlePaymentSettingsUpdate = async () => {
+    setIsSavingPayment(true);
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          payment_enabled: paymentEnabled,
+        })
+        .eq('id', organization?.id);
+
+      if (error) throw error;
+
+      await refreshOrganization();
+      toast({
+        title: "更新完了",
+        description: "決済設定を更新しました",
+      });
+    } catch (error) {
+      console.error('Payment settings update error:', error);
+      toast({
+        variant: "destructive",
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : "決済設定の更新に失敗しました",
+      });
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
+
+  const webhookUrl = "https://yfxuqyvsccheqhzjopuj.supabase.co/functions/v1/stripe-webhook";
+
   const COLOR_PRESETS = [
     { name: 'ネイビー', value: '#1E3A8A' },
     { name: 'ブルー', value: '#2563EB' },
@@ -641,7 +679,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="booking" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="booking" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">予約ページ</span>
@@ -666,6 +704,11 @@ export default function ProfilePage() {
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">LINE連携</span>
               <span className="sm:hidden">LINE</span>
+            </TabsTrigger>
+            <TabsTrigger value="payment" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">決済</span>
+              <span className="sm:hidden">決済</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1258,6 +1301,179 @@ export default function ProfilePage() {
           {/* LINE連携タブ */}
           <TabsContent value="line">
             <LineSettingsForm />
+          </TabsContent>
+
+          {/* 決済タブ */}
+          <TabsContent value="payment" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  事前決済設定
+                </CardTitle>
+                <CardDescription>
+                  予約承認時にお客様へ決済リンクを送信し、支払い完了後に予約を確定します
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Payment Enabled Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentEnabled" className="text-base font-medium">
+                      事前決済を有効にする
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      有効にすると、予約承認時に決済リンクが顧客に送信されます
+                    </p>
+                  </div>
+                  <Switch
+                    id="paymentEnabled"
+                    checked={paymentEnabled}
+                    onCheckedChange={setPaymentEnabled}
+                  />
+                </div>
+
+                {paymentEnabled && (
+                  <>
+                    <Separator />
+                    
+                    {/* Payment Info */}
+                    <div className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="p-4 rounded-lg border">
+                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                            <Clock className="h-4 w-4" />
+                            決済リンク有効期限
+                          </div>
+                          <p className="text-2xl font-bold">72時間</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            期限切れ12時間前にリマインダーを自動送信
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-lg border">
+                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                            <Icon name="percent" size={16} />
+                            プラットフォーム手数料
+                          </div>
+                          <p className="text-2xl font-bold">7%</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            決済金額から自動的に差し引かれます
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Webhook URL */}
+                    <div className="space-y-3">
+                      <Label>Stripe Webhook URL</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-muted px-3 py-2 rounded-md text-sm font-mono break-all">
+                          {webhookUrl}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            navigator.clipboard.writeText(webhookUrl);
+                            toast({
+                              title: "コピーしました",
+                              description: "Webhook URLをクリップボードにコピーしました",
+                            });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Stripe Dashboardの Webhooks設定でこのURLを登録してください
+                      </p>
+                    </div>
+
+                    {/* Stripe Dashboard Link */}
+                    <div className="p-4 rounded-lg border bg-primary/10">
+                      <div className="flex items-start gap-3">
+                        <Icon name="info" size={20} className="text-primary mt-0.5" />
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">
+                            Stripe Webhookの設定手順
+                          </p>
+                          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                            <li>Stripe Dashboardの「Developers → Webhooks」を開く</li>
+                            <li>「Add endpoint」をクリック</li>
+                            <li>上記のURLを「Endpoint URL」に貼り付け</li>
+                            <li>イベントを選択: checkout.session.completed, checkout.session.expired, charge.refunded</li>
+                            <li>「Add endpoint」で保存</li>
+                          </ol>
+                          <a
+                            href="https://dashboard.stripe.com/webhooks"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 mt-2"
+                          >
+                            Stripe Dashboardを開く
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={handlePaymentSettingsUpdate}
+                  disabled={isSavingPayment}
+                >
+                  {isSavingPayment ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    '決済設定を保存'
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Payment Flow Explanation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">決済フローについて</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</div>
+                    <div>
+                      <p className="font-medium text-sm">予約リクエスト受付</p>
+                      <p className="text-xs text-muted-foreground">お客様が予約をリクエスト（ステータス: 保留中）</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</div>
+                    <div>
+                      <p className="font-medium text-sm">管理者が承認 & 決済リンク送信</p>
+                      <p className="text-xs text-muted-foreground">「承認して決済リンクを送信」ボタンをクリック（ステータス: 決済待ち）</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</div>
+                    <div>
+                      <p className="font-medium text-sm">お客様が決済完了</p>
+                      <p className="text-xs text-muted-foreground">決済完了後、自動的に予約確定（ステータス: 確定）</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 rounded-lg bg-muted border">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>⏰ リマインダー:</strong> 決済期限の12時間前に自動でリマインダーが送信されます。72時間経過しても決済されない場合は、管理者にて判断してください（自動キャンセルはされません）。
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
