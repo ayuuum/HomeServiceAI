@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.create-refund]
 verify_jwt = false
 
+[functions.cron-payment-check]
+verify_jwt = false
+
 # Japanese Email Templates for Supabase Auth
 [auth.email.template.confirmation]
 subject = "メールアドレスの確認"
