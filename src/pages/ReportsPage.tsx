@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+ import { useState, useEffect } from 'react';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,8 @@ import { Icon } from '@/components/ui/icon';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { exportToCSV, formatCurrencyForExport, type ColumnConfig } from '@/lib/exportUtils';
-import { TrendingUp, TrendingDown, Minus, Calendar, Users, Banknote, ShoppingBag } from 'lucide-react';
+ import { TrendingUp, TrendingDown, Minus, Calendar, Users, Banknote, ShoppingBag, Receipt } from 'lucide-react';
+ import { MonthlyBillingReport } from '@/components/MonthlyBillingReport';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -26,9 +28,10 @@ interface KPIData {
   previousNewCustomers: number;
 }
 
-export default function ReportsPage() {
+ export default function ReportsPage() {
   const { toast } = useToast();
   const [period, setPeriod] = useState('7');
+   const [activeTab, setActiveTab] = useState('analytics');
   const [salesData, setSalesData] = useState<any[]>([]);
   const [serviceData, setServiceData] = useState<any[]>([]);
   const [statusData, setStatusData] = useState<any[]>([]);
@@ -248,20 +251,35 @@ export default function ReportsPage() {
             <h1 className="text-lg md:text-xl font-bold">経営ダッシュボード</h1>
             <p className="text-muted-foreground text-sm mt-1">売上と予約の統計情報</p>
           </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">過去7日間</SelectItem>
-              <SelectItem value="14">過去14日間</SelectItem>
-              <SelectItem value="30">過去30日間</SelectItem>
-              <SelectItem value="90">過去90日間</SelectItem>
-            </SelectContent>
-          </Select>
+          {activeTab === 'analytics' && (
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">過去7日間</SelectItem>
+                <SelectItem value="14">過去14日間</SelectItem>
+                <SelectItem value="30">過去30日間</SelectItem>
+                <SelectItem value="90">過去90日間</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        {isLoading ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              売上分析
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              月次請求
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="analytics">
+            {isLoading ? (
           <div className="flex items-center justify-center py-24">
             <p className="text-muted-foreground animate-pulse">読み込み中...</p>
           </div>
@@ -526,10 +544,16 @@ export default function ReportsPage() {
                     )}
                   </CardContent>
                 </Card>
-              </motion.div>
+                </motion.div>
+              </div>
             </div>
-          </div>
-        )}
+            )}
+          </TabsContent>
+
+          <TabsContent value="billing">
+            <MonthlyBillingReport />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
