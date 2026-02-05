@@ -44,14 +44,9 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { bookingId, notificationType, adminNotificationType }: HybridNotificationRequest = await req.json();
-    let checkoutUrl = undefined;
-    try {
-      const bodyClone = await req.clone().json();
-      checkoutUrl = bodyClone.checkoutUrl;
-    } catch (e) {
-      // ignore if clone fails or body is already consumed
-    }
+    const body = await req.json();
+    const { bookingId, notificationType, adminNotificationType } = body as HybridNotificationRequest;
+    const checkoutUrl = body.checkoutUrl;
 
     if (!bookingId || !notificationType) {
       return new Response(JSON.stringify({ error: "bookingId and notificationType are required" }), {
