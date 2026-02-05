@@ -24,6 +24,8 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MyBookingsPage from "./pages/liff/MyBookingsPage";
 import LiffBookingPage from "./pages/liff/LiffBookingPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentCancelledPage from "./pages/PaymentCancelledPage";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/payment/success" element={<PaymentSuccessPage />} />
+            <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminDashboard />

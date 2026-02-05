@@ -49,6 +49,13 @@ const getStatusBadge = (status: string) => {
           確定済み
         </Badge>
       );
+    case "awaiting_payment":
+      return (
+        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 font-medium">
+          <Icon name="payments" size={12} className="mr-1" />
+          決済待ち
+        </Badge>
+      );
     case "cancelled":
       return (
         <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 font-medium">

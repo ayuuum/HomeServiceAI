@@ -43,6 +43,14 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
     preference3Time: dbBooking.preference3_time,
     // 承認された希望番号
     approvedPreference: dbBooking.approved_preference,
+    // Payment fields
+    paymentStatus: dbBooking.payment_status,
+    stripeCheckoutSessionId: dbBooking.stripe_checkout_session_id,
+    stripePaymentIntentId: dbBooking.stripe_payment_intent_id,
+    checkoutExpiresAt: dbBooking.checkout_expires_at,
+    paidAt: dbBooking.paid_at,
+    refundedAt: dbBooking.refunded_at,
+    refundAmount: dbBooking.refund_amount,
   };
 };
 
