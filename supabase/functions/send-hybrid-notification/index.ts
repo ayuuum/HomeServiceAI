@@ -109,7 +109,8 @@ serve(async (req: Request): Promise<Response> => {
           brand_color,
           line_channel_token,
           logo_url,
-          admin_email
+          admin_email,
+          admin_line_user_id
         )
       `,
       )
@@ -138,9 +139,32 @@ serve(async (req: Request): Promise<Response> => {
     const results: { channel: "line" | "email"; success: boolean; message?: string; error?: string }[] = [];
 
     // 1. Admin Notification (Email only)
+    // 1. Admin Notification (LINE + Email)
     if (notificationType === "admin_notification") {
-      const emailResult = await sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType);
-      results.push({ channel: "email", ...emailResult });
+      const promises = [];
+
+      // Send LINE notification to admin if admin_line_user_id is configured
+      if (org?.admin_line_user_id && org?.line_channel_token) {
+        promises.push(
+          sendAdminLineNotification(
+            booking,
+            org.admin_line_user_id,
+            org,
+            adminNotificationType || "new_booking"
+          ).then((res) => ({ channel: "line" as const, ...res }))
+        );
+      }
+
+      // Send email notification to admin
+      promises.push(
+        sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType).then((res) => ({
+          channel: "email" as const,
+          ...res,
+        }))
+      );
+
+      const taskResults = await Promise.all(promises);
+      results.push(...taskResults);
     }
     // 2. Customer Notifications (LINE + Email)
     else {
@@ -206,6 +230,86 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 });
+
+// Send LINE notification to admin
+async function sendAdminLineNotification(
+  booking: any,
+  adminLineUserId: string,
+  org: any,
+  adminNotificationType: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log(`[send-hybrid-notification] Sending admin LINE notification to ${adminLineUserId}`);
+
+    const message = buildAdminLineMessage(booking, org.name, adminNotificationType);
+
+    const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${org.line_channel_token}`,
+      },
+      body: JSON.stringify({
+        to: adminLineUserId,
+        messages: [{ type: "text", text: message }],
+      }),
+    });
+
+    if (!lineResponse.ok) {
+      const errorText = await lineResponse.text();
+      console.error("[send-hybrid-notification] Admin LINE API error:", errorText);
+      return {
+        success: false,
+        message: "Failed to send admin LINE message",
+        error: errorText,
+      };
+    }
+
+    console.log("[send-hybrid-notification] Admin LINE notification sent successfully");
+    return {
+      success: true,
+      message: "Admin LINE notification sent successfully",
+    };
+  } catch (error: any) {
+    console.error("[send-hybrid-notification] Admin LINE error:", error);
+    return {
+      success: false,
+      message: "Failed to send admin LINE notification",
+      error: error.message,
+    };
+  }
+}
+
+// Build admin LINE message
+function buildAdminLineMessage(booking: any, orgName: string, adminNotificationType: string): string {
+  const dateStr = booking.selected_date;
+  const timeStr = booking.selected_time;
+  const customerName = booking.customer_name || "お客様";
+  const customerPhone = booking.customer_phone || "未登録";
+  const totalPrice = booking.total_price?.toLocaleString() || "0";
+
+  if (adminNotificationType === "cancelled") {
+    return `❌ 予約キャンセル通知
+
+${customerName}様がご予約をキャンセルされました。
+
+📅 ${dateStr} ${timeStr}
+📞 ${customerPhone}
+💰 ${totalPrice}円
+
+※ 管理画面で詳細をご確認ください`;
+  }
+
+  return `🔔 新規予約通知
+
+${customerName}様から新規予約が入りました！
+
+📅 ${dateStr} ${timeStr}
+📞 ${customerPhone}
+💰 ${totalPrice}円
+
+※ 管理画面で予約内容をご確認ください`;
+}
 
 // Send LINE notification
 // Send LINE notification
