@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -43,9 +41,28 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Safely read and parse request body
+  let body: HybridNotificationRequest;
   try {
-    const body = await req.json();
-    const { bookingId, notificationType, adminNotificationType } = body as HybridNotificationRequest;
+    const text = await req.text();
+    if (!text) {
+      console.error("[send-hybrid-notification] Request body is empty");
+      return new Response(
+        JSON.stringify({ error: "Request body is empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    body = JSON.parse(text) as HybridNotificationRequest;
+  } catch (parseError: any) {
+    console.error("[send-hybrid-notification] Failed to parse request body:", parseError);
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON in request body" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    const { bookingId, notificationType, adminNotificationType } = body;
     const checkoutUrl = body.checkoutUrl;
 
     if (!bookingId || !notificationType) {
