@@ -103,11 +103,13 @@ export type Database = {
       }
       bookings: {
         Row: {
+          additional_charges: Json | null
           approved_preference: number | null
           cancel_token: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           checkout_expires_at: string | null
+          collected_at: string | null
           created_at: string | null
           customer_address: string | null
           customer_address_building: string | null
@@ -118,10 +120,14 @@ export type Database = {
           customer_postal_code: string | null
           diagnosis_has_parking: boolean | null
           diagnosis_notes: string | null
+          final_amount: number | null
+          gmv_included_at: string | null
           id: string
           line_reminder_sent_at: string | null
+          online_payment_status: string | null
           organization_id: string | null
           paid_at: string | null
+          payment_method: string | null
           payment_reminder_sent_at: string | null
           payment_status: string | null
           preference1_date: string | null
@@ -141,11 +147,13 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          additional_charges?: Json | null
           approved_preference?: number | null
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           checkout_expires_at?: string | null
+          collected_at?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -156,10 +164,14 @@ export type Database = {
           customer_postal_code?: string | null
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
+          final_amount?: number | null
+          gmv_included_at?: string | null
           id?: string
           line_reminder_sent_at?: string | null
+          online_payment_status?: string | null
           organization_id?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           payment_reminder_sent_at?: string | null
           payment_status?: string | null
           preference1_date?: string | null
@@ -179,11 +191,13 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          additional_charges?: Json | null
           approved_preference?: number | null
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           checkout_expires_at?: string | null
+          collected_at?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -194,10 +208,14 @@ export type Database = {
           customer_postal_code?: string | null
           diagnosis_has_parking?: boolean | null
           diagnosis_notes?: string | null
+          final_amount?: number | null
+          gmv_included_at?: string | null
           id?: string
           line_reminder_sent_at?: string | null
+          online_payment_status?: string | null
           organization_id?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           payment_reminder_sent_at?: string | null
           payment_status?: string | null
           preference1_date?: string | null
@@ -387,6 +405,57 @@ export type Database = {
           },
         ]
       }
+      gmv_audit_log: {
+        Row: {
+          action: string
+          booking_id: string
+          created_at: string | null
+          id: string
+          new_amount: number | null
+          organization_id: string
+          performed_by: string | null
+          previous_amount: number | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          new_amount?: number | null
+          organization_id: string
+          performed_by?: string | null
+          previous_amount?: number | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          new_amount?: number | null
+          organization_id?: string
+          performed_by?: string | null
+          previous_amount?: number | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmv_audit_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gmv_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       line_messages: {
         Row: {
           content: string
@@ -444,6 +513,77 @@ export type Database = {
           },
         ]
       }
+      monthly_billing: {
+        Row: {
+          billing_month: string
+          booking_count: number
+          created_at: string | null
+          due_at: string | null
+          fee_percent: number
+          fee_total: number
+          gmv_bank_transfer: number
+          gmv_cash: number
+          gmv_online: number
+          gmv_total: number
+          hosted_invoice_url: string | null
+          id: string
+          invoice_status: string | null
+          issued_at: string | null
+          organization_id: string
+          paid_at: string | null
+          stripe_invoice_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_month: string
+          booking_count?: number
+          created_at?: string | null
+          due_at?: string | null
+          fee_percent?: number
+          fee_total?: number
+          gmv_bank_transfer?: number
+          gmv_cash?: number
+          gmv_online?: number
+          gmv_total?: number
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_status?: string | null
+          issued_at?: string | null
+          organization_id: string
+          paid_at?: string | null
+          stripe_invoice_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_month?: string
+          booking_count?: number
+          created_at?: string | null
+          due_at?: string | null
+          fee_percent?: number
+          fee_total?: number
+          gmv_bank_transfer?: number
+          gmv_cash?: number
+          gmv_online?: number
+          gmv_total?: number
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_status?: string | null
+          issued_at?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          stripe_invoice_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_billing_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -492,6 +632,8 @@ export type Database = {
         Row: {
           admin_email: string | null
           admin_line_user_id: string | null
+          billing_customer_id: string | null
+          billing_payment_method_status: string | null
           booking_headline: string | null
           brand_color: string | null
           business_hours: Json | null
@@ -520,6 +662,8 @@ export type Database = {
         Insert: {
           admin_email?: string | null
           admin_line_user_id?: string | null
+          billing_customer_id?: string | null
+          billing_payment_method_status?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null
@@ -548,6 +692,8 @@ export type Database = {
         Update: {
           admin_email?: string | null
           admin_line_user_id?: string | null
+          billing_customer_id?: string | null
+          billing_payment_method_status?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null

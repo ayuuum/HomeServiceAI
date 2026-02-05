@@ -47,6 +47,7 @@ export interface Booking {
   serviceId: string;
   serviceName: string;
   totalPrice: number;
+  finalAmount?: number;
   status: "pending" | "awaiting_payment" | "confirmed" | "completed" | "cancelled";
   selectedDate: string;
   selectedTime: string;
@@ -62,6 +63,15 @@ export interface Booking {
   optionsSummary: string[];
   createdAt: string;
   customerId?: string;
+  // GMV課金関連
+  paymentMethod?: "cash" | "bank_transfer" | "online_card" | "other";
+  collectedAt?: string;
+  gmvIncludedAt?: string;
+  onlinePaymentStatus?: "pending" | "paid" | "failed" | "refunded";
+  additionalCharges?: Array<{
+    title: string;
+    amount: number;
+  }>;
   // 希望日時（3つ）
   preference1Date?: string;
   preference1Time?: string;
@@ -75,10 +85,42 @@ export interface Booking {
   paymentStatus?: "unpaid" | "awaiting_payment" | "paid" | "expired" | "failed" | "refunded" | "partially_refunded";
   stripeCheckoutSessionId?: string;
   stripePaymentIntentId?: string;
-  checkoutExpiresAt?: string;
   paidAt?: string;
   refundedAt?: string;
   refundAmount?: number;
+}
+
+export interface MonthlyBilling {
+  id: string;
+  organizationId: string;
+  billingMonth: string;
+  gmvTotal: number;
+  gmvCash: number;
+  gmvBankTransfer: number;
+  gmvOnline: number;
+  bookingCount: number;
+  feePercent: number;
+  feeTotal: number;
+  stripeInvoiceId?: string;
+  invoiceStatus: "draft" | "issued" | "paid" | "overdue" | "void";
+  hostedInvoiceUrl?: string;
+  issuedAt?: string;
+  dueAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GmvAuditLog {
+  id: string;
+  organizationId: string;
+  bookingId: string;
+  action: "completed" | "modified" | "refunded" | "cancelled";
+  previousAmount?: number;
+  newAmount?: number;
+  reason?: string;
+  performedBy?: string;
+  createdAt: string;
 }
 
 export interface Customer {
