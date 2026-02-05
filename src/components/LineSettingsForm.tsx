@@ -20,6 +20,7 @@ export function LineSettingsForm() {
   const [channelSecret, setChannelSecret] = useState('');
   const [botUserId, setBotUserId] = useState('');
   const [liffId, setLiffId] = useState('');
+  const [adminLineUserId, setAdminLineUserId] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,6 +73,9 @@ export function LineSettingsForm() {
       if ((data as any).line_liff_id) {
         setLiffId((data as any).line_liff_id);
       }
+      if ((data as any).admin_line_user_id) {
+        setAdminLineUserId((data as any).admin_line_user_id);
+      }
       // Reminder settings
       if ((data as any).line_reminder_hours_before) {
         const hours = (data as any).line_reminder_hours_before;
@@ -115,6 +119,11 @@ export function LineSettingsForm() {
       }
       if (liffId) {
         updates.line_liff_id = liffId.trim();
+      }
+      if (adminLineUserId) {
+        (updates as any).admin_line_user_id = adminLineUserId.trim();
+      } else {
+        (updates as any).admin_line_user_id = null;
       }
       
       // Always update reminder and AI settings
@@ -218,6 +227,7 @@ export function LineSettingsForm() {
     setChannelSecret('');
     setBotUserId('');
     setLiffId('');
+    setAdminLineUserId('');
     setHasExistingConfig(false);
   };
 
@@ -343,6 +353,22 @@ export function LineSettingsForm() {
             value={liffId}
             onChange={(e) => setLiffId(e.target.value)}
             placeholder="例: 1234567890-abcdefgh"
+            className="font-mono"
+          />
+        </div>
+
+        {/* Admin LINE User ID for notifications */}
+        <div className="space-y-2">
+          <Label htmlFor="adminLineUserId">管理者LINE User ID（予約通知用）</Label>
+          <p className="text-xs text-muted-foreground">
+            新規予約やキャンセル時に通知を受け取る管理者のLINE User IDを入力してください。
+            Bot Friendの場合、友だち追加後にプロフィール設定から確認できます。
+          </p>
+          <Input
+            id="adminLineUserId"
+            value={adminLineUserId}
+            onChange={(e) => setAdminLineUserId(e.target.value)}
+            placeholder="U で始まる LINE User ID"
             className="font-mono"
           />
         </div>

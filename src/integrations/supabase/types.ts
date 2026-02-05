@@ -491,6 +491,7 @@ export type Database = {
       organizations: {
         Row: {
           admin_email: string | null
+          admin_line_user_id: string | null
           booking_headline: string | null
           brand_color: string | null
           business_hours: Json | null
@@ -518,6 +519,7 @@ export type Database = {
         }
         Insert: {
           admin_email?: string | null
+          admin_line_user_id?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null
@@ -545,6 +547,7 @@ export type Database = {
         }
         Update: {
           admin_email?: string | null
+          admin_line_user_id?: string | null
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null
