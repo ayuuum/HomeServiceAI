@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
 import { extractCityDistrict } from "@/lib/addressUtils";
 import BookingEditModal from "./BookingEditModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -40,6 +50,28 @@ export const BookingDetailModal = ({
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [isSendingPayment, setIsSendingPayment] = useState(false);
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+
+  // Check if organization has payment enabled
+  useEffect(() => {
+    const checkPaymentEnabled = async () => {
+      if (!booking) return;
+      
+      const { data } = await supabase
+        .from('organizations')
+        .select('payment_enabled')
+        .single();
+      
+      setPaymentEnabled(data?.payment_enabled || false);
+    };
+    
+    if (open) {
+      checkPaymentEnabled();
+    }
+  }, [booking, open]);
 
   if (!booking) return null;
 
@@ -120,6 +152,108 @@ export const BookingDetailModal = ({
     onSuccess?.();
   };
 
+  const handleApproveWithPayment = async () => {
+    setIsSendingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { bookingId: booking.id }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("決済リンクを送信しました", {
+        description: "お客様にお支払い案内を送信しました"
+      });
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Payment link error:', error);
+      toast.error(error instanceof Error ? error.message : "決済リンクの送信に失敗しました");
+    } finally {
+      setIsSendingPayment(false);
+    }
+  };
+
+  const handleResendPaymentLink = async () => {
+    setIsSendingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { bookingId: booking.id }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("決済リンクを再送信しました");
+      onSuccess?.();
+    } catch (error) {
+      console.error('Resend payment link error:', error);
+      toast.error(error instanceof Error ? error.message : "決済リンクの再送信に失敗しました");
+    } finally {
+      setIsSendingPayment(false);
+    }
+  };
+
+  const handleRefund = async () => {
+    setIsRefunding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-refund', {
+        body: { bookingId: booking.id }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("返金処理が完了しました");
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Refund error:', error);
+      toast.error(error instanceof Error ? error.message : "返金処理に失敗しました");
+    } finally {
+      setIsRefunding(false);
+      setShowRefundDialog(false);
+    }
+  };
+
+  const getPaymentStatusBadge = () => {
+    if (!booking.paymentStatus || booking.paymentStatus === 'unpaid') return null;
+    
+    switch (booking.paymentStatus) {
+      case 'awaiting_payment':
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+            <Icon name="payments" size={12} className="mr-1" />
+            決済待ち
+          </Badge>
+        );
+      case 'paid':
+        return (
+          <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+            <Icon name="check_circle" size={12} className="mr-1" />
+            決済済み
+          </Badge>
+        );
+      case 'expired':
+        return (
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
+            <Icon name="schedule" size={12} className="mr-1" />
+            決済期限切れ
+          </Badge>
+        );
+      case 'refunded':
+        return (
+          <Badge variant="outline" className="bg-muted text-muted-foreground">
+            <Icon name="undo" size={12} className="mr-1" />
+            返金済み
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
   const handleSendReminder = async () => {
     try {
       setIsSendingReminder(true);
@@ -171,6 +305,13 @@ export const BookingDetailModal = ({
                 キャンセル
               </Badge>
             )}
+            {booking.status === "awaiting_payment" && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+                <Icon name="payments" size={12} className="mr-1" />
+                決済待ち
+              </Badge>
+            )}
+            {getPaymentStatusBadge()}
           </div>
 
           <Separator />
@@ -437,6 +578,21 @@ export const BookingDetailModal = ({
           {/* Actions */}
           {booking.status === "pending" && (
             <div className="space-y-3 pt-4">
+              {/* Payment approval option */}
+              {paymentEnabled && (
+                <Button
+                  className="w-full h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                  onClick={handleApproveWithPayment}
+                  disabled={isSendingPayment}
+                >
+                  {isSendingPayment ? (
+                    <Icon name="sync" size={20} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="payments" size={20} className="mr-2" />
+                  )}
+                  承認＆決済リンクを送信
+                </Button>
+              )}
               <div className="flex gap-3">
                 <Button
                   className="flex-1 h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25 transition-all duration-200 hover:scale-[1.02]"
@@ -575,6 +731,31 @@ export const BookingDetailModal = ({
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-center">
               <Icon name="cancel" size={32} className="text-destructive mx-auto mb-2" />
               <p className="text-sm font-medium text-destructive">この予約はキャンセルされました</p>
+            </div>
+          )}
+
+          {booking.status === "awaiting_payment" && (
+            <div className="space-y-3 pt-4">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
+                <Icon name="payments" size={32} className="text-blue-600 mx-auto mb-2" />
+                <p className="text-sm font-medium text-blue-600">決済リンク送信済み</p>
+                <p className="text-xs text-muted-foreground mt-1">お客様の決済完了をお待ちください</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleResendPaymentLink}
+                  disabled={isSendingPayment}
+                >
+                  {isSendingPayment ? (
+                    <Icon name="sync" size={14} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="send" size={14} className="mr-2" />
+                  )}
+                  決済リンク再送信
+                </Button>
+              </div>
             </div>
           )}
         </div>

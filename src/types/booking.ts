@@ -47,7 +47,7 @@ export interface Booking {
   serviceId: string;
   serviceName: string;
   totalPrice: number;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: "pending" | "awaiting_payment" | "confirmed" | "completed" | "cancelled";
   selectedDate: string;
   selectedTime: string;
   customerName: string;
@@ -71,6 +71,14 @@ export interface Booking {
   preference3Time?: string;
   // 承認された希望番号（1, 2, or 3）
   approvedPreference?: number;
+  // Payment fields
+  paymentStatus?: "unpaid" | "awaiting_payment" | "paid" | "expired" | "failed" | "refunded" | "partially_refunded";
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+  checkoutExpiresAt?: string;
+  paidAt?: string;
+  refundedAt?: string;
+  refundAmount?: number;
 }
 
 export interface Customer {

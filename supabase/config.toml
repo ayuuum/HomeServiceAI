@@ -39,6 +39,15 @@ verify_jwt = true
 [functions.send-hybrid-notification]
 verify_jwt = false
 
+[functions.create-checkout-session]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-refund]
+verify_jwt = false
+
 # Japanese Email Templates for Supabase Auth
 [auth.email.template.confirmation]
 subject = "メールアドレスの確認"

@@ -107,6 +107,7 @@ export type Database = {
           cancel_token: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          checkout_expires_at: string | null
           created_at: string | null
           customer_address: string | null
           customer_address_building: string | null
@@ -120,15 +121,22 @@ export type Database = {
           id: string
           line_reminder_sent_at: string | null
           organization_id: string | null
+          paid_at: string | null
+          payment_reminder_sent_at: string | null
+          payment_status: string | null
           preference1_date: string | null
           preference1_time: string | null
           preference2_date: string | null
           preference2_time: string | null
           preference3_date: string | null
           preference3_time: string | null
+          refund_amount: number | null
+          refunded_at: string | null
           selected_date: string
           selected_time: string
           status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
           total_price: number
           updated_at: string | null
         }
@@ -137,6 +145,7 @@ export type Database = {
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          checkout_expires_at?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -150,15 +159,22 @@ export type Database = {
           id?: string
           line_reminder_sent_at?: string | null
           organization_id?: string | null
+          paid_at?: string | null
+          payment_reminder_sent_at?: string | null
+          payment_status?: string | null
           preference1_date?: string | null
           preference1_time?: string | null
           preference2_date?: string | null
           preference2_time?: string | null
           preference3_date?: string | null
           preference3_time?: string | null
+          refund_amount?: number | null
+          refunded_at?: string | null
           selected_date: string
           selected_time: string
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           total_price: number
           updated_at?: string | null
         }
@@ -167,6 +183,7 @@ export type Database = {
           cancel_token?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          checkout_expires_at?: string | null
           created_at?: string | null
           customer_address?: string | null
           customer_address_building?: string | null
@@ -180,15 +197,22 @@ export type Database = {
           id?: string
           line_reminder_sent_at?: string | null
           organization_id?: string | null
+          paid_at?: string | null
+          payment_reminder_sent_at?: string | null
+          payment_status?: string | null
           preference1_date?: string | null
           preference1_time?: string | null
           preference2_date?: string | null
           preference2_time?: string | null
           preference3_date?: string | null
           preference3_time?: string | null
+          refund_amount?: number | null
+          refunded_at?: string | null
           selected_date?: string
           selected_time?: string
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           total_price?: number
           updated_at?: string | null
         }
@@ -470,6 +494,7 @@ export type Database = {
           booking_headline: string | null
           brand_color: string | null
           business_hours: Json | null
+          checkout_expiry_hours: number | null
           created_at: string | null
           header_layout: string | null
           id: string
@@ -483,7 +508,11 @@ export type Database = {
           line_reminder_hours_before: number[] | null
           logo_url: string | null
           name: string
+          payment_enabled: boolean | null
+          platform_fee_percent: number | null
           slug: string
+          stripe_account_id: string | null
+          stripe_account_status: string | null
           updated_at: string | null
           welcome_message: string | null
         }
@@ -492,6 +521,7 @@ export type Database = {
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null
+          checkout_expiry_hours?: number | null
           created_at?: string | null
           header_layout?: string | null
           id?: string
@@ -505,7 +535,11 @@ export type Database = {
           line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name: string
+          payment_enabled?: boolean | null
+          platform_fee_percent?: number | null
           slug: string
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
           updated_at?: string | null
           welcome_message?: string | null
         }
@@ -514,6 +548,7 @@ export type Database = {
           booking_headline?: string | null
           brand_color?: string | null
           business_hours?: Json | null
+          checkout_expiry_hours?: number | null
           created_at?: string | null
           header_layout?: string | null
           id?: string
@@ -527,7 +562,11 @@ export type Database = {
           line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name?: string
+          payment_enabled?: boolean | null
+          platform_fee_percent?: number | null
           slug?: string
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
           updated_at?: string | null
           welcome_message?: string | null
         }
@@ -666,6 +705,7 @@ export type Database = {
           is_active: boolean | null
           organization_id: string | null
           quantity_discounts: Json | null
+          requires_prepayment: boolean | null
           title: string
           updated_at: string | null
         }
@@ -680,6 +720,7 @@ export type Database = {
           is_active?: boolean | null
           organization_id?: string | null
           quantity_discounts?: Json | null
+          requires_prepayment?: boolean | null
           title: string
           updated_at?: string | null
         }
@@ -694,12 +735,48 @@ export type Database = {
           is_active?: boolean | null
           organization_id?: string | null
           quantity_discounts?: Json | null
+          requires_prepayment?: boolean | null
           title?: string
           updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "services_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          organization_id: string | null
+          payload: Json | null
+          processed_at: string | null
+          stripe_event_id: string
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          organization_id?: string | null
+          payload?: Json | null
+          processed_at?: string | null
+          stripe_event_id: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          organization_id?: string | null
+          payload?: Json | null
+          processed_at?: string | null
+          stripe_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_webhook_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
