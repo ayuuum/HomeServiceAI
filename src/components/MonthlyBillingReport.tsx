@@ -34,6 +34,7 @@
    customer_name: string;
    selected_date: string;
    final_amount: number;
+  total_price?: number;
    payment_method: string;
    gmv_included_at: string;
    booking_services: { service_title: string }[];
@@ -96,6 +97,7 @@
        const monthStart = startOfMonth(new Date(year, month - 1));
        const monthEnd = endOfMonth(new Date(year, month - 1));
  
+      // GMVは予約確定時（confirmed）に計上されるため、confirmed + completed を対象にする
        const { data: bookingsData, error: bookingsError } = await supabase
          .from('bookings')
          .select(`
@@ -103,11 +105,12 @@
            customer_name,
            selected_date,
            final_amount,
+          total_price,
            payment_method,
            gmv_included_at,
            booking_services (service_title)
          `)
-         .eq('status', 'completed')
+        .in('status', ['confirmed', 'completed'])
          .not('gmv_included_at', 'is', null)
          .gte('gmv_included_at', monthStart.toISOString())
          .lte('gmv_included_at', monthEnd.toISOString())
@@ -157,10 +160,12 @@
    };
  
    // Calculate GMV from bookings if no billing record
-   const calculatedGmv = bookings.reduce((sum, b) => sum + (b.final_amount || 0), 0);
-   const calculatedCash = bookings.filter(b => b.payment_method === 'cash').reduce((sum, b) => sum + (b.final_amount || 0), 0);
-   const calculatedTransfer = bookings.filter(b => b.payment_method === 'bank_transfer').reduce((sum, b) => sum + (b.final_amount || 0), 0);
-   const calculatedOnline = bookings.filter(b => b.payment_method === 'online_card').reduce((sum, b) => sum + (b.final_amount || 0), 0);
+    // final_amountがあればそれを使用、なければtotal_priceを使用
+    const getAmount = (b: CompletedBooking) => b.final_amount || b.total_price || 0;
+    const calculatedGmv = bookings.reduce((sum, b) => sum + getAmount(b), 0);
+    const calculatedCash = bookings.filter(b => b.payment_method === 'cash').reduce((sum, b) => sum + getAmount(b), 0);
+    const calculatedTransfer = bookings.filter(b => b.payment_method === 'bank_transfer').reduce((sum, b) => sum + getAmount(b), 0);
+    const calculatedOnline = bookings.filter(b => b.payment_method === 'online_card').reduce((sum, b) => sum + getAmount(b), 0);
  
    const gmvTotal = billing?.gmv_total ?? calculatedGmv;
    const gmvCash = billing?.gmv_cash ?? calculatedCash;
@@ -180,8 +185,8 @@
        {/* Header */}
        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
          <div>
-           <h2 className="text-lg font-bold">月次請求レポート</h2>
-           <p className="text-sm text-muted-foreground">GMV集計とプラットフォーム利用料</p>
+            <h2 className="text-lg font-bold">月次利用料レポート</h2>
+            <p className="text-sm text-muted-foreground">月間売上集計とサービス利用料</p>
          </div>
          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
            <SelectTrigger className="w-full md:w-[180px]">
@@ -211,7 +216,7 @@
                        <Banknote className="h-4 w-4 text-emerald-500" />
                      </div>
                    </div>
-                   <p className="text-xs text-muted-foreground">総売上 (GMV)</p>
+                    <p className="text-xs text-muted-foreground">月間売上</p>
                    <p className="text-xl font-bold">¥{gmvTotal.toLocaleString()}</p>
                  </CardContent>
                </Card>
@@ -267,9 +272,9 @@
                <CardHeader className="pb-2">
                  <CardTitle className="text-base font-bold flex items-center gap-2">
                    <Receipt className="h-4 w-4" />
-                   プラットフォーム利用料
+                    サービス利用料
                  </CardTitle>
-                 <CardDescription>GMV × {feePercent}%</CardDescription>
+                  <CardDescription>月間売上 × {feePercent}%</CardDescription>
                </CardHeader>
                <CardContent className="space-y-4">
                  <div className="flex items-center justify-between">
@@ -376,8 +381,8 @@
            {/* GMV Detail Table */}
            <Card className="border-none shadow-medium">
              <CardHeader className="pb-2">
-               <CardTitle className="text-base font-bold">GMV明細</CardTitle>
-               <CardDescription>作業完了した予約の一覧</CardDescription>
+                <CardTitle className="text-base font-bold">売上明細</CardTitle>
+                <CardDescription>売上計上済みの予約一覧</CardDescription>
              </CardHeader>
              <CardContent>
                {bookings.length === 0 ? (

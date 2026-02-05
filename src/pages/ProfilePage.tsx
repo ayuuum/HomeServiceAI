@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Icon } from '@/components/ui/icon';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
@@ -1310,10 +1311,10 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Icon name="receipt" size={20} />
-                  プラットフォーム利用料
+                  サービス利用料
                 </CardTitle>
                 <CardDescription>
-                  月間売上（GMV）の7%を翌月に請求します
+                  月間売上の7%を翌月に請求します
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1325,7 +1326,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-2xl font-bold">7%</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      作業完了した予約のGMVに適用
+                      確定した予約の売上に適用
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border">
@@ -1344,11 +1345,11 @@ export default function ProfilePage() {
                   <div className="flex items-start gap-3">
                     <Icon name="info" size={20} className="text-primary mt-0.5" />
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">GMV課金モデルについて</p>
+                      <p className="text-sm font-medium">売上連動型利用料について</p>
                       <ul className="text-xs text-muted-foreground space-y-1">
                         <li>• お客様からの代金は御社で直接回収（現金・振込・カード）</li>
-                        <li>• 「作業完了」登録時にGMVとして計上されます</li>
-                        <li>• 月末締めでGMVを集計し、7%の利用料を請求します</li>
+                        <li>• 予約を「確定」した時点で売上として計上されます</li>
+                        <li>• 月末締めで売上を集計し、7%の利用料を請求します</li>
                         <li>• 請求書はメールで送付、Stripeで支払い可能です</li>
                       </ul>
                     </div>
@@ -1391,7 +1392,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* オンライン決済（事業者Stripe）- 将来機能 */}
+            {/* オンライン決済（事業者Stripe連携） */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -1403,54 +1404,98 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-                  <div className="space-y-1">
-                    <Label className="text-base font-medium">
-                      オンライン決済を有効にする
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      有効にすると、お客様にカード決済を提供できます
-                    </p>
+                {/* Stripe連携状況 */}
+                <div className="p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">連携状況</span>
+                        {(organization as any)?.stripe_account_status === 'connected' ? (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            連携済み
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-muted">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            未連携
+                          </Badge>
+                        )}
+                      </div>
+                      {(organization as any)?.stripe_account_id && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          ID: {(organization as any).stripe_account_id}
+                        </p>
+                      )}
+                    </div>
+                    {(organization as any)?.stripe_account_status === 'connected' ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase.functions.invoke('stripe-connect-oauth', {
+                              method: 'DELETE',
+                            });
+                            if (error) throw error;
+                            await refreshOrganization();
+                            toast({
+                              title: "連携解除",
+                              description: "Stripe連携を解除しました",
+                            });
+                          } catch (error) {
+                            toast({
+                              variant: "destructive",
+                              title: "エラー",
+                              description: "Stripe連携の解除に失敗しました",
+                            });
+                          }
+                        }}
+                      >
+                        連携を解除
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const { data, error } = await supabase.functions.invoke('stripe-connect-oauth', {
+                              body: {
+                                redirectUri: `${window.location.origin}/admin/profile`,
+                              },
+                            });
+                            if (error) throw error;
+                            if (data?.url) {
+                              window.location.href = data.url;
+                            }
+                          } catch (error) {
+                            toast({
+                              variant: "destructive",
+                              title: "エラー",
+                              description: "Stripe連携の開始に失敗しました",
+                            });
+                          }
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Stripeと連携する
+                      </Button>
+                    )}
                   </div>
-                  <Switch
-                    checked={paymentEnabled}
-                    onCheckedChange={setPaymentEnabled}
-                  />
                 </div>
 
-                {paymentEnabled && (
-                  <>
-                    <Separator />
-                    <div className="p-4 rounded-lg border bg-amber-500/10 border-amber-500/20">
-                      <div className="flex items-start gap-3">
-                        <Icon name="info" size={20} className="text-amber-600 mt-0.5" />
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                            Stripe連携は近日公開予定
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300">
-                            現在、オンライン決済機能は開発中です。ご自身のStripeアカウントを連携して、お客様へカード決済を提供できるようになります。
-                          </p>
-                        </div>
-                      </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <div className="flex items-start gap-3">
+                    <Icon name="info" size={20} className="text-primary mt-0.5" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Stripe連携について</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• Stripeアカウントをお持ちでない場合は、連携時に新規作成できます</li>
+                        <li>• 連携後、お客様へカード決済リンクを送信できるようになります</li>
+                        <li>• 決済手数料はStripeの標準料金（3.6%）が適用されます</li>
+                      </ul>
                     </div>
-                  </>
-                )}
-
-                <Button
-                  type="button"
-                  onClick={handlePaymentSettingsUpdate}
-                  disabled={isSavingPayment}
-                >
-                  {isSavingPayment ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      保存中...
-                    </>
-                  ) : (
-                    '決済設定を保存'
-                  )}
-                </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -1479,19 +1524,19 @@ export default function ProfilePage() {
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</div>
                     <div>
                       <p className="font-medium text-sm">作業完了を記録</p>
-                      <p className="text-xs text-muted-foreground">予約詳細から「作業完了」を押して最終金額・決済方法を入力</p>
+                      <p className="text-xs text-muted-foreground">予約詳細から「作業完了」を押して最終金額・決済方法を記録（任意）</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</div>
                     <div>
-                      <p className="font-medium text-sm">GMV計上</p>
-                      <p className="text-xs text-muted-foreground">作業完了時点で月間GMVに自動計上されます</p>
+                      <p className="font-medium text-sm">売上計上</p>
+                      <p className="text-xs text-muted-foreground">予約確定時点で月間売上に自動計上されます</p>
                     </div>
                   </div>
                   <div className="mt-4 p-3 rounded-lg bg-muted border">
                     <p className="text-xs text-muted-foreground">
-                      <strong>📊 レポート:</strong> 月次GMVと利用料は「レポート → 月次請求」タブで確認できます。
+                      <strong>📊 レポート:</strong> 月間売上と利用料は「レポート → 月次請求」タブで確認できます。
                     </p>
                   </div>
                 </div>

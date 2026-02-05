@@ -112,6 +112,7 @@ export const BookingDetailModal = ({
           approved_preference: preferenceNum,
           selected_date: prefDate,
           selected_time: prefTime,
+          gmv_included_at: new Date().toISOString(), // 予約確定時にGMV計上
           updated_at: new Date().toISOString(),
         })
         .eq('id', booking.id);
@@ -135,10 +136,27 @@ export const BookingDetailModal = ({
     } else {
       // 従来の予約（希望日時なし）
       setIsApproving(true);
-      onApprove(booking.id);
-      await sendNotification(booking.id, 'confirmed');
-      setIsApproving(false);
-      onOpenChange(false);
+      try {
+        // 予約確定時にGMV計上
+        const { error } = await supabase
+          .from('bookings')
+          .update({
+            status: 'confirmed',
+            gmv_included_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', booking.id);
+
+        if (error) throw error;
+        await sendNotification(booking.id, 'confirmed');
+        toast.success("予約を承認しました");
+        onSuccess?.();
+        onOpenChange(false);
+      } catch (error) {
+        toast.error("予約の承認に失敗しました");
+      } finally {
+        setIsApproving(false);
+      }
     }
   };
 
