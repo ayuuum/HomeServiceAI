@@ -6,21 +6,34 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface HybridNotificationRequest {
   bookingId: string;
-  notificationType: 'confirmed' | 'cancelled' | 'reminder' | 'admin_notification' | 'pending' | 'payment_request' | 'payment_completed' | 'payment_reminder' | 'payment_expired';
-  adminNotificationType?: 'new_booking' | 'cancelled';
+  notificationType:
+    | "confirmed"
+    | "cancelled"
+    | "reminder"
+    | "admin_notification"
+    | "pending"
+    | "payment_request"
+    | "payment_completed"
+    | "payment_reminder"
+    | "payment_expired";
+  adminNotificationType?: "new_booking" | "cancelled";
   checkoutUrl?: string;
 }
 
+// Update NotificationResult to support multiple results
 interface NotificationResult {
   success: boolean;
-  channel: 'line' | 'email' | 'none';
-  message: string;
+  results?: {
+    channel: "line" | "email";
+    success: boolean;
+    message?: string;
+    error?: string;
+  }[];
   error?: string;
 }
 
@@ -32,14 +45,19 @@ serve(async (req: Request): Promise<Response> => {
 
   try {
     const { bookingId, notificationType, adminNotificationType }: HybridNotificationRequest = await req.json();
-    const body = await req.clone().json();
-    const checkoutUrl = body.checkoutUrl;
+    let checkoutUrl = undefined;
+    try {
+      const bodyClone = await req.clone().json();
+      checkoutUrl = bodyClone.checkoutUrl;
+    } catch (e) {
+      // ignore if clone fails or body is already consumed
+    }
 
     if (!bookingId || !notificationType) {
-      return new Response(
-        JSON.stringify({ error: "bookingId and notificationType are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "bookingId and notificationType are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log(`[send-hybrid-notification] Processing ${notificationType} for booking: ${bookingId}`);
@@ -51,8 +69,9 @@ serve(async (req: Request): Promise<Response> => {
 
     // Fetch booking with customer and organization info
     const { data: booking, error: bookingError } = await supabase
-      .from('bookings')
-      .select(`
+      .from("bookings")
+      .select(
+        `
         id,
         customer_name,
         customer_email,
@@ -80,79 +99,103 @@ serve(async (req: Request): Promise<Response> => {
           logo_url,
           admin_email
         )
-      `)
-      .eq('id', bookingId)
+      `,
+      )
+      .eq("id", bookingId)
       .single();
 
     if (bookingError || !booking) {
       console.error("[send-hybrid-notification] Booking not found:", bookingError);
-      return new Response(
-        JSON.stringify({ error: "Booking not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Booking not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Determine notification channel
+    // Determine notification channels
     const customer = booking.customers as any;
     const hasLine = !!customer?.line_user_id;
     const hasEmail = !!booking.customer_email;
     const org = booking.organizations as any;
     const hasLineConfig = !!org?.line_channel_token;
 
-    console.log(`[send-hybrid-notification] Customer has LINE: ${hasLine}, has Email: ${hasEmail}, LINE configured: ${hasLineConfig}`);
-
-    let result: NotificationResult;
-
-    // Priority 1: Admin Notification
-    if (notificationType === 'admin_notification') {
-      result = await sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType);
-    }
-    // Priority 2: Payment notifications (LINE preferred, fallback to email)
-    else if (['payment_request', 'payment_completed', 'payment_reminder', 'payment_expired'].includes(notificationType)) {
-      if (hasLine && hasLineConfig) {
-        result = await sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase, checkoutUrl);
-      } else if (hasEmail) {
-        result = await sendEmailNotification(booking, org, notificationType, supabase, undefined, checkoutUrl);
-      } else {
-        result = {
-          success: true,
-          channel: 'none',
-          message: "No notification channel available for payment notification"
-        };
-      }
-    }
-    // Priority 3: LINE (if customer has line_user_id AND org has LINE configured)
-    else if (hasLine && hasLineConfig) {
-      result = await sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase);
-    }
-    // Priority 4: Email (if customer has email)
-    else if (hasEmail) {
-      result = await sendEmailNotification(booking, org, notificationType, supabase);
-    }
-    // No channel available
-    else {
-      result = {
-        success: true,
-        channel: 'none',
-        message: "No notification channel available (no LINE or email)"
-      };
-      console.log("[send-hybrid-notification] No notification channel available");
-    }
-
-    return new Response(
-      JSON.stringify(result),
-      { status: result.success ? 200 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    console.log(
+      `[send-hybrid-notification] Channel check - LINE: ${hasLine} (Config: ${hasLineConfig}), Email: ${hasEmail}`,
     );
 
+    const results: { channel: "line" | "email"; success: boolean; message?: string; error?: string }[] = [];
+
+    // 1. Admin Notification (Email only)
+    if (notificationType === "admin_notification") {
+      const emailResult = await sendEmailNotification(booking, org, notificationType, supabase, adminNotificationType);
+      results.push({ channel: "email", ...emailResult });
+    }
+    // 2. Customer Notifications (LINE + Email)
+    else {
+      const promises = [];
+
+      // LINE Notification
+      if (hasLine && hasLineConfig) {
+        promises.push(
+          sendLineNotification(booking, customer.line_user_id, org, notificationType, supabase, checkoutUrl).then(
+            (res) => ({ channel: "line" as const, ...res }),
+          ),
+        );
+      }
+
+      // Email Notification
+      // Always attempt email if available, unless it's a payment notification where LINE was successful?
+      // No, user requested "Send Both".
+      if (hasEmail) {
+        // Create Resend instance lazily inside sendEmailNotification to avoid init crash if key is missing
+        promises.push(
+          sendEmailNotification(booking, org, notificationType, supabase, undefined, checkoutUrl).then((res) => ({
+            channel: "email" as const,
+            ...res,
+          })),
+        );
+      }
+
+      if (promises.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, message: "No notification channels available", results: [] }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const taskResults = await Promise.all(promises);
+      results.push(...taskResults);
+    }
+
+    // Check if at least one succeeded (or if it was a partial success)
+    const anySuccess = results.some((r) => r.success);
+    const allErrors = results
+      .filter((r) => !r.success)
+      .map((r) => `${r.channel}: ${r.error || r.message}`)
+      .join(", ");
+
+    if (!anySuccess && results.length > 0) {
+      console.error("[send-hybrid-notification] All notifications failed:", allErrors);
+      return new Response(
+        JSON.stringify({ success: false, error: "All notifications failed", details: allErrors, results }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, results }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error: any) {
     console.error("[send-hybrid-notification] Error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
+// Send LINE notification
 // Send LINE notification
 async function sendLineNotification(
   booking: any,
@@ -160,8 +203,8 @@ async function sendLineNotification(
   org: any,
   notificationType: string,
   supabase: any,
-  checkoutUrl?: string
-): Promise<NotificationResult> {
+  checkoutUrl?: string,
+): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     console.log(`[send-hybrid-notification] Sending LINE notification to ${lineUserId}`);
 
@@ -171,7 +214,7 @@ async function sendLineNotification(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${org.line_channel_token}`,
+        Authorization: `Bearer ${org.line_channel_token}`,
       },
       body: JSON.stringify({
         to: lineUserId,
@@ -184,9 +227,8 @@ async function sendLineNotification(
       console.error("[send-hybrid-notification] LINE API error:", errorText);
       return {
         success: false,
-        channel: 'line',
         message: "Failed to send LINE message",
-        error: errorText
+        error: errorText,
       };
     }
 
@@ -203,16 +245,14 @@ async function sendLineNotification(
     console.log("[send-hybrid-notification] LINE notification sent successfully");
     return {
       success: true,
-      channel: 'line',
-      message: "LINE notification sent successfully"
+      message: "LINE notification sent successfully",
     };
   } catch (error: any) {
     console.error("[send-hybrid-notification] LINE error:", error);
     return {
       success: false,
-      channel: 'line',
       message: "Failed to send LINE notification",
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -224,42 +264,50 @@ async function sendEmailNotification(
   notificationType: string,
   supabase: any,
   adminNotificationType?: string,
-  checkoutUrl?: string
-): Promise<NotificationResult> {
+  checkoutUrl?: string,
+): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("[send-hybrid-notification] RESEND_API_KEY not found");
+      return { success: false, error: "RESEND_API_KEY not configured" };
+    }
+    // Initialize Resend with the key
+    const resend = new Resend(resendApiKey);
+
     console.log(`[send-hybrid-notification] Sending email notification to ${booking.customer_email}`);
 
     // Fetch admin email for Reply-To
     const { data: adminProfile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('organization_id', booking.organization_id)
-      .not('email', 'is', null)
+      .from("profiles")
+      .select("email")
+      .eq("organization_id", booking.organization_id)
+      .not("email", "is", null)
       .limit(1)
       .maybeSingle();
 
     // Fetch booking services
     const { data: bookingServices } = await supabase
-      .from('booking_services')
-      .select('service_title, service_quantity, service_base_price')
-      .eq('booking_id', booking.id);
+      .from("booking_services")
+      .select("service_title, service_quantity, service_base_price")
+      .eq("booking_id", booking.id);
 
     // Build services list
     const servicesList = (bookingServices || [])
-      .map((s: any) => `${s.service_title}${s.service_quantity > 1 ? ` x${s.service_quantity}` : ''}`)
-      .join(', ');
+      .map((s: any) => `${s.service_title}${s.service_quantity > 1 ? ` x${s.service_quantity}` : ""}`)
+      .join(", ");
 
-    const orgName = org?.name || '予約システム';
-    const brandColor = org?.brand_color || '#4F46E5';
+    const orgName = org?.name || "予約システム";
+    const brandColor = org?.brand_color || "#4F46E5";
     const logoUrl = org?.logo_url;
     const replyToEmail = adminProfile?.email;
 
     // Format date
-    const formattedDate = new Date(booking.selected_date).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
+    const formattedDate = new Date(booking.selected_date).toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
     });
 
     // Build cancel URL
@@ -269,7 +317,7 @@ async function sendEmailNotification(
     let subject: string;
     let htmlContent: string;
 
-    if (notificationType === 'pending') {
+    if (notificationType === "pending") {
       subject = `【${orgName}】ご予約リクエストを受け付けました`;
       htmlContent = buildPendingEmail({
         customerName: booking.customer_name,
@@ -282,7 +330,7 @@ async function sendEmailNotification(
         cancelUrl,
         logoUrl,
       });
-    } else if (notificationType === 'confirmed') {
+    } else if (notificationType === "confirmed") {
       subject = `【${orgName}】ご予約が確定しました`;
       htmlContent = buildConfirmedEmail({
         customerName: booking.customer_name,
@@ -295,7 +343,7 @@ async function sendEmailNotification(
         cancelUrl,
         logoUrl,
       });
-    } else if (notificationType === 'cancelled') {
+    } else if (notificationType === "cancelled") {
       subject = `【${orgName}】ご予約がキャンセルされました`;
       htmlContent = buildCancelledEmail({
         customerName: booking.customer_name,
@@ -305,8 +353,8 @@ async function sendEmailNotification(
         selectedTime: booking.selected_time,
         logoUrl,
       });
-    } else if (notificationType === 'admin_notification') {
-      const typeLabel = adminNotificationType === 'new_booking' ? '新規予約' : 'キャンセル';
+    } else if (notificationType === "admin_notification") {
+      const typeLabel = adminNotificationType === "new_booking" ? "新規予約" : "キャンセル";
       subject = `【管理通知】${typeLabel}のお知らせ (${booking.customer_name}様)`;
       htmlContent = buildAdminNotificationEmail({
         customerName: booking.customer_name,
@@ -318,10 +366,10 @@ async function sendEmailNotification(
         selectedTime: booking.selected_time,
         servicesList,
         totalPrice: booking.total_price,
-        adminNotificationType: adminNotificationType || 'new_booking',
+        adminNotificationType: adminNotificationType || "new_booking",
         logoUrl,
       });
-    } else if (notificationType === 'payment_request') {
+    } else if (notificationType === "payment_request") {
       subject = `【${orgName}】お支払いのお願い`;
       htmlContent = buildPaymentRequestEmail({
         customerName: booking.customer_name,
@@ -331,11 +379,11 @@ async function sendEmailNotification(
         selectedTime: booking.selected_time,
         servicesList,
         totalPrice: booking.total_price,
-        checkoutUrl: checkoutUrl || '',
+        checkoutUrl: checkoutUrl || "",
         expiresAt: booking.checkout_expires_at,
         logoUrl,
       });
-    } else if (notificationType === 'payment_completed') {
+    } else if (notificationType === "payment_completed") {
       subject = `【${orgName}】お支払いが完了しました`;
       htmlContent = buildPaymentCompletedEmail({
         customerName: booking.customer_name,
@@ -348,7 +396,7 @@ async function sendEmailNotification(
         cancelUrl,
         logoUrl,
       });
-    } else if (notificationType === 'payment_reminder') {
+    } else if (notificationType === "payment_reminder") {
       subject = `【${orgName}】お支払い期限が近づいています`;
       htmlContent = buildPaymentReminderEmail({
         customerName: booking.customer_name,
@@ -357,11 +405,11 @@ async function sendEmailNotification(
         formattedDate,
         selectedTime: booking.selected_time,
         totalPrice: booking.total_price,
-        checkoutUrl: checkoutUrl || '',
+        checkoutUrl: checkoutUrl || "",
         expiresAt: booking.checkout_expires_at,
         logoUrl,
       });
-    } else if (notificationType === 'payment_expired') {
+    } else if (notificationType === "payment_expired") {
       subject = `【${orgName}】決済リンクの有効期限が切れました`;
       htmlContent = buildPaymentExpiredEmail({
         customerName: booking.customer_name,
@@ -389,13 +437,12 @@ async function sendEmailNotification(
     // Priority for admin_notification: 1) org.admin_email, 2) profiles email, 3) ADMIN_EMAIL env var
     const orgAdminEmail = org?.admin_email;
     const adminRecipient = orgAdminEmail || replyToEmail || Deno.env.get("ADMIN_EMAIL");
-    const recipientEmail = notificationType === 'admin_notification' ? adminRecipient : booking.customer_email;
+    const recipientEmail = notificationType === "admin_notification" ? adminRecipient : booking.customer_email;
 
     if (!recipientEmail) {
       return {
         success: false,
-        channel: 'email',
-        message: "Recipient email not found"
+        message: "Recipient email not found",
       };
     }
 
@@ -408,19 +455,19 @@ async function sendEmailNotification(
       html: htmlContent,
     });
 
-    console.log(`[send-hybrid-notification] Email sent successfully${replyToEmail ? ` (reply-to: ${replyToEmail})` : ''}`);
+    console.log(
+      `[send-hybrid-notification] Email sent successfully${replyToEmail ? ` (reply-to: ${replyToEmail})` : ""}`,
+    );
     return {
       success: true,
-      channel: 'email',
-      message: `Email notification sent successfully${replyToEmail ? ' with reply-to' : ''}`
+      message: `Email notification sent successfully${replyToEmail ? " with reply-to" : ""}`,
     };
   } catch (error: any) {
     console.error("[send-hybrid-notification] Email error:", error);
     return {
       success: false,
-      channel: 'email',
       message: "Failed to send email notification",
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -434,7 +481,7 @@ function buildLineMessage(booking: any, notificationType: string, orgName: strin
   const storeName = orgName || "ハウクリPro";
 
   switch (notificationType) {
-    case 'pending':
+    case "pending":
       return `📋 ご予約リクエストを受け付けました
 
 ${customerName}様
@@ -447,7 +494,7 @@ ${customerName}様
 
 ${storeName}`;
 
-    case 'confirmed':
+    case "confirmed":
       return `✓ ご予約が確定しました
 
 ${customerName}様
@@ -459,7 +506,7 @@ ${customerName}様
 
 ${storeName}`;
 
-    case 'cancelled':
+    case "cancelled":
       return `キャンセル完了
 
 ${customerName}様
@@ -472,7 +519,7 @@ ${customerName}様
 
 ${storeName}`;
 
-    case 'reminder':
+    case "reminder":
       return `📅 明日のご予約
 
 ${customerName}様
@@ -484,7 +531,7 @@ ${customerName}様
 
 ${storeName}`;
 
-    case 'payment_request':
+    case "payment_request":
       return `💳 お支払いのお願い
 
 ${customerName}様
@@ -496,13 +543,13 @@ ${customerName}様
 💰 ${totalPrice}円
 
 🔗 お支払いはこちら:
-${checkoutUrl || ''}
+${checkoutUrl || ""}
 
 ⏰ 有効期限: 72時間
 
 ${storeName}`;
 
-    case 'payment_completed':
+    case "payment_completed":
       return `✅ お支払い完了
 
 ${customerName}様
@@ -515,7 +562,7 @@ ${customerName}様
 
 ${storeName}`;
 
-    case 'payment_reminder':
+    case "payment_reminder":
       return `⏰ お支払い期限が近づいています
 
 ${customerName}様
@@ -527,11 +574,11 @@ ${customerName}様
 💰 ${totalPrice}円
 
 🔗 お支払いはこちら:
-${checkoutUrl || ''}
+${checkoutUrl || ""}
 
 ${storeName}`;
 
-    case 'payment_expired':
+    case "payment_expired":
       return `❌ 決済期限切れ
 
 ${customerName}様
@@ -571,7 +618,15 @@ interface EmailParams {
 }
 
 // Shared email wrapper
-function emailWrapper(params: { brandColor: string; orgName: string; headerBgColor: string; headerText: string; content: string; showReplyNote?: boolean; logoUrl?: string }): string {
+function emailWrapper(params: {
+  brandColor: string;
+  orgName: string;
+  headerBgColor: string;
+  headerText: string;
+  content: string;
+  showReplyNote?: boolean;
+  logoUrl?: string;
+}): string {
   // Use organization brand color for header background if not explicitly set to something else (like red for errors)
   // But strictly follow the params passed.
 
@@ -590,11 +645,15 @@ function emailWrapper(params: { brandColor: string; orgName: string; headerBgCol
           <!-- Header -->
           <tr>
             <td style="background-color: ${params.headerBgColor}; padding: 28px 24px; text-align: center;">
-              ${params.logoUrl ? `
+              ${
+                params.logoUrl
+                  ? `
               <div style="margin-bottom: 16px;">
                 <img src="${params.logoUrl}" alt="${params.orgName}" width="60" height="60" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background-color: #ffffff; padding: 2px;">
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
               <p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 600;">${params.headerText}</p>
             </td>
           </tr>
@@ -610,11 +669,15 @@ function emailWrapper(params: { brandColor: string; orgName: string; headerBgCol
               <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500;">
                 ${params.orgName}
               </p>
-              ${params.showReplyNote ? `
+              ${
+                params.showReplyNote
+                  ? `
               <p style="margin: 8px 0 0; font-size: 11px; color: #94a3b8;">
                 このメールに返信すると、担当者へ直接連絡できます
               </p>
-              ` : ''}
+              `
+                  : ""
+              }
             </td>
           </tr>
         </table>
@@ -647,20 +710,28 @@ function buildPendingEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
-            ${params.totalPrice ? `
+            `
+                : ""
+            }
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">お見積り</td>
               <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
                 ¥${params.totalPrice.toLocaleString()}
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
@@ -675,18 +746,22 @@ function buildPendingEmail(params: EmailParams): string {
       </p>
     </div>
     
-    ${params.cancelUrl ? `
+    ${
+      params.cancelUrl
+        ? `
     <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
       キャンセルをご希望の場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>
     </p>
-    ` : ''}
+    `
+        : ""
+    }
   `;
 
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
     headerBgColor: params.brandColor,
-    headerText: '📋 ご予約リクエストを受け付けました',
+    headerText: "📋 ご予約リクエストを受け付けました",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -694,12 +769,15 @@ function buildPendingEmail(params: EmailParams): string {
 }
 
 function buildPaymentRequestEmail(params: EmailParams): string {
-  const expiresAtFormatted = params.expiresAt 
-    ? new Date(params.expiresAt).toLocaleString('ja-JP', { 
-        year: 'numeric', month: 'long', day: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
+  const expiresAtFormatted = params.expiresAt
+    ? new Date(params.expiresAt).toLocaleString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       })
-    : '72時間後';
+    : "72時間後";
 
   const content = `
     <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
@@ -721,20 +799,28 @@ function buildPaymentRequestEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
-            ${params.totalPrice ? `
+            `
+                : ""
+            }
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
               <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
                 ¥${params.totalPrice.toLocaleString()}
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
@@ -760,7 +846,7 @@ function buildPaymentRequestEmail(params: EmailParams): string {
     brandColor: params.brandColor,
     orgName: params.orgName,
     headerBgColor: params.brandColor,
-    headerText: '💳 お支払いのお願い',
+    headerText: "💳 お支払いのお願い",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -788,37 +874,49 @@ function buildPaymentCompletedEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
-            ${params.totalPrice ? `
+            `
+                : ""
+            }
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">お支払い済み</td>
               <td style="padding: 10px 0 0; color: #10b981; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
                 ¥${params.totalPrice.toLocaleString()} ✓
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
     </table>
     
-    ${params.cancelUrl ? `
+    ${
+      params.cancelUrl
+        ? `
     <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
       ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
     </p>
-    ` : ''}
+    `
+        : ""
+    }
   `;
 
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
-    headerBgColor: '#10b981',
-    headerText: '✅ お支払い完了・ご予約確定',
+    headerBgColor: "#10b981",
+    headerText: "✅ お支払い完了・ご予約確定",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -826,12 +924,15 @@ function buildPaymentCompletedEmail(params: EmailParams): string {
 }
 
 function buildPaymentReminderEmail(params: EmailParams): string {
-  const expiresAtFormatted = params.expiresAt 
-    ? new Date(params.expiresAt).toLocaleString('ja-JP', { 
-        year: 'numeric', month: 'long', day: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
+  const expiresAtFormatted = params.expiresAt
+    ? new Date(params.expiresAt).toLocaleString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       })
-    : '間もなく';
+    : "間もなく";
 
   const content = `
     <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
@@ -853,14 +954,18 @@ function buildPaymentReminderEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.totalPrice ? `
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">金額</td>
               <td style="padding: 6px 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700;">
                 ¥${params.totalPrice.toLocaleString()}
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
@@ -887,8 +992,8 @@ function buildPaymentReminderEmail(params: EmailParams): string {
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
-    headerBgColor: '#f59e0b',
-    headerText: '⏰ お支払い期限が近づいています',
+    headerBgColor: "#f59e0b",
+    headerText: "⏰ お支払い期限が近づいています",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -920,8 +1025,8 @@ function buildPaymentExpiredEmail(params: EmailParams): string {
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
-    headerBgColor: '#64748b',
-    headerText: '❌ 決済期限切れ',
+    headerBgColor: "#64748b",
+    headerText: "❌ 決済期限切れ",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -949,37 +1054,49 @@ function buildConfirmedEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
-            ${params.totalPrice ? `
+            `
+                : ""
+            }
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
               <td style="padding: 10px 0 0; color: ${params.brandColor}; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
                 ¥${params.totalPrice.toLocaleString()}
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
     </table>
     
-    ${params.cancelUrl ? `
+    ${
+      params.cancelUrl
+        ? `
     <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
       ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
     </p>
-    ` : ''}
+    `
+        : ""
+    }
   `;
 
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
-    headerBgColor: '#10b981',
-    headerText: '✓ ご予約が確定しました',
+    headerBgColor: "#10b981",
+    headerText: "✓ ご予約が確定しました",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -1010,8 +1127,8 @@ function buildCancelledEmail(params: EmailParams): string {
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
-    headerBgColor: '#64748b',
-    headerText: 'キャンセル完了',
+    headerBgColor: "#64748b",
+    headerText: "キャンセル完了",
     content,
     showReplyNote: false,
     logoUrl: params.logoUrl,
@@ -1038,29 +1155,37 @@ function buildReminderEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
     </table>
     
-    ${params.cancelUrl ? `
+    ${
+      params.cancelUrl
+        ? `
     <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
       ご都合が悪くなった場合は<a href="${params.cancelUrl}" style="color: #64748b;">こちら</a>からキャンセルできます
     </p>
-    ` : ''}
+    `
+        : ""
+    }
   `;
 
   return emailWrapper({
     brandColor: params.brandColor,
     orgName: params.orgName,
     headerBgColor: params.brandColor,
-    headerText: '📅 リマインダー',
+    headerText: "📅 リマインダー",
     content,
     showReplyNote: true,
     logoUrl: params.logoUrl,
@@ -1068,9 +1193,9 @@ function buildReminderEmail(params: EmailParams): string {
 }
 
 function buildAdminNotificationEmail(params: EmailParams): string {
-  const isNew = params.adminNotificationType === 'new_booking';
-  const statusLabel = isNew ? '新規予約' : 'キャンセル';
-  const statusColor = isNew ? '#4F46E5' : '#dc2626';
+  const isNew = params.adminNotificationType === "new_booking";
+  const statusLabel = isNew ? "新規予約" : "キャンセル";
+  const statusColor = isNew ? "#4F46E5" : "#dc2626";
 
   const content = `
     <p style="margin: 0 0 24px; font-size: 15px; color: #334155;">
@@ -1098,20 +1223,28 @@ function buildAdminNotificationEmail(params: EmailParams): string {
                 ${params.formattedDate}<br>${params.selectedTime}〜
               </td>
             </tr>
-            ${params.servicesList ? `
+            ${
+              params.servicesList
+                ? `
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-size: 13px;">内容</td>
               <td style="padding: 6px 0; color: #1e293b; font-size: 14px;">${params.servicesList}</td>
             </tr>
-            ` : ''}
-            ${params.totalPrice ? `
+            `
+                : ""
+            }
+            ${
+              params.totalPrice
+                ? `
             <tr>
               <td style="padding: 10px 0 0; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;">金額</td>
               <td style="padding: 10px 0 0; color: #1e293b; font-size: 18px; font-weight: 700; border-top: 1px solid #e2e8f0;">
                 ¥${params.totalPrice.toLocaleString()}
               </td>
             </tr>
-            ` : ''}
+            `
+                : ""
+            }
           </table>
         </td>
       </tr>
