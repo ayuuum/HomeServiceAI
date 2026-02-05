@@ -1303,31 +1303,116 @@ export default function ProfilePage() {
             <LineSettingsForm />
           </TabsContent>
 
-          {/* 決済タブ */}
+          {/* 決済・請求タブ */}
           <TabsContent value="payment" className="space-y-6">
+            {/* プラットフォーム利用料 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Icon name="receipt" size={20} />
+                  プラットフォーム利用料
+                </CardTitle>
+                <CardDescription>
+                  月間売上（GMV）の7%を翌月に請求します
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                      <Icon name="percent" size={16} />
+                      手数料率
+                    </div>
+                    <p className="text-2xl font-bold">7%</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      作業完了した予約のGMVに適用
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                      <Icon name="calendar_month" size={16} />
+                      請求サイクル
+                    </div>
+                    <p className="text-2xl font-bold">月次</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      翌月1日に請求書を発行
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <div className="flex items-start gap-3">
+                    <Icon name="info" size={20} className="text-primary mt-0.5" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">GMV課金モデルについて</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• お客様からの代金は御社で直接回収（現金・振込・カード）</li>
+                        <li>• 「作業完了」登録時にGMVとして計上されます</li>
+                        <li>• 月末締めでGMVを集計し、7%の利用料を請求します</li>
+                        <li>• 請求書はメールで送付、Stripeで支払い可能です</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* 請求先メール設定 */}
+                <div className="space-y-3">
+                  <Label>請求先メールアドレス</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="billing@example.com"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    月次請求書の送付先として使用されます
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleOrganizationUpdate}
+                  disabled={isLoadingOrganization}
+                >
+                  {isLoadingOrganization ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    '請求設定を保存'
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* オンライン決済（事業者Stripe）- 将来機能 */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  事前決済設定
+                  オンライン決済（カード決済）
                 </CardTitle>
                 <CardDescription>
-                  予約承認時にお客様へ決済リンクを送信し、支払い完了後に予約を確定します
+                  お客様にカード決済を提供する場合は、Stripeアカウントを連携してください
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Payment Enabled Toggle */}
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                   <div className="space-y-1">
-                    <Label htmlFor="paymentEnabled" className="text-base font-medium">
-                      事前決済を有効にする
+                    <Label className="text-base font-medium">
+                      オンライン決済を有効にする
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      有効にすると、予約承認時に決済リンクが顧客に送信されます
+                      有効にすると、お客様にカード決済を提供できます
                     </p>
                   </div>
                   <Switch
-                    id="paymentEnabled"
                     checked={paymentEnabled}
                     onCheckedChange={setPaymentEnabled}
                   />
@@ -1336,85 +1421,16 @@ export default function ProfilePage() {
                 {paymentEnabled && (
                   <>
                     <Separator />
-                    
-                    {/* Payment Info */}
-                    <div className="space-y-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="p-4 rounded-lg border">
-                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-                            <Clock className="h-4 w-4" />
-                            決済リンク有効期限
-                          </div>
-                          <p className="text-2xl font-bold">72時間</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            期限切れ12時間前にリマインダーを自動送信
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg border">
-                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
-                            <Icon name="percent" size={16} />
-                            プラットフォーム手数料
-                          </div>
-                          <p className="text-2xl font-bold">7%</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            決済金額から自動的に差し引かれます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Webhook URL */}
-                    <div className="space-y-3">
-                      <Label>Stripe Webhook URL</Label>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-muted px-3 py-2 rounded-md text-sm font-mono break-all">
-                          {webhookUrl}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            navigator.clipboard.writeText(webhookUrl);
-                            toast({
-                              title: "コピーしました",
-                              description: "Webhook URLをクリップボードにコピーしました",
-                            });
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Stripe Dashboardの Webhooks設定でこのURLを登録してください
-                      </p>
-                    </div>
-
-                    {/* Stripe Dashboard Link */}
-                    <div className="p-4 rounded-lg border bg-primary/10">
+                    <div className="p-4 rounded-lg border bg-amber-500/10 border-amber-500/20">
                       <div className="flex items-start gap-3">
-                        <Icon name="info" size={20} className="text-primary mt-0.5" />
+                        <Icon name="info" size={20} className="text-amber-600 mt-0.5" />
                         <div className="space-y-2">
-                          <p className="text-sm font-medium">
-                            Stripe Webhookの設定手順
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                            Stripe連携は近日公開予定
                           </p>
-                          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                            <li>Stripe Dashboardの「Developers → Webhooks」を開く</li>
-                            <li>「Add endpoint」をクリック</li>
-                            <li>上記のURLを「Endpoint URL」に貼り付け</li>
-                            <li>イベントを選択: checkout.session.completed, checkout.session.expired, charge.refunded</li>
-                            <li>「Add endpoint」で保存</li>
-                          </ol>
-                          <a
-                            href="https://dashboard.stripe.com/webhooks"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 mt-2"
-                          >
-                            Stripe Dashboardを開く
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            現在、オンライン決済機能は開発中です。ご自身のStripeアカウントを連携して、お客様へカード決済を提供できるようになります。
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1438,37 +1454,44 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Payment Flow Explanation */}
+            {/* 売上記録フロー */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">決済フローについて</CardTitle>
+                <CardTitle className="text-base">売上記録フロー</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</div>
                     <div>
-                      <p className="font-medium text-sm">予約リクエスト受付</p>
-                      <p className="text-xs text-muted-foreground">お客様が予約をリクエスト（ステータス: 保留中）</p>
+                      <p className="font-medium text-sm">予約受付・確定</p>
+                      <p className="text-xs text-muted-foreground">お客様からの予約を承認して確定</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</div>
                     <div>
-                      <p className="font-medium text-sm">管理者が承認 & 決済リンク送信</p>
-                      <p className="text-xs text-muted-foreground">「承認して決済リンクを送信」ボタンをクリック（ステータス: 決済待ち）</p>
+                      <p className="font-medium text-sm">作業実施</p>
+                      <p className="text-xs text-muted-foreground">予約日時にサービスを提供</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">3</div>
                     <div>
-                      <p className="font-medium text-sm">お客様が決済完了</p>
-                      <p className="text-xs text-muted-foreground">決済完了後、自動的に予約確定（ステータス: 確定）</p>
+                      <p className="font-medium text-sm">作業完了を記録</p>
+                      <p className="text-xs text-muted-foreground">予約詳細から「作業完了」を押して最終金額・決済方法を入力</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">4</div>
+                    <div>
+                      <p className="font-medium text-sm">GMV計上</p>
+                      <p className="text-xs text-muted-foreground">作業完了時点で月間GMVに自動計上されます</p>
                     </div>
                   </div>
                   <div className="mt-4 p-3 rounded-lg bg-muted border">
                     <p className="text-xs text-muted-foreground">
-                      <strong>⏰ リマインダー:</strong> 決済期限の12時間前に自動でリマインダーが送信されます。72時間経過しても決済されない場合は、管理者にて判断してください（自動キャンセルはされません）。
+                      <strong>📊 レポート:</strong> 月次GMVと利用料は「レポート → 月次請求」タブで確認できます。
                     </p>
                   </div>
                 </div>

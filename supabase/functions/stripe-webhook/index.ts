@@ -1,3 +1,9 @@
+ // =====================================================
+ // Stripe Webhook Handler for Organization Online Payments
+ // This handles webhooks from organizations' own Stripe accounts
+ // for online payments made by customers.
+ // =====================================================
+ 
  import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
@@ -14,6 +20,9 @@
    }
  
    try {
+     // Note: In the GMV model, organizations have their own Stripe accounts.
+     // This webhook would be configured by each organization pointing to this endpoint.
+     // For now, we use the platform's Stripe key to verify signatures.
      const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
      const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
  
@@ -73,6 +82,8 @@
      }
  
      // Process based on event type
+     // In the GMV model, these events come from organization's Stripe accounts
+     // for online payments made by customers
      switch (event.type) {
        case "checkout.session.completed": {
          const session = event.data.object as Stripe.Checkout.Session;
@@ -132,14 +143,16 @@
      return;
    }
  
-   console.log(`[stripe-webhook] Payment completed for booking: ${bookingId}`);
+   console.log(`[stripe-webhook] Online payment completed for booking: ${bookingId}`);
  
-   // Update booking status
+   // Update booking - mark online payment as completed
+   // Note: In GMV model, this doesn't complete the booking.
+   // The booking is completed when the admin records "work completion"
    const { error } = await supabase
      .from("bookings")
      .update({
-       status: "confirmed",
-       payment_status: "paid",
+       online_payment_status: "paid",
+       payment_method: "online_card",
        stripe_payment_intent_id: session.payment_intent,
        paid_at: new Date().toISOString(),
        updated_at: new Date().toISOString(),
@@ -151,19 +164,25 @@
      return;
    }
  
-   // Send confirmation notification to customer
-   try {
-     await supabase.functions.invoke("send-hybrid-notification", {
-       body: {
-         bookingId,
-         notificationType: "payment_completed",
-       },
+   // Create notification for admin
+   const { data: booking } = await supabase
+     .from("bookings")
+     .select("organization_id, customer_name")
+     .eq("id", bookingId)
+     .single();
+ 
+   if (booking) {
+     await supabase.from("notifications").insert({
+       organization_id: booking.organization_id,
+       type: "payment_completed",
+       title: "オンライン決済完了",
+       message: `${booking.customer_name}様がカード決済を完了しました`,
+       resource_type: "booking",
+       resource_id: bookingId,
      });
-   } catch (notifyError) {
-     console.error("[stripe-webhook] Notification failed:", notifyError);
    }
  
-   console.log(`[stripe-webhook] Booking ${bookingId} marked as paid and confirmed`);
+   console.log(`[stripe-webhook] Booking ${bookingId} online payment marked as paid`);
  }
  
  async function handleCheckoutExpired(supabase: any, session: Stripe.Checkout.Session) {
@@ -175,11 +194,11 @@
  
    console.log(`[stripe-webhook] Checkout expired for booking: ${bookingId}`);
  
-   // Update booking payment status to expired (don't auto-cancel per user requirement)
+   // Update booking online payment status
    const { error } = await supabase
      .from("bookings")
      .update({
-       payment_status: "expired",
+       online_payment_status: "expired",
        updated_at: new Date().toISOString(),
      })
      .eq("id", bookingId);
@@ -189,20 +208,7 @@
      return;
    }
  
-   // Send notification to admin about expired payment
-   try {
-     await supabase.functions.invoke("send-hybrid-notification", {
-       body: {
-         bookingId,
-         notificationType: "admin_notification",
-         adminNotificationType: "payment_expired",
-       },
-     });
-   } catch (notifyError) {
-     console.error("[stripe-webhook] Admin notification failed:", notifyError);
-   }
- 
-   console.log(`[stripe-webhook] Booking ${bookingId} payment marked as expired`);
+   console.log(`[stripe-webhook] Booking ${bookingId} online payment marked as expired`);
  }
  
  async function handleChargeRefunded(supabase: any, charge: Stripe.Charge) {
@@ -217,7 +223,7 @@
    // Find booking by payment intent ID
    const { data: booking, error: findError } = await supabase
      .from("bookings")
-     .select("id")
+     .select("id, organization_id, final_amount")
      .eq("stripe_payment_intent_id", paymentIntentId)
      .maybeSingle();
  
@@ -226,15 +232,11 @@
      return;
    }
  
-   // Check if fully or partially refunded
-   const isFullRefund = charge.amount_refunded === charge.amount;
-   const newPaymentStatus = isFullRefund ? "refunded" : "partially_refunded";
- 
-   // Update booking
+   // Update online payment status to refunded
    const { error } = await supabase
      .from("bookings")
      .update({
-       payment_status: newPaymentStatus,
+       online_payment_status: "refunded",
        refund_amount: charge.amount_refunded,
        refunded_at: new Date().toISOString(),
        updated_at: new Date().toISOString(),
@@ -246,7 +248,19 @@
      return;
    }
  
-   console.log(`[stripe-webhook] Booking ${booking.id} marked as ${newPaymentStatus}`);
+   // Log to audit if GMV was already recorded
+   if (booking.final_amount) {
+     await supabase.from("gmv_audit_log").insert({
+       organization_id: booking.organization_id,
+       booking_id: booking.id,
+       action: "refunded",
+       previous_amount: booking.final_amount,
+       new_amount: booking.final_amount - charge.amount_refunded,
+       reason: "Online payment refunded via Stripe",
+     });
+   }
+ 
+   console.log(`[stripe-webhook] Booking ${booking.id} online payment marked as refunded`);
  }
  
  async function handlePaymentFailed(supabase: any, paymentIntent: Stripe.PaymentIntent) {
@@ -258,11 +272,11 @@
  
    console.log(`[stripe-webhook] Payment failed for booking: ${bookingId}`);
  
-   // Update booking payment status
+   // Update booking online payment status
    const { error } = await supabase
      .from("bookings")
      .update({
-       payment_status: "failed",
+       online_payment_status: "failed",
        updated_at: new Date().toISOString(),
      })
      .eq("id", bookingId);
