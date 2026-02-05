@@ -7,6 +7,30 @@ const corsHeaders = {
 };
 
 // HMAC-SHA256 signature verification
+async function sendLineReply(
+  replyToken: string,
+  message: string,
+  channelToken: string
+): Promise<boolean> {
+  try {
+    const response = await fetch("https://api.line.me/v2/bot/message/reply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${channelToken}`,
+      },
+      body: JSON.stringify({
+        replyToken,
+        messages: [{ type: "text", text: message }],
+      }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error("Failed to send LINE reply:", error);
+    return false;
+  }
+}
+
 async function verifySignature(body: string, signature: string, channelSecret: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -53,7 +77,7 @@ serve(async (req) => {
     // Find organization by line_bot_user_id
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .select("id, line_channel_secret, line_channel_token, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords")
+      .select("id, line_channel_secret, line_channel_token, line_ai_enabled, line_ai_system_prompt, line_ai_escalation_keywords, admin_line_user_id")
       .eq("line_bot_user_id", destination)
       .single();
 
@@ -193,6 +217,7 @@ serve(async (req) => {
       // Handle message events
       if (event.type === "message" && event.message) {
         const message = event.message;
+        const replyToken = event.replyToken;
         let content = "";
         let messageType = message.type || "text";
 
@@ -220,6 +245,53 @@ serve(async (req) => {
             break;
           default:
             content = `[${message.type}]`;
+        }
+
+        // Check for admin registration keyword
+        if (message.type === "text" && (content === "管理者登録" || content.toLowerCase() === "admin")) {
+          console.log("Admin registration keyword detected from:", lineUserId);
+          
+          // Check if already registered
+          if (org.admin_line_user_id === lineUserId) {
+            if (replyToken && org.line_channel_token) {
+              await sendLineReply(
+                replyToken,
+                "ℹ️ このアカウントは既に管理者として登録されています。",
+                org.line_channel_token
+              );
+            }
+            console.log("User already registered as admin, skipping");
+            continue;
+          }
+          
+          // Update admin_line_user_id
+          const { error: updateError } = await supabase
+            .from("organizations")
+            .update({ admin_line_user_id: lineUserId })
+            .eq("id", org.id);
+          
+          if (!updateError) {
+            console.log("Admin LINE User ID registered successfully:", lineUserId);
+            if (replyToken && org.line_channel_token) {
+              await sendLineReply(
+                replyToken,
+                "✅ 管理者として登録しました！新規予約・キャンセル通知がこのLINEに届きます。",
+                org.line_channel_token
+              );
+            }
+          } else {
+            console.error("Failed to update admin_line_user_id:", updateError);
+            if (replyToken && org.line_channel_token) {
+              await sendLineReply(
+                replyToken,
+                "❌ 登録に失敗しました。しばらくしてから再度お試しください。",
+                org.line_channel_token
+              );
+            }
+          }
+          
+          // Skip normal message processing for admin registration
+          continue;
         }
 
         // Handle Image/Video content

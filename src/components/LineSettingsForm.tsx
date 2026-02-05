@@ -361,8 +361,8 @@ export function LineSettingsForm() {
         <div className="space-y-2">
           <Label htmlFor="adminLineUserId">管理者LINE User ID（予約通知用）</Label>
           <p className="text-xs text-muted-foreground">
-            新規予約やキャンセル時に通知を受け取る管理者のLINE User IDを入力してください。
-            Bot Friendの場合、友だち追加後にプロフィール設定から確認できます。
+            LINE公式アカウントに「管理者登録」とメッセージを送ると自動設定されます。
+            または、LINE User IDを直接入力することもできます。
           </p>
           <Input
             id="adminLineUserId"
