@@ -2,6 +2,23 @@
 
 # 修正プラン：用語・GMVタイミング・Stripe連携
 
+## ✅ 実装完了
+
+### 1. 用語の改善 ✅
+- `GMV課金モデル` → `売上連動型利用料`
+- `GMV` → `月間売上`
+- `プラットフォーム利用料` → `サービス利用料`
+
+### 2. GMV計上タイミング ✅
+- 予約確定時（`status = 'confirmed'`）に `gmv_included_at` を設定
+- WorkCompletionModalは最終金額・決済方法の記録用に変更
+
+### 3. Stripe OAuth連携 ✅
+- `stripe-connect-oauth` Edge Function を作成・デプロイ
+- ProfilePage に連携ボタン・状態表示を追加
+
+---
+
 ## 1. 用語の改善
 
 「GMV課金モデル」を以下のように分かりやすい表現に変更します：

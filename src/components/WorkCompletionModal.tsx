@@ -83,7 +83,7 @@
      try {
        const finalTotal = finalAmount || calculatedTotal;
  
-       // Update booking with completion data
+      // Update booking with completion data (GMVは予約確定時に計上済み)
        const { error: bookingError } = await supabase
          .from("bookings")
          .update({
@@ -91,7 +91,6 @@
            final_amount: finalTotal,
            payment_method: paymentMethod,
           additional_charges: additionalCharges as unknown as { title: string; amount: number }[],
-           gmv_included_at: new Date().toISOString(),
            collected_at: paymentMethod !== "online_card" ? new Date().toISOString() : null,
            updated_at: new Date().toISOString(),
          })
@@ -102,7 +101,7 @@
        // Get organization_id for audit log
        const { data: bookingData } = await supabase
          .from("bookings")
-         .select("organization_id")
+        .select("organization_id, gmv_included_at")
          .eq("id", booking.id)
          .single();
  
@@ -112,12 +111,12 @@
        await supabase.from("gmv_audit_log").insert({
          organization_id: bookingData?.organization_id,
          booking_id: booking.id,
-         action: "completed",
+        action: bookingData?.gmv_included_at ? "modified" : "completed",
          previous_amount: booking.totalPrice,
          new_amount: finalTotal,
          reason: additionalCharges.length > 0 
-           ? `追加料金: ${additionalCharges.map(c => c.title).join(", ")}`
-           : null,
+          ? `作業完了・追加料金: ${additionalCharges.map(c => c.title).join(", ")}`
+          : "作業完了",
          performed_by: userData?.user?.id,
        });
  

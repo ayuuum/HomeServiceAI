@@ -60,6 +60,9 @@ verify_jwt = false
 [functions.get-or-create-line-customer]
 verify_jwt = false
 
+[functions.stripe-connect-oauth]
+verify_jwt = false
+
 # Japanese Email Templates for Supabase Auth
 [auth.email.template.confirmation]
 subject = "メールアドレスの確認"
