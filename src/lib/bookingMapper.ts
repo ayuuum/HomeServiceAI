@@ -24,6 +24,7 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
     selectedDate: dbBooking.selected_date,
     selectedTime: dbBooking.selected_time,
     totalPrice: dbBooking.total_price,
+    finalAmount: dbBooking.final_amount,
     status: dbBooking.status,
     diagnosisHasParking: dbBooking.diagnosis_has_parking,
     diagnosisNotes: dbBooking.diagnosis_notes,
@@ -34,6 +35,12 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
     ),
     createdAt: dbBooking.created_at,
     customerId: dbBooking.customer_id,
+    // GMV課金関連
+    paymentMethod: dbBooking.payment_method,
+    collectedAt: dbBooking.collected_at,
+    gmvIncludedAt: dbBooking.gmv_included_at,
+    onlinePaymentStatus: dbBooking.online_payment_status,
+    additionalCharges: dbBooking.additional_charges,
     // 希望日時（3つ）
     preference1Date: dbBooking.preference1_date,
     preference1Time: dbBooking.preference1_time,
@@ -47,7 +54,6 @@ export const mapDbBookingToBooking = (dbBooking: any) => {
     paymentStatus: dbBooking.payment_status,
     stripeCheckoutSessionId: dbBooking.stripe_checkout_session_id,
     stripePaymentIntentId: dbBooking.stripe_payment_intent_id,
-    checkoutExpiresAt: dbBooking.checkout_expires_at,
     paidAt: dbBooking.paid_at,
     refundedAt: dbBooking.refunded_at,
     refundAmount: dbBooking.refund_amount,

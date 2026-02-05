@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateGoogleCalendarUrl } from "@/lib/googleCalendar";
 import { extractCityDistrict } from "@/lib/addressUtils";
 import BookingEditModal from "./BookingEditModal";
+import { WorkCompletionModal } from "./WorkCompletionModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ export const BookingDetailModal = ({
   onSuccess,
 }: BookingDetailModalProps) => {
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [workCompletionModalOpen, setWorkCompletionModalOpen] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
@@ -305,13 +307,26 @@ export const BookingDetailModal = ({
                 キャンセル
               </Badge>
             )}
+            {booking.status === "completed" && (
+              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                <Icon name="task_alt" size={12} className="mr-1" />
+                完了
+              </Badge>
+            )}
             {booking.status === "awaiting_payment" && (
               <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
                 <Icon name="payments" size={12} className="mr-1" />
                 決済待ち
               </Badge>
             )}
-            {getPaymentStatusBadge()}
+            {booking.paymentMethod && booking.status === "completed" && (
+              <Badge variant="outline" className="bg-muted text-muted-foreground">
+                {booking.paymentMethod === "cash" && "現金"}
+                {booking.paymentMethod === "bank_transfer" && "振込"}
+                {booking.paymentMethod === "online_card" && "カード"}
+                {booking.paymentMethod === "other" && "その他"}
+              </Badge>
+            )}
           </div>
 
           <Separator />
@@ -557,14 +572,27 @@ export const BookingDetailModal = ({
             <h3 className="font-semibold text-lg">料金</h3>
             <div className="bg-primary/5 p-3 md:p-4 rounded-lg">
               <div className="flex items-baseline justify-between">
-                <span className="text-base md:text-lg font-semibold">合計金額</span>
+                <span className="text-base md:text-lg font-semibold">
+                  {booking.status === "completed" ? "確定金額" : "見積金額"}
+                </span>
                 <div className="text-right">
                   <p className="text-2xl md:text-3xl font-bold text-primary">
-                    ¥{booking.totalPrice.toLocaleString()}
+                    ¥{(booking.finalAmount || booking.totalPrice).toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground">税込</p>
                 </div>
               </div>
+              {booking.additionalCharges && booking.additionalCharges.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">追加料金内訳:</p>
+                  {booking.additionalCharges.map((charge, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{charge.title}</span>
+                      <span>¥{charge.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -673,10 +701,15 @@ export const BookingDetailModal = ({
 
           {booking.status === "confirmed" && (
             <div className="space-y-3 pt-4">
-              <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
-                <Icon name="check_circle" size={32} className="text-success mx-auto mb-2" />
-                <p className="text-sm font-medium text-success">この予約は承認済みです</p>
-              </div>
+              {/* Work Completion Button */}
+              <Button
+                className="w-full h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25 transition-all duration-200 hover:scale-[1.02]"
+                onClick={() => setWorkCompletionModalOpen(true)}
+              >
+                <Icon name="task_alt" size={20} className="mr-2" />
+                作業完了を記録
+              </Button>
+              
               <div className="flex gap-2 md:gap-3">
                 <Button
                   variant="outline"
@@ -724,6 +757,28 @@ export const BookingDetailModal = ({
                   キャンセル
                 </Button>
               </div>
+            </div>
+          )}
+
+          {booking.status === "completed" && (
+            <div className="space-y-3 pt-4">
+              <div className="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
+                <Icon name="task_alt" size={32} className="text-success mx-auto mb-2" />
+                <p className="text-sm font-medium text-success">作業完了済み</p>
+                {booking.gmvIncludedAt && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    完了日時: {format(new Date(booking.gmvIncludedAt), "yyyy/M/d HH:mm", { locale: ja })}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setEditModalOpen(true)}
+              >
+                <Icon name="edit" size={14} className="mr-2" />
+                売上情報を修正
+              </Button>
             </div>
           )}
 
@@ -776,6 +831,17 @@ export const BookingDetailModal = ({
             customer_address_building: booking.customerAddressBuilding || '',
           }}
           onSuccess={handleEditSuccess}
+        />
+
+        {/* Work Completion Modal */}
+        <WorkCompletionModal
+          booking={booking}
+          open={workCompletionModalOpen}
+          onOpenChange={setWorkCompletionModalOpen}
+          onSuccess={() => {
+            onSuccess?.();
+            onOpenChange(false);
+          }}
         />
       </DialogContent>
     </Dialog>
