@@ -1,74 +1,103 @@
-# 次のステップ：Stripe決済実装の残りタスク
 
-## 実装完了済み ✓✓✓
+# send-hybrid-notification Edge Function エラー修正計画
 
-| 項目 | ファイル |
-|------|----------|
-| DBスキーマ（payment_status等） | migration完了 |
-| create-checkout-session | Edge Function作成済み |
-| stripe-webhook | Edge Function作成済み |
-| create-refund | Edge Function作成済み |
-| BookingDetailModal決済UI | 承認・再送信・返金ボタン追加済み |
-| AdminDashboard バッジ | awaiting_payment表示追加済み |
-| 決済完了/キャンセルページ | PaymentSuccessPage, PaymentCancelledPage作成済み |
-| **設定ページ「決済」タブ** | **ProfilePage.tsx に追加完了 ✓** |
-| **send-hybrid-notification決済通知** | **payment_request/completed/reminder/expired追加完了 ✓** |
-| **cron-payment-check** | **Edge Function作成完了 ✓** |
-| **STRIPE_WEBHOOK_SECRET** | **Secrets設定完了 ✓** |
+## 問題の概要
 
----
+Edge Function で `TypeError: Body is unusable` エラーが発生しています。これは Deno の HTTP サーバーが、エラー発生時にリクエストをクローンしようとした際、既に `req.json()` でボディが消費されているために発生します。
 
-## 残りタスク（オプション）
+## 原因分析
 
-### 1. サービス別の事前決済フラグUI（オプション）
-
-**目的**: サービスごとに事前決済を必須にできる
-
-**変更ファイル**: `src/pages/AdminServiceManagement.tsx` / `ServiceFormModal.tsx`
-
-**追加内容**:
-- 「このサービスは事前決済を必須にする」チェックボックス
-
----
-
-### 2. Cron Jobのスケジュール設定（推奨）
-
-**目的**: `cron-payment-check` を定期実行するスケジュール設定
-
-**Supabase Dashboard → SQL Editorで実行**:
-```sql
-select cron.schedule(
-  'payment-check-hourly',
-  '0 * * * *', -- 毎時0分に実行
-  $$
-  select net.http_post(
-    url:='https://yfxuqyvsccheqhzjopuj.supabase.co/functions/v1/cron-payment-check',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmeHVxeXZzY2NoZXFoempvcHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3ODk3NzIsImV4cCI6MjA3OTM2NTc3Mn0.yceV0Cnmx81UjOlq0NwdA4k_rg9ZoYczVH9AlxSUs54"}'::jsonb,
-    body:='{}'::jsonb
-  ) as request_id;
-  $$
-);
+```text
+エラーの流れ:
+1. リクエスト受信
+2. req.json() でボディを消費
+3. 何らかのエラー発生
+4. Deno サーバーがエラーハンドリングのため Request.clone() を試行
+5. ボディが既に消費されているため "Body is unusable" エラー
 ```
 
----
+## 修正内容
 
-## Stripe Webhook設定（手動作業・必須）
+### ファイル: `supabase/functions/send-hybrid-notification/index.ts`
 
-1. [Stripe Dashboard](https://dashboard.stripe.com/webhooks) を開く
-2. 「Add endpoint」をクリック
-3. 以下を入力:
-   - **Endpoint URL**: `https://yfxuqyvsccheqhzjopuj.supabase.co/functions/v1/stripe-webhook`
-   - **Events**: `checkout.session.completed`, `checkout.session.expired`, `charge.refunded`
-4. 作成後、「Signing secret」（`whsec_xxx`）をコピー
-5. ✅ STRIPE_WEBHOOK_SECRET は設定済み
+**変更1: リクエストボディの安全な読み取り**
 
----
+リクエストボディを読み取る前に、ボディが存在するかチェックし、エラーハンドリングを強化します。
 
-## テスト手順
+```typescript
+serve(async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-1. 設定ページ → 決済タブ → 「事前決済を有効にする」をON
-2. 新規予約を作成
-3. 予約詳細 → 「承認して決済リンクを送信」をクリック
-4. Stripeテストカード（4242424242424242）で決済
-5. 予約ステータスが「確定」に変わることを確認
+  // ボディを安全に読み取る
+  let body: HybridNotificationRequest;
+  try {
+    const text = await req.text();
+    if (!text) {
+      return new Response(
+        JSON.stringify({ error: "Request body is empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    body = JSON.parse(text);
+  } catch (parseError: any) {
+    console.error("[send-hybrid-notification] Failed to parse request body:", parseError);
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON in request body" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
+  try {
+    const { bookingId, notificationType, adminNotificationType } = body;
+    const checkoutUrl = body.checkoutUrl;
+    // ... 残りの処理
+```
+
+**変更2: モジュールレベルの Resend 初期化を削除**
+
+現在、5行目で Resend をモジュールレベルで初期化していますが、これは関数内で既にローカルで初期化されているため不要です。
+
+```typescript
+// 削除: const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+```
+
+## 修正後のコード構造
+
+```text
+send-hybrid-notification/index.ts
+├── CORS ヘッダー定義
+├── インターフェース定義
+├── serve() ハンドラー
+│   ├── OPTIONS プリフライト処理
+│   ├── ボディの安全な読み取り（try-catch）
+│   │   ├── req.text() でテキストとして取得
+│   │   ├── 空チェック
+│   │   └── JSON.parse() でパース
+│   └── メイン処理（try-catch）
+│       ├── バリデーション
+│       ├── Supabase クライアント初期化
+│       ├── 予約データ取得
+│       ├── 通知チャネル判定
+│       └── LINE/Email 送信
+├── sendLineNotification()
+├── sendEmailNotification()
+├── buildLineMessage()
+└── 各種 Email テンプレート関数
+```
+
+## 実装手順
+
+1. `req.json()` を `req.text()` + `JSON.parse()` に変更
+2. ボディの空チェックを追加
+3. JSON パースエラーの適切なハンドリングを追加
+4. モジュールレベルの不要な Resend 初期化を削除
+5. Edge Function を再デプロイ
+
+## テスト方法
+
+1. 正常なリクエストで通知が送信されることを確認
+2. 空のボディでリクエストした場合に 400 エラーが返ることを確認
+3. 不正な JSON でリクエストした場合に 400 エラーが返ることを確認
