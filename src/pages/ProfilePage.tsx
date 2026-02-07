@@ -14,7 +14,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 
-import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, MessageSquare, Wrench, Clock, CreditCard, Copy, ExternalLink } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Download, Printer, Upload, Trash2, Palette, User, Settings, Clock, CreditCard, ExternalLink } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
@@ -679,42 +679,24 @@ export default function ProfilePage() {
           <p className="text-sm text-muted-foreground mt-1">アカウント情報・組織設定の管理</p>
         </div>
 
-        <Tabs defaultValue="booking" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
-            <TabsTrigger value="booking" className="flex items-center gap-2">
+        <Tabs defaultValue="store" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="store" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">予約ページ</span>
-              <span className="sm:hidden">予約</span>
+              店舗設定
             </TabsTrigger>
-            <TabsTrigger value="hours" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">営業時間</span>
-              <span className="sm:hidden">時間</span>
-            </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">サービス</span>
-              <span className="sm:hidden">サービス</span>
+            <TabsTrigger value="integrations" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              連携・決済
             </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">アカウント</span>
-              <span className="sm:hidden">設定</span>
-            </TabsTrigger>
-            <TabsTrigger value="line" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">LINE連携</span>
-              <span className="sm:hidden">LINE</span>
-            </TabsTrigger>
-            <TabsTrigger value="payment" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              <span className="hidden sm:inline">決済</span>
-              <span className="sm:hidden">決済</span>
+              アカウント
             </TabsTrigger>
           </TabsList>
 
-          {/* 予約ページタブ */}
-          <TabsContent value="booking" className="space-y-6">
+          {/* 店舗設定タブ */}
+          <TabsContent value="store" className="space-y-6">
             {/* QR Code Section */}
             <Card>
               <CardHeader>
@@ -1036,99 +1018,8 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Organization Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">組織設定</CardTitle>
-                <CardDescription>予約ページのURLを管理します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleOrganizationUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="organizationName">組織名</Label>
-                    <Input
-                      id="organizationName"
-                      type="text"
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      disabled={isLoadingOrganization}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="adminEmail">通知用メールアドレス</Label>
-                    <Input
-                      id="adminEmail"
-                      type="email"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      placeholder="notifications@example.com"
-                      disabled={isLoadingOrganization}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      新規予約やキャンセルの通知を受け取るメールアドレス
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">予約ページURL</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">/booking/</span>
-                      <div className="relative flex-1">
-                        <Input
-                          id="slug"
-                          type="text"
-                          value={slug}
-                          onChange={(e) => handleSlugChange(e.target.value)}
-                          disabled={isLoadingOrganization}
-                          className={`pr-10 ${slugStatus === 'taken' || slugStatus === 'invalid'
-                            ? 'border-destructive focus-visible:ring-destructive'
-                            : slugStatus === 'available'
-                              ? 'border-green-500 focus-visible:ring-green-500'
-                              : ''
-                            }`}
-                          required
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          {slugStatus === 'checking' && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          )}
-                          {slugStatus === 'available' && (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          )}
-                          {(slugStatus === 'taken' || slugStatus === 'invalid') && (
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {slugError ? (
-                      <p className="text-sm text-destructive">{slugError}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        英小文字、数字、ハイフンのみ使用可能（例: tanaka-cleaning）
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
-                  >
-                    {isLoadingOrganization ? (
-                      <>
-                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                        更新中...
-                      </>
-                    ) : (
-                      '組織設定を保存'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* 営業時間タブ */}
-          <TabsContent value="hours" className="space-y-6">
+            <Separator />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -1143,169 +1034,18 @@ export default function ProfilePage() {
                 <BusinessHoursSettings organizationId={organization?.id} />
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* アカウントタブ */}
-          <TabsContent value="account" className="space-y-6">
-            {/* Profile Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">プロフィール情報</CardTitle>
-                <CardDescription>名前とメールアドレスを管理します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">名前</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={isLoadingProfile}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">メールアドレス</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoadingProfile}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isLoadingProfile}>
-                    {isLoadingProfile ? (
-                      <>
-                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                        更新中...
-                      </>
-                    ) : (
-                      'プロフィールを更新'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Password Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">パスワード変更</CardTitle>
-                <CardDescription>新しいパスワードを設定します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">現在のパスワード</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      disabled={isLoadingPassword}
-                      required
-                    />
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">新しいパスワード</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      disabled={isLoadingPassword}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">パスワード（確認）</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={isLoadingPassword}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isLoadingPassword}>
-                    {isLoadingPassword ? (
-                      <>
-                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                        変更中...
-                      </>
-                    ) : (
-                      'パスワードを変更'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Email Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="mail" size={20} />
-                  メールアドレス変更
-                </CardTitle>
-                <CardDescription>ログインに使用するメールアドレスを変更します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleEmailChange} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>現在のメールアドレス</Label>
-                    <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
-                      {user?.email || '未設定'}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newEmail">新しいメールアドレス</Label>
-                    <Input
-                      id="newEmail"
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="new@example.com"
-                      disabled={isLoadingEmail}
-                    />
-                  </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Icon name="info" size={16} />
-                    <span>確認メールが新しいアドレスに送信されます</span>
-                  </div>
-                  <Button type="submit" disabled={isLoadingEmail || !newEmail}>
-                    {isLoadingEmail ? (
-                      <>
-                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
-                        送信中...
-                      </>
-                    ) : (
-                      'メールアドレスを変更'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* サービス管理タブ */}
-          <TabsContent value="services">
+            {/* サービス管理セクション */}
+            <Separator />
             <AdminServiceManagement />
           </TabsContent>
 
-          {/* LINE連携タブ */}
-          <TabsContent value="line">
+          {/* 連携・決済タブ */}
+          <TabsContent value="integrations" className="space-y-6">
             <LineSettingsForm />
-          </TabsContent>
 
-          {/* 決済・請求タブ */}
-          <TabsContent value="payment" className="space-y-6">
+            <Separator />
+
             {/* プラットフォーム利用料 */}
             <Card>
               <CardHeader>
@@ -1540,6 +1280,245 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* アカウントタブ */}
+          <TabsContent value="account" className="space-y-6">
+            {/* Profile Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">プロフィール情報</CardTitle>
+                <CardDescription>名前とメールアドレスを管理します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">名前</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isLoadingProfile}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">メールアドレス</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoadingProfile}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoadingProfile}>
+                    {isLoadingProfile ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        更新中...
+                      </>
+                    ) : (
+                      'プロフィールを更新'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Password Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">パスワード変更</CardTitle>
+                <CardDescription>新しいパスワードを設定します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">現在のパスワード</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">新しいパスワード</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">パスワード（確認）</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isLoadingPassword}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoadingPassword}>
+                    {isLoadingPassword ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        変更中...
+                      </>
+                    ) : (
+                      'パスワードを変更'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Email Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Icon name="mail" size={20} />
+                  メールアドレス変更
+                </CardTitle>
+                <CardDescription>ログインに使用するメールアドレスを変更します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleEmailChange} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>現在のメールアドレス</Label>
+                    <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md">
+                      {user?.email || '未設定'}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newEmail">新しいメールアドレス</Label>
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="new@example.com"
+                      disabled={isLoadingEmail}
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Icon name="info" size={16} />
+                    <span>確認メールが新しいアドレスに送信されます</span>
+                  </div>
+                  <Button type="submit" disabled={isLoadingEmail || !newEmail}>
+                    {isLoadingEmail ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        送信中...
+                      </>
+                    ) : (
+                      'メールアドレスを変更'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Organization Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">組織設定</CardTitle>
+                <CardDescription>予約ページのURLを管理します</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleOrganizationUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="organizationName">組織名</Label>
+                    <Input
+                      id="organizationName"
+                      type="text"
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      disabled={isLoadingOrganization}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail">通知用メールアドレス</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="notifications@example.com"
+                      disabled={isLoadingOrganization}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      新規予約やキャンセルの通知を受け取るメールアドレス
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">予約ページURL</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">/booking/</span>
+                      <div className="relative flex-1">
+                        <Input
+                          id="slug"
+                          type="text"
+                          value={slug}
+                          onChange={(e) => handleSlugChange(e.target.value)}
+                          disabled={isLoadingOrganization}
+                          className={`pr-10 ${slugStatus === 'taken' || slugStatus === 'invalid'
+                            ? 'border-destructive focus-visible:ring-destructive'
+                            : slugStatus === 'available'
+                              ? 'border-green-500 focus-visible:ring-green-500'
+                              : ''
+                            }`}
+                          required
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {slugStatus === 'checking' && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                          {slugStatus === 'available' && (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          )}
+                          {(slugStatus === 'taken' || slugStatus === 'invalid') && (
+                            <XCircle className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {slugError ? (
+                      <p className="text-sm text-destructive">{slugError}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        英小文字、数字、ハイフンのみ使用可能（例: tanaka-cleaning）
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isLoadingOrganization || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
+                  >
+                    {isLoadingOrganization ? (
+                      <>
+                        <Icon name="sync" size={16} className="mr-2 animate-spin" />
+                        更新中...
+                      </>
+                    ) : (
+                      '組織設定を保存'
+                    )}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
