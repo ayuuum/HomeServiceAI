@@ -6,6 +6,7 @@ import { BookingServiceSelection } from "@/components/booking/BookingServiceSele
 import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSelection";
 import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
+import { BookingUpsellSection } from "@/components/booking/BookingUpsellSection";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
@@ -474,6 +475,13 @@ const BookingPage = () => {
                   {notes && <p><span className="text-foreground font-medium">備考:</span> {notes}</p>}
                 </div>
               </section>
+
+              {/* Upsell Section */}
+              <BookingUpsellSection
+                allOptions={allOptions}
+                selectedOptionIds={selectedOptions.map(o => o.optionId)}
+                onAddOption={handleOptionChange}
+              />
 
               {/* Price Summary */}
               <div className="bg-primary/10 rounded-lg border-2 border-primary/30 p-4 sm:p-5">
