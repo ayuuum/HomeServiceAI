@@ -18,6 +18,7 @@ import CustomerManagement from "./pages/CustomerManagement";
 import CalendarPage from "./pages/CalendarPage";
 import InboxPage from "./pages/InboxPage";
 import BroadcastPage from "./pages/BroadcastPage";
+import MessagesPage from "./pages/MessagesPage";
 import CancelBookingPage from "./pages/CancelBookingPage";
 import RescheduleBookingPage from "./pages/RescheduleBookingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -76,14 +77,20 @@ const App = () => (
                 <CalendarPage />
               </ProtectedRoute>
             } />
+            <Route path="/admin/messages" element={
+              <ProtectedRoute>
+                <MessagesPage />
+              </ProtectedRoute>
+            } />
+            {/* Legacy routes redirect to messages */}
             <Route path="/admin/inbox" element={
               <ProtectedRoute>
-                <InboxPage />
+                <MessagesPage />
               </ProtectedRoute>
             } />
             <Route path="/admin/broadcast" element={
               <ProtectedRoute>
-                <BroadcastPage />
+                <MessagesPage />
               </ProtectedRoute>
             } />
             <Route path="/admin/profile" element={
