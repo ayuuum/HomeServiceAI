@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Service, ServiceOption } from "@/types/booking";
 import { mapDbServiceToService, mapDbOptionToOption } from "@/lib/serviceMapper";
 import { calculateDiscount } from "@/lib/discountCalculator";
+import { calculateSetDiscounts, SetDiscountDefinition, AppliedSetDiscount } from "@/lib/discountCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useBookingStorage } from "./useBookingStorage";
@@ -47,6 +48,8 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
     const [customerAddressBuilding, setCustomerAddressBuilding] = useState("");
     const [totalPrice, setTotalPrice] = useState(0);
     const [totalDiscount, setTotalDiscount] = useState(0);
+    const [appliedSetDiscounts, setAppliedSetDiscounts] = useState<AppliedSetDiscount[]>([]);
+    const [setDiscountDefinitions, setSetDiscountDefinitions] = useState<SetDiscountDefinition[]>([]);
     const [loading, setLoading] = useState(true);
     const [lineUserId, setLineUserId] = useState<string | null>(null);
     const [isLiffInitialized, setIsLiffInitialized] = useState(false);
@@ -377,10 +380,26 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
         };
     }, [selectedServices]);
 
+    // Fetch set discount definitions when organization loads
+    useEffect(() => {
+        if (!organizationId) return;
+        const fetchSetDiscounts = async () => {
+            const { data } = await supabase
+                .from('organizations')
+                .select('service_set_discounts')
+                .eq('id', organizationId)
+                .single();
+            if (data?.service_set_discounts) {
+                setSetDiscountDefinitions(data.service_set_discounts as unknown as SetDiscountDefinition[]);
+            }
+        };
+        fetchSetDiscounts();
+    }, [organizationId]);
+
     // Calculate total price
     useEffect(() => {
-        let total = 0;
-        let discount = 0;
+        let subtotal = 0;
+        let quantityDiscount = 0;
 
         // Services total with quantity discounts
         selectedServices.forEach(({ service, quantity }) => {
@@ -390,18 +409,27 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                 quantity,
                 service.quantityDiscounts || []
             );
-            total += baseTotal - serviceDiscount;
-            discount += serviceDiscount;
+            subtotal += baseTotal - serviceDiscount;
+            quantityDiscount += serviceDiscount;
         });
 
         // Options total
         selectedOptions.forEach(({ option, quantity }) => {
-            total += option.price * quantity;
+            subtotal += option.price * quantity;
         });
 
-        setTotalPrice(total);
-        setTotalDiscount(discount);
-    }, [selectedServices, selectedOptions]);
+        // Set discounts (applied on subtotal after quantity discounts)
+        const serviceIds = selectedServices.map(s => s.serviceId);
+        const { appliedDiscounts, totalSetDiscount } = calculateSetDiscounts(
+            serviceIds,
+            setDiscountDefinitions,
+            subtotal
+        );
+
+        setAppliedSetDiscounts(appliedDiscounts);
+        setTotalPrice(subtotal - totalSetDiscount);
+        setTotalDiscount(quantityDiscount + totalSetDiscount);
+    }, [selectedServices, selectedOptions, setDiscountDefinitions]);
 
     // Cleanup photo URLs
     useEffect(() => {
@@ -795,6 +823,8 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
         setCustomerAddressBuilding,
         totalPrice,
         totalDiscount,
+        appliedSetDiscounts,
+        setDiscountDefinitions,
         loading,
         handleServiceQuantityChange,
         handleOptionChange,

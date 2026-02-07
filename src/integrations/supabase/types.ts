@@ -653,6 +653,7 @@ export type Database = {
           name: string
           payment_enabled: boolean | null
           platform_fee_percent: number | null
+          service_set_discounts: Json | null
           slug: string
           stripe_account_id: string | null
           stripe_account_status: string | null
@@ -683,6 +684,7 @@ export type Database = {
           name: string
           payment_enabled?: boolean | null
           platform_fee_percent?: number | null
+          service_set_discounts?: Json | null
           slug: string
           stripe_account_id?: string | null
           stripe_account_status?: string | null
@@ -713,6 +715,7 @@ export type Database = {
           name?: string
           payment_enabled?: boolean | null
           platform_fee_percent?: number | null
+          service_set_discounts?: Json | null
           slug?: string
           stripe_account_id?: string | null
           stripe_account_status?: string | null
