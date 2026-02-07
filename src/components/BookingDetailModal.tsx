@@ -29,6 +29,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BookingDetailModalProps {
   booking: Booking | null;
@@ -624,7 +631,7 @@ export const BookingDetailModal = ({
           {/* Actions */}
           {booking.status === "pending" && (
             <div className="space-y-3 pt-4">
-              {/* Payment approval option */}
+              {/* Primary Actions: Approve & Reject */}
               {paymentEnabled && (
                 <Button
                   className="w-full h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg transition-all duration-200 hover:scale-[1.02]"
@@ -667,59 +674,55 @@ export const BookingDetailModal = ({
                   <span className="md:hidden">却下</span>
                 </Button>
               </div>
-              <div className="flex gap-2 md:gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
-                  onClick={() => setEditModalOpen(true)}
-                >
-                  <Icon name="edit" size={14} className="mr-1 md:mr-2" />
-                  編集
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
-                  onClick={handleSendReminder}
-                  disabled={isSendingReminder || !booking.customerId}
-                >
-                  {isSendingReminder ? (
-                    <Icon name="sync" size={14} className="mr-1 md:mr-2 animate-spin" />
-                  ) : (
-                    <Icon name="notifications" size={14} className="mr-1 md:mr-2" />
-                  )}
-                  <span className="hidden md:inline">リマインド送信</span><span className="md:hidden">通知</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm border-destructive/50 text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    try {
-                      const { error } = await supabase
-                        .from('bookings')
-                        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                        .eq('id', booking.id);
-
-                      if (error) throw error;
-
-                      await sendNotification(booking.id, 'cancelled');
-                      toast.success("予約をキャンセルしました");
-                      onSuccess?.();
-                      onOpenChange(false);
-                    } catch (error) {
-                      toast.error("予約のキャンセルに失敗しました");
-                    }
-                  }}
-                >
-                  <Icon name="cancel" size={16} className="mr-2" />
-                  キャンセル
-                </Button>
-              </div>
+              {/* Sub-actions in dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full h-9 md:h-11 text-xs md:text-sm">
+                    <Icon name="more_horiz" size={16} className="mr-2" />
+                    その他の操作
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56">
+                  <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                    <Icon name="edit" size={16} className="mr-2" />
+                    予約を編集
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleSendReminder}
+                    disabled={isSendingReminder || !booking.customerId}
+                  >
+                    <Icon name="notifications" size={16} className="mr-2" />
+                    リマインド送信
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('bookings')
+                          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                          .eq('id', booking.id);
+                        if (error) throw error;
+                        await sendNotification(booking.id, 'cancelled');
+                        toast.success("予約をキャンセルしました");
+                        onSuccess?.();
+                        onOpenChange(false);
+                      } catch (error) {
+                        toast.error("予約のキャンセルに失敗しました");
+                      }
+                    }}
+                  >
+                    <Icon name="cancel" size={16} className="mr-2" />
+                    予約をキャンセル
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
           {booking.status === "confirmed" && (
             <div className="space-y-3 pt-4">
-              {/* Work Completion Button */}
               <Button
                 className="w-full h-12 md:h-14 text-sm md:text-base font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25 transition-all duration-200 hover:scale-[1.02]"
                 onClick={() => setWorkCompletionModalOpen(true)}
@@ -728,53 +731,49 @@ export const BookingDetailModal = ({
                 作業完了を記録
               </Button>
               
-              <div className="flex gap-2 md:gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
-                  onClick={() => setEditModalOpen(true)}
-                >
-                  <Icon name="edit" size={14} className="mr-1 md:mr-2" />
-                  編集
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm"
-                  onClick={handleSendReminder}
-                  disabled={isSendingReminder || !booking.customerId}
-                >
-                  {isSendingReminder ? (
-                    <Icon name="sync" size={14} className="mr-1 md:mr-2 animate-spin" />
-                  ) : (
-                    <Icon name="notifications" size={14} className="mr-1 md:mr-2" />
-                  )}
-                  <span className="hidden md:inline">リマインド送信</span><span className="md:hidden">通知</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 h-9 md:h-11 text-xs md:text-sm border-destructive/50 text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    try {
-                      const { error } = await supabase
-                        .from('bookings')
-                        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                        .eq('id', booking.id);
-
-                      if (error) throw error;
-
-                      await sendNotification(booking.id, 'cancelled');
-                      toast.success("予約をキャンセルしました");
-                      onSuccess?.();
-                      onOpenChange(false);
-                    } catch (error) {
-                      toast.error("予約のキャンセルに失敗しました");
-                    }
-                  }}
-                >
-                  <Icon name="cancel" size={16} className="mr-2" />
-                  キャンセル
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full h-9 md:h-11 text-xs md:text-sm">
+                    <Icon name="more_horiz" size={16} className="mr-2" />
+                    その他の操作
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56">
+                  <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                    <Icon name="edit" size={16} className="mr-2" />
+                    予約を編集
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleSendReminder}
+                    disabled={isSendingReminder || !booking.customerId}
+                  >
+                    <Icon name="notifications" size={16} className="mr-2" />
+                    リマインド送信
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('bookings')
+                          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                          .eq('id', booking.id);
+                        if (error) throw error;
+                        await sendNotification(booking.id, 'cancelled');
+                        toast.success("予約をキャンセルしました");
+                        onSuccess?.();
+                        onOpenChange(false);
+                      } catch (error) {
+                        toast.error("予約のキャンセルに失敗しました");
+                      }
+                    }}
+                  >
+                    <Icon name="cancel" size={16} className="mr-2" />
+                    予約をキャンセル
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 

@@ -75,20 +75,12 @@ export function AdminHeader() {
               予約管理
             </NavLink>
             <NavLink
-              to="/admin/inbox"
+              to="/admin/messages"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
               activeClassName="bg-muted text-primary"
             >
-              <Icon name="inbox" size={16} />
-              受信トレイ
-            </NavLink>
-            <NavLink
-              to="/admin/broadcast"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-            >
-              <Icon name="campaign" size={16} />
-              一斉配信
+              <Icon name="forum" size={16} />
+              メッセージ
             </NavLink>
             <NavLink
               to="/admin/reports"
@@ -96,18 +88,8 @@ export function AdminHeader() {
               activeClassName="bg-muted text-primary"
             >
               <Icon name="description" size={16} />
-              経営管理
+              レポート
             </NavLink>
-            <a
-              href={bookingPageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              <Icon name="auto_awesome" size={16} />
-              予約ページ
-              <Icon name="open_in_new" size={14} className="ml-0.5" />
-            </a>
             <NavLink
               to="/admin/profile"
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-muted"
