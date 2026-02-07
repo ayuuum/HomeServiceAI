@@ -7,6 +7,7 @@ import { BookingDateTimeSelection } from "@/components/booking/BookingDateTimeSe
 import { BookingCustomerForm } from "@/components/booking/BookingCustomerForm";
 import { BookingConfirmationModal } from "@/components/BookingConfirmationModal";
 import { BookingUpsellSection } from "@/components/booking/BookingUpsellSection";
+import { SetDiscountBadge } from "@/components/booking/SetDiscountBadge";
 import { BookingStepIndicator } from "@/components/booking/BookingStepIndicator";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
@@ -90,6 +91,7 @@ const BookingPage = () => {
     setCustomerAddressBuilding,
     totalPrice,
     totalDiscount,
+    appliedSetDiscounts,
     loading,
     handleServiceQuantityChange,
     handleOptionChange,
@@ -302,16 +304,23 @@ const BookingPage = () => {
         <div className="flex-1 container max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Step 1: Service Selection */}
           {currentStep === 1 && (
-            <BookingServiceSelection
-              allServices={allServices}
-              selectedServices={selectedServices}
-              allOptions={allOptions}
-              selectedOptions={selectedOptions}
-              onServiceQuantityChange={handleServiceQuantityChange}
-              onOptionChange={handleOptionChange}
-              onOptionQuantityChange={handleOptionQuantityChange}
-              getOptionsForService={getOptionsForService}
-            />
+            <>
+              <BookingServiceSelection
+                allServices={allServices}
+                selectedServices={selectedServices}
+                allOptions={allOptions}
+                selectedOptions={selectedOptions}
+                onServiceQuantityChange={handleServiceQuantityChange}
+                onOptionChange={handleOptionChange}
+                onOptionQuantityChange={handleOptionQuantityChange}
+                getOptionsForService={getOptionsForService}
+              />
+              {appliedSetDiscounts.length > 0 && (
+                <div className="mt-4">
+                  <SetDiscountBadge appliedDiscounts={appliedSetDiscounts} />
+                </div>
+              )}
+            </>
           )}
 
           {/* Step 2: Date/Time Selection */}
@@ -485,15 +494,28 @@ const BookingPage = () => {
 
               {/* Price Summary */}
               <div className="bg-primary/10 rounded-lg border-2 border-primary/30 p-4 sm:p-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-bold text-foreground">合計金額（税込）</span>
-                  <div className="text-right">
-                    {totalDiscount > 0 && (
-                      <p className="text-sm text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
-                    )}
-                    <p className="text-2xl sm:text-3xl font-bold text-primary">
-                      ¥{totalPrice.toLocaleString()}
-                    </p>
+                <div className="space-y-2">
+                  {/* Set discount breakdown */}
+                  {appliedSetDiscounts.length > 0 && (
+                    <div className="space-y-1 pb-2 border-b border-primary/20">
+                      {appliedSetDiscounts.map((d) => (
+                        <div key={d.id} className="flex justify-between text-sm">
+                          <span className="text-primary font-medium">🎉 {d.title}（{Math.round(d.discountRate * 100)}%OFF）</span>
+                          <span className="text-primary font-medium">-¥{d.discountAmount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-base sm:text-lg font-bold text-foreground">合計金額（税込）</span>
+                    <div className="text-right">
+                      {totalDiscount > 0 && (
+                        <p className="text-sm text-primary font-medium">-¥{totalDiscount.toLocaleString()} 割引</p>
+                      )}
+                      <p className="text-2xl sm:text-3xl font-bold text-primary">
+                        ¥{totalPrice.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

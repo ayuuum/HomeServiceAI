@@ -20,6 +20,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { LineSettingsForm } from '@/components/LineSettingsForm';
 import AdminServiceManagement from './AdminServiceManagement';
 import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
+import { SetDiscountManager } from '@/components/admin/SetDiscountManager';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "名前を入力してください" }),
@@ -1038,6 +1039,10 @@ export default function ProfilePage() {
             {/* サービス管理セクション */}
             <Separator />
             <AdminServiceManagement />
+
+            {/* セット割引管理 */}
+            <Separator />
+            <SetDiscountManager />
           </TabsContent>
 
           {/* 連携・決済タブ */}
