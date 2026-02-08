@@ -22,10 +22,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    const openaiChatModel = Deno.env.get("OPENAI_CHAT_MODEL") || "gpt-4o-mini";
 
-    if (!lovableApiKey) {
-      console.error("LOVABLE_API_KEY is not configured");
+    if (!openaiApiKey) {
+      console.error("OPENAI_API_KEY is not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -173,15 +174,15 @@ ${businessContext}
       { role: "user", content: message },
     ];
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call OpenAI API
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${openaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: openaiChatModel,
         messages,
         stream: true,
       }),
@@ -195,13 +196,13 @@ ${businessContext}
         });
       }
       if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits depleted. Please add credits." }), {
+        return new Response(JSON.stringify({ error: "OpenAI API quota exceeded. Please check your usage and billing." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
+      console.error("OpenAI API error:", aiResponse.status, errorText);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

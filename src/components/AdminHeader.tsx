@@ -27,7 +27,7 @@ export function AdminHeader() {
   };
 
   // Build booking page URL with organization slug (using public URL for customer sharing)
-  const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || 'https://cleaning-booking.lovable.app';
+  const publicBaseUrl = import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : '');
   const bookingPageUrl = organization?.slug && organization.slug !== 'default'
     ? `${publicBaseUrl}/booking/${organization.slug}`
     : publicBaseUrl;

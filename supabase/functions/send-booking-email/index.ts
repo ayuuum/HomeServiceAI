@@ -42,7 +42,7 @@ PRODID:-//${params.orgName}//Booking System//JP
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:${params.bookingId}@booking.lovable.app
+UID:${params.bookingId}@booking
 DTSTAMP:${formatICalDate(now)}
 DTSTART:${formatICalDate(params.startDate)}
 DTEND:${formatICalDate(params.endDate)}
@@ -127,7 +127,14 @@ const handler = async (req: Request): Promise<Response> => {
     const logoUrl = (booking.organizations as any)?.logo_url;
 
     // Build URLs
-    const baseUrl = Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app";
+    const baseUrl = Deno.env.get("SITE_URL");
+    if (!baseUrl) {
+      console.error("[send-booking-email] SITE_URL environment variable is required");
+      return new Response(
+        JSON.stringify({ error: "SITE_URL environment variable is required" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const cancelUrl = `${baseUrl}/cancel/${booking.cancel_token}`;
     const rescheduleUrl = `${baseUrl}/reschedule/${booking.cancel_token}`;
 
@@ -209,7 +216,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Send email to admin
       const emailResponse = await resend.emails.send({
-        from: `${orgName} <noreply@amber-inc.com>`,
+        from: `${orgName} <${orgAdminEmail || Deno.env.get("SENDER_EMAIL") || "noreply@example.com"}>`,
         to: [adminEmail],
         subject,
         html: htmlContent,
@@ -349,7 +356,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailPayload: any = {
-      from: `${orgName} <noreply@amber-inc.com>`,
+      from: `${orgName} <${orgAdminEmail || Deno.env.get("SENDER_EMAIL") || "noreply@example.com"}>`,
       to: [booking.customer_email],
       subject,
       html: htmlContent,

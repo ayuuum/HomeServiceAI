@@ -63,8 +63,8 @@ LIFFアプリはMessaging APIチャネルには追加できません。
 3. 以下の設定を入力：
    - **LIFFアプリ名**: 例「予約確認」
    - **サイズ**: Tall または Full
-   - **エンドポイントURL**: `https://cleaning-booking.lovable.app/booking/{orgSlug}/my-bookings`
-     - `{orgSlug}` は店舗のスラッグに置き換えてください（例: `nook`）
+   - **エンドポイントURL**: `https://your-domain.com/booking/{orgSlug}/my-bookings`
+     - 本番の公開URL（`VITE_PUBLIC_URL` で設定したドメイン）を使用し、`{orgSlug}` は店舗のスラッグに置き換えてください（例: `nook`）
    - **Scope**: `profile` を有効化
    - **ボットリンク機能**: On (Aggressive)
 4. 作成後に表示される「**LIFF ID**」をコピー

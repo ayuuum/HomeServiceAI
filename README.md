@@ -1,83 +1,44 @@
-# Lovable プロジェクトへようこそ
+# ハウスクリーニング予約システム（Haukuri Pro）
 
-## プロジェクト情報
-
-**URL**: https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0
+React + Vite + Supabase で構築された予約管理アプリケーションです。
 
 ## ドキュメント
+
 - [システムアーキテクチャ図](docs/architecture.md)
 - [デプロイガイド](docs/deployment.md)
 - [LINE連携設定ガイド](docs/line_integration_guide.md)
 - [技術スタック](docs/tech_stack.md)
 - [セキュリティ・認証・インフラ](docs/security.md)
 
-## このコードを編集するには？
+## 開発の始め方
 
-アプリケーションを編集する方法はいくつかあります。
-
-### **Lovable を使う**
-
-[Lovable Project](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) にアクセスし、そのままプロンプトを入力するだけです。
-
-Lovable 経由で行った変更は、自動的にこのリポジトリにコミットされます。
-
-### **お好みの IDE を使う**
-
-ローカル環境で作業したい場合は、このリポジトリをクローンして変更を push してください。  
-push された変更は Lovable 側にも自動で反映されます。
-
-必要なものは **Node.js と npm** のみです。  
+必要なものは **Node.js と npm** です。  
 → [nvm を使ったインストール方法](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-以下の手順に従ってください：
-
 ```sh
-# Step 1: プロジェクトの Git URL を使ってリポジトリをクローン
+# リポジトリをクローン
 git clone <YOUR_GIT_URL>
-
-# Step 2: プロジェクトディレクトリへ移動
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: 必要な依存関係をインストール
-npm i
+# 依存関係をインストール
+npm install
 
-# Step 4: 自動リロード＆即時プレビュー付きで開発サーバーを起動
+# 環境変数を設定（.env.example を参照）
+# AI 機能を使う場合は Supabase Dashboard > Edge Functions > Secrets に OPENAI_API_KEY を設定してください
+
+# 開発サーバーを起動
 npm run dev
 ```
 
-### **GitHub 上で直接ファイルを編集する**
+AI 機能（LINE AI エージェント・予約アシスタント・管理画面 AI）を使用する場合は、Supabase Edge Functions 用に **OPENAI_API_KEY** を設定してください。詳細は [デプロイガイド](docs/deployment.md) を参照してください。
 
-- 編集したいファイルに移動
-- 右上の「Edit（鉛筆アイコン）」をクリック
-- 変更を加えてコミット
+## 技術スタック
 
-### **GitHub Codespaces を使う**
+- **Frontend**: Vite, TypeScript, React, React Router
+- **UI**: shadcn/ui, Tailwind CSS
+- **Backend**: Supabase（PostgreSQL, Auth, Storage, Edge Functions）
+- **AI**: OpenAI API（チャット補完・Function Calling）
 
-- リポジトリのトップページに移動
-- 右上の「Code（緑のボタン）」をクリック
-- 「Codespaces」タブを選択
-- 「New codespace」をクリックして Codespace 環境を起動
-- Codespace 上でファイルを編集し、完了後にコミット＆push
+## デプロイ
 
-## このプロジェクトで使われている技術
-
-このプロジェクトは以下の技術で構築されています：
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## このプロジェクトをデプロイするには？
-
-[Lovable](https://lovable.dev/projects/e1287b9f-3586-4ee6-941a-055da8613ca0) を開き、  
-**Share → Publish** をクリックするだけでデプロイできます。
-
-## Lovable プロジェクトにカスタムドメインを接続できますか？
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[デプロイガイド](docs/deployment.md) を参照してください。

@@ -63,10 +63,11 @@ serve(async (req) => {
     console.log("Authenticated user:", user.id);
 
     const { userInput, services, options, budget } = await req.json() as RequestBody;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    const openaiChatModel = Deno.env.get("OPENAI_CHAT_MODEL") || "gpt-4o-mini";
+
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     // Build service list for prompt
@@ -134,14 +135,14 @@ ${budgetInfo}
 
 **重要**: recommendedOptionsにはオプションIDのみ使用。サービスIDを入れないでください。`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${openaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: openaiChatModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userInput }
@@ -158,13 +159,13 @@ ${budgetInfo}
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "サービス利用制限に達しました。" }), {
+        return new Response(JSON.stringify({ error: "OpenAIの利用枠を超えました。請求設定をご確認ください。" }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "AI処理エラーが発生しました" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
