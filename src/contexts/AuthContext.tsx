@@ -63,38 +63,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch organization info after auth state change
-        if (session?.user) {
-          await fetchOrganization(session.user.id);
-        } else {
-          setOrganizationId(null);
-          setOrganization(null);
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          // Fetch organization info after auth state change
+          if (session?.user) {
+            await fetchOrganization(session.user.id);
+          } else {
+            setOrganizationId(null);
+            setOrganization(null);
+          }
+        } finally {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      // Only handle if onAuthStateChange hasn't already processed this
-      if (!initialSessionHandled) {
-        initialSessionHandled = true;
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchOrganization(session.user.id);
-        }
-        
-        setLoading(false);
-      }
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        try {
+          // Only handle if onAuthStateChange hasn't already processed this
+          if (!initialSessionHandled) {
+            initialSessionHandled = true;
+            setSession(session);
+            setUser(session?.user ?? null);
 
-    return () => subscription.unsubscribe();
+            if (session?.user) {
+              await fetchOrganization(session.user.id);
+            }
+          }
+        } finally {
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Auth getSession failed:', err);
+        setLoading(false);
+      });
+
+    // Fallback: ensure loading ends if neither path completes (e.g. Supabase unreachable)
+    const timeoutId = setTimeout(() => setLoading(false), 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
