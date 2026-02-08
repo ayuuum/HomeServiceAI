@@ -28,7 +28,9 @@ import LiffBookingPage from "./pages/liff/LiffBookingPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelledPage from "./pages/PaymentCancelledPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import NotFound from "./pages/NotFound";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -59,6 +61,7 @@ const App = () => (
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminDashboard />

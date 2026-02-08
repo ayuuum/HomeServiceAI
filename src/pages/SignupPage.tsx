@@ -282,6 +282,7 @@ export default function SignupPage() {
             onClick={async () => {
               setIsLoading(true);
               const { error } = await signInWithGoogle();
+
               if (error) {
                 toast({
                   title: "登録エラー",

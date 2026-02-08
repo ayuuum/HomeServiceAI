@@ -9,13 +9,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
-  // Check if we're in the middle of an OAuth callback (URL contains access_token in hash)
-  const isOAuthCallback = location.hash.includes('access_token');
-
-  // Show loading if either auth is loading OR we're processing OAuth callback
-  if (loading || (isOAuthCallback && !user)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -32,4 +27,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   return <>{children}</>;
 }
+
 

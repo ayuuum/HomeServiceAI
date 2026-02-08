@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/admin`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       return { error };
@@ -151,14 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      organizationId, 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      organizationId,
       organization,
-      loading, 
-      signIn, 
-      signInWithGoogle, 
+      loading,
+      signIn,
+      signInWithGoogle,
       signOut,
       refreshOrganization
     }}>
