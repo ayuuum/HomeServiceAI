@@ -17,6 +17,7 @@ import { ja } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { AdminAIAssistant } from "@/components/AdminAIAssistant";
+import { OnboardingChecklist } from "@/components/onboarding";
 
 const container = {
   hidden: { opacity: 0 },
@@ -259,6 +260,9 @@ const AdminDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Onboarding Checklist */}
+        <OnboardingChecklist />
 
         <motion.div
           className="space-y-6"

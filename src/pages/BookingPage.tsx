@@ -25,6 +25,7 @@ interface Organization {
   welcome_message?: string;
   header_layout?: string;
   line_liff_id?: string;
+  booking_page_status?: string;
 }
 
 const BookingPage = () => {
@@ -229,6 +230,49 @@ const BookingPage = () => {
           >
             トップページへ戻る
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show preparing page if onboarding is not completed
+  if (organization.booking_page_status === 'preparing' || !organization.booking_page_status) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mb-6">
+            <Icon name="engineering" size={40} className="text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-3">
+            ただいま準備中です
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {organization.name}の予約ページは現在準備中です。<br />
+            もうしばらくお待ちください。
+          </p>
+          <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+            お急ぎの方は直接お電話でお問い合わせください
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show paused page if booking is paused
+  if (organization.booking_page_status === 'paused') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-orange-500/5 to-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-500/10 rounded-full mb-6">
+            <Icon name="pause_circle" size={40} className="text-orange-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-3">
+            予約受付を一時停止中
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {organization.name}は現在予約の受付を一時停止しております。<br />
+            再開までお待ちいただくか、直接お問い合わせください。
+          </p>
         </div>
       </div>
     );

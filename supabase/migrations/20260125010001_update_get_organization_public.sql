@@ -1,4 +1,6 @@
 -- Create or replace get_organization_public function to include line_liff_id
+-- Drop existing function first since return type is changing
+DROP FUNCTION IF EXISTS get_organization_public(text);
 CREATE OR REPLACE FUNCTION get_organization_public(org_slug text)
 RETURNS TABLE (
   id uuid,

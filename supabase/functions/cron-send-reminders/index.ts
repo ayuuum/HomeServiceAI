@@ -76,7 +76,7 @@ serve(async (req) => {
                 if (!lineUserId && !customerEmail) continue;
 
                 // Parse booking datetime
-                const bookingDateTime = new Date(`${booking.selected_date}T${booking.selected_time}:00`);
+                const bookingDateTime = new Date(`${booking.selected_date}T${booking.selected_time}:00+09:00`);
                 const hoursUntilBooking = (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
                 // Get already-sent reminders from JSONB

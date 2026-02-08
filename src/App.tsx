@@ -27,6 +27,7 @@ import MyBookingsPage from "./pages/liff/MyBookingsPage";
 import LiffBookingPage from "./pages/liff/LiffBookingPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelledPage from "./pages/PaymentCancelledPage";
+import OnboardingPage from "./pages/OnboardingPage";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/payment/cancelled" element={<PaymentCancelledPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminDashboard />

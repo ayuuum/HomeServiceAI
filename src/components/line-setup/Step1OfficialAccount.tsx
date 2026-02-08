@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { ExternalLink, MessageSquare, ArrowRight } from 'lucide-react';
+import { ExternalLink, MessageSquare, ArrowRight, MessageCircle, Smartphone, Shield } from 'lucide-react';
 
 interface Step1Props {
   onNext: () => void;
@@ -16,6 +16,25 @@ export function Step1OfficialAccount({ onNext }: Step1Props) {
         <p className="text-sm text-muted-foreground">
           LINE連携には公式アカウント（無料）が必要です
         </p>
+      </div>
+
+      {/* Overview of what will be set up */}
+      <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">このウィザードで設定するもの:</p>
+        <ul className="space-y-1.5 text-sm">
+          <li className="flex items-center gap-2">
+            <MessageCircle className="h-3.5 w-3.5 text-[#06C755] flex-shrink-0" />
+            <span><strong>Messaging API</strong> — メッセージの送受信に使用</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <Shield className="h-3.5 w-3.5 text-[#06C755] flex-shrink-0" />
+            <span><strong>Webhook</strong> — LINEからの通知を自動受信（自動設定）</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <Smartphone className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+            <span><strong>LIFF</strong>（任意）— LINEから予約画面を開く機能</span>
+          </li>
+        </ul>
       </div>
 
       <div className="space-y-3">

@@ -41,6 +41,16 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Service Role Key verification (server-to-server auth)
+  const authHeader = req.headers.get("authorization");
+  const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!authHeader || authHeader !== `Bearer ${expectedKey}`) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   // Safely read and parse request body
   let body: HybridNotificationRequest;
   try {
@@ -427,7 +437,11 @@ async function sendEmailNotification(
     });
 
     // Build cancel URL
-    const baseUrl = Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app";
+    const baseUrl = Deno.env.get("SITE_URL");
+    if (!baseUrl) {
+      console.error("[send-hybrid-notification] SITE_URL environment variable is required");
+      throw new Error("SITE_URL environment variable is required");
+    }
     const cancelUrl = `${baseUrl}/cancel/${booking.cancel_token}`;
 
     let subject: string;
@@ -564,7 +578,7 @@ async function sendEmailNotification(
 
     // Send email via Resend with Reply-To header
     const emailResponse = await resend.emails.send({
-      from: `${orgName} <info@amber-inc.com>`,
+      from: `${orgName} <${org?.admin_email || Deno.env.get("SENDER_EMAIL") || "noreply@example.com"}>`,
       reply_to: replyToEmail || undefined,
       to: [recipientEmail],
       subject,
@@ -1367,7 +1381,7 @@ function buildAdminNotificationEmail(params: EmailParams): string {
     </table>
     
     <div style="text-align: center;">
-      <a href="${Deno.env.get("SITE_URL") || "https://cleaning-booking.lovable.app"}/admin" style="display: inline-block; padding: 12px 28px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+      <a href="${Deno.env.get("SITE_URL") || ""}/admin" style="display: inline-block; padding: 12px 28px; background-color: ${params.brandColor}; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
         管理画面を開く
       </a>
     </div>

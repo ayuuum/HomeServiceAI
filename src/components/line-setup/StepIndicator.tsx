@@ -6,7 +6,7 @@ interface StepIndicatorProps {
   totalSteps: number;
 }
 
-const stepLabels = ['公式アカウント', 'API有効化', '認証情報', 'Webhook'];
+const stepLabels = ['公式アカウント', 'API有効化', '認証情報', 'Webhook', 'LIFF'];
 
 export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
   return (

@@ -1,3 +1,6 @@
+-- Enable pgcrypto extension for gen_random_bytes function
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Add cancel token and cancellation tracking to bookings
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_token TEXT UNIQUE;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ;
@@ -8,7 +11,7 @@ CREATE OR REPLACE FUNCTION generate_cancel_token()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.cancel_token IS NULL THEN
-    NEW.cancel_token := encode(gen_random_bytes(16), 'hex');
+    NEW.cancel_token := encode(extensions.gen_random_bytes(16), 'hex');
   END IF;
   RETURN NEW;
 END;
@@ -21,7 +24,7 @@ BEFORE INSERT ON bookings
 FOR EACH ROW EXECUTE FUNCTION generate_cancel_token();
 
 -- Generate cancel tokens for existing bookings that don't have one
-UPDATE bookings SET cancel_token = encode(gen_random_bytes(16), 'hex') WHERE cancel_token IS NULL;
+UPDATE bookings SET cancel_token = encode(extensions.gen_random_bytes(16), 'hex') WHERE cancel_token IS NULL;
 
 -- RPC function to get booking by cancel token (public access, bypasses RLS)
 CREATE OR REPLACE FUNCTION get_booking_by_cancel_token(p_token TEXT)

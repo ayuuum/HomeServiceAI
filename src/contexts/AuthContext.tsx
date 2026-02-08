@@ -58,17 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         // Fetch organization info after auth state change
         if (session?.user) {
-          setTimeout(() => {
-            fetchOrganization(session.user.id);
-          }, 0);
+          await fetchOrganization(session.user.id);
         } else {
           setOrganizationId(null);
           setOrganization(null);
@@ -80,14 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchOrganization(session.user.id);
+      // Only handle if onAuthStateChange hasn't already processed this
+      if (!initialSessionHandled) {
+        initialSessionHandled = true;
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchOrganization(session.user.id);
+        }
+        
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

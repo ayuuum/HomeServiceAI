@@ -7,8 +7,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Eye, EyeOff, ExternalLink, Loader2, CheckCircle } from 'lucide-react';
 
+export interface WebhookSetupResult {
+  attempted: boolean;
+  success: boolean;
+  webhookActive: boolean;
+  testSuccess: boolean;
+  error?: string;
+}
+
 interface Step3Props {
-  onNext: (botName: string | null) => void;
+  onNext: (botName: string | null, webhookResult: WebhookSetupResult) => void;
   onBack: () => void;
 }
 
@@ -21,12 +29,22 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
   const [showSecret, setShowSecret] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; botName?: string } | null>(null);
+  const [webhookPhase, setWebhookPhase] = useState<'idle' | 'setting' | 'done'>('idle');
 
   const handleTest = async () => {
     if (!organization?.id || !channelToken.trim() || !channelSecret.trim()) return;
 
     setIsTesting(true);
     setTestResult(null);
+    setWebhookPhase('idle');
+
+    let botName: string | null = null;
+    let webhookResult: WebhookSetupResult = {
+      attempted: false,
+      success: false,
+      webhookActive: false,
+      testSuccess: false,
+    };
 
     try {
       // Save credentials first
@@ -54,7 +72,32 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
           .eq('id', organization.id);
 
         await refreshOrganization();
-        setTestResult({ success: true, botName: data.botInfo.displayName });
+        botName = data.botInfo.displayName;
+        setTestResult({ success: true, botName });
+
+        // Connection succeeded — now auto-setup webhook
+        setWebhookPhase('setting');
+        try {
+          const { data: whData, error: whError } = await supabase.functions.invoke('setup-line-webhook');
+
+          webhookResult.attempted = true;
+
+          if (whError) {
+            console.error('Webhook auto-setup error:', whError);
+            webhookResult.error = whError.message;
+          } else if (whData?.success) {
+            webhookResult.success = true;
+            webhookResult.webhookActive = whData.webhookActive ?? false;
+            webhookResult.testSuccess = whData.testSuccess ?? false;
+          } else {
+            webhookResult.error = whData?.error || 'Webhook設定に失敗しました';
+          }
+        } catch (whErr) {
+          console.error('Webhook auto-setup exception:', whErr);
+          webhookResult.attempted = true;
+          webhookResult.error = whErr instanceof Error ? whErr.message : 'Webhook設定中にエラーが発生しました';
+        }
+        setWebhookPhase('done');
       } else {
         throw new Error('接続に失敗しました');
       }
@@ -69,9 +112,18 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
     } finally {
       setIsTesting(false);
     }
+
+    // If connection test succeeded, auto-proceed to next step with webhook result
+    if (botName) {
+      onNext(botName, webhookResult);
+    }
   };
 
-  const canProceed = testResult?.success;
+  const statusMessage = webhookPhase === 'setting'
+    ? 'Webhook設定中...'
+    : isTesting
+      ? 'テスト中...'
+      : '接続テスト';
 
   return (
     <div className="space-y-5">
@@ -106,7 +158,6 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          📍
           <a href="https://developers.line.biz/console/" target="_blank" rel="noopener noreferrer"
             className="text-primary hover:underline inline-flex items-center gap-0.5">
             LINE Developers <ExternalLink className="h-3 w-3" />
@@ -139,7 +190,7 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          📍 チャネル基本設定タブに記載
+          チャネル基本設定タブに記載
         </p>
       </div>
 
@@ -163,26 +214,17 @@ export function Step3Credentials({ onNext, onBack }: Step3Props) {
           <ArrowLeft className="h-4 w-4 mr-1" />
           戻る
         </Button>
-        {!canProceed ? (
-          <Button
-            onClick={handleTest}
-            disabled={isTesting || !channelToken.trim() || !channelSecret.trim()}
-            className="flex-1 bg-[#06C755] hover:bg-[#06C755]/90 text-white"
-          >
-            {isTesting ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />テスト中...</>
-            ) : (
-              '接続テスト'
-            )}
-          </Button>
-        ) : (
-          <Button
-            onClick={() => onNext(testResult?.botName || null)}
-            className="flex-1 bg-[#06C755] hover:bg-[#06C755]/90 text-white"
-          >
-            次へ：Webhook設定
-          </Button>
-        )}
+        <Button
+          onClick={handleTest}
+          disabled={isTesting || webhookPhase === 'setting' || !channelToken.trim() || !channelSecret.trim()}
+          className="flex-1 bg-[#06C755] hover:bg-[#06C755]/90 text-white"
+        >
+          {(isTesting || webhookPhase === 'setting') ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{statusMessage}</>
+          ) : (
+            '接続テスト'
+          )}
+        </Button>
       </div>
     </div>
   );

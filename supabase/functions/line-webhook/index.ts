@@ -250,8 +250,8 @@ serve(async (req) => {
         // Check for admin registration keyword
         if (message.type === "text" && (content === "管理者登録" || content.toLowerCase() === "admin")) {
           console.log("Admin registration keyword detected from:", lineUserId);
-          
-          // Check if already registered
+
+          // Check if already registered as this user
           if (org.admin_line_user_id === lineUserId) {
             if (replyToken && org.line_channel_token) {
               await sendLineReply(
@@ -263,13 +263,27 @@ serve(async (req) => {
             console.log("User already registered as admin, skipping");
             continue;
           }
-          
-          // Update admin_line_user_id
+
+          // SECURITY: If admin is already registered by a different user, reject the request
+          if (org.admin_line_user_id) {
+            console.warn(`Admin registration rejected: admin already set for org ${org.id}. Attempted by: ${lineUserId}`);
+            if (replyToken && org.line_channel_token) {
+              await sendLineReply(
+                replyToken,
+                "⚠️ 管理者は既に登録されています。変更が必要な場合は、管理画面の設定から行ってください。",
+                org.line_channel_token
+              );
+            }
+            continue;
+          }
+
+          // Only allow first-time admin registration (when admin_line_user_id is null)
           const { error: updateError } = await supabase
             .from("organizations")
             .update({ admin_line_user_id: lineUserId })
-            .eq("id", org.id);
-          
+            .eq("id", org.id)
+            .is("admin_line_user_id", null);
+
           if (!updateError) {
             console.log("Admin LINE User ID registered successfully:", lineUserId);
             if (replyToken && org.line_channel_token) {
@@ -289,7 +303,7 @@ serve(async (req) => {
               );
             }
           }
-          
+
           // Skip normal message processing for admin registration
           continue;
         }
