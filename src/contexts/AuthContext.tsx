@@ -144,14 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // セッションの有無に関わらず、ハッシュが含まれていればクリアする
-        // これにより、リフレッシュ時に古いトークンが再処理されるのを防ぐ
+        // セッションが確立された場合、またはエラーハッシュがある場合にのみクリアする
         if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('error='))) {
-          console.log('AuthContext: Clearing hash from URL');
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          if (session || window.location.hash.includes('error=')) {
+            console.log('AuthContext: Clearing session/error hash from URL');
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
         }
       } catch (err) {
         console.error('Auth initial check failed:', err);
+        setInitialized(true);
       } finally {
         setLoading(false);
       }

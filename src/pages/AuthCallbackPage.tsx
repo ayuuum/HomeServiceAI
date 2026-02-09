@@ -1,79 +1,52 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthCallbackPage() {
     const navigate = useNavigate();
+    const { user, initialized } = useAuth();
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        let sub: { unsubscribe: () => void } | null = null;
+        console.log('AuthCallback: State update -', { hasUser: !!user, initialized });
 
-        const handleAuthCallback = async () => {
-            console.log('AuthCallback: Checking initial session...');
-            try {
-                // 1. まず現在のセッションを直接確認する
-                const { data: { session }, error } = await supabase.auth.getSession();
+        // 認証が完了し、組織データの初期化も終わったら管理画面へ
+        if (user && initialized) {
+            console.log('AuthCallback: User authenticated and initialized, redirecting to admin');
+            navigate('/admin', { replace: true });
+            return;
+        }
 
-                // セッション取得（または失敗）後、URLハッシュをクリアして無限ループや警告を防ぐ
-                if (window.location.hash) {
-                    console.log('AuthCallback: Clearing hash from URL');
-                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-                }
-
-                if (session) {
-                    console.log('AuthCallback: Session found immediately, redirecting to admin');
-                    navigate('/admin', { replace: true });
-                    return;
-                }
-
-                if (error) {
-                    console.error('AuthCallback: Error getting session:', error);
-                    // エラーがあっても、onAuthStateChange でログインが飛んでくる可能性に賭ける
-                }
-
-                // 2. まだセッションがない場合は、状態の変化を監視する
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                    console.log('AuthCallback event:', event, session ? 'Session exists' : 'No session');
-                    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-                        console.log('AuthCallback: Auth state change detected session, redirecting to admin');
-                        navigate('/admin', { replace: true });
-                    }
-                });
-                sub = subscription;
-            } catch (err) {
-                console.error('AuthCallback unexpected error:', err);
-            }
-        };
-
-        handleAuthCallback();
-
-        const timeout = setTimeout(() => {
-            console.warn('AuthCallback: Timeout waiting for session, final check before redirect...');
-            // 最後にもう一度確認
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session) {
+        // タイムアウト監視（万が一初期化が終わらない場合のため）
+        if (!timeoutRef.current) {
+            timeoutRef.current = setTimeout(() => {
+                console.warn('AuthCallback: Timeout waiting for full initialization');
+                if (user) {
+                    // ユーザーはいるが組織取得が終わっていない場合でも、
+                    // 管理画面（ProtectedRoute）側で待機させるためリダイレクト
                     navigate('/admin', { replace: true });
                 } else {
-                    console.error('AuthCallback: No session after 10s timeout, redirecting to login');
+                    console.error('AuthCallback: No session detected after 10s, returning to login');
                     navigate('/login', { replace: true });
                 }
-            });
-        }, 10000);
+            }, 10000);
+        }
 
         return () => {
-            if (sub) {
-                sub.unsubscribe();
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
             }
-            clearTimeout(timeout);
         };
-    }, [navigate]);
+    }, [user, initialized, navigate]);
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <h2 className="text-xl font-semibold text-gray-900">認証処理中...</h2>
-                <p className="text-gray-500 mt-2">まもなく管理画面へ移動します</p>
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="text-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <div>
+                    <h2 className="text-xl font-semibold">認証処理中...</h2>
+                    <p className="text-muted-foreground mt-2">まもなく管理画面へ移動します</p>
+                </div>
             </div>
         </div>
     );
