@@ -1,48 +1,60 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Icon } from '@/components/ui/icon';
 
 export default function AuthCallbackPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log('AuthCallback event:', event);
-            if (event === 'SIGNED_IN' && session) {
-                // Redirect to admin dashboard once signed in
-                navigate('/admin', { replace: true });
-            }
-            if (event === 'INITIAL_SESSION' && session) {
-                navigate('/admin', { replace: true });
-            }
-        });
+        let sub: { unsubscribe: () => void } | null = null;
 
-        // Also check current session immediately
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const handleAuthCallback = async () => {
+            console.log('AuthCallback: Checking initial session...');
+            // 1. まず現在のセッションを直接確認する（URLのハッシュがパースされているか確認）
+            const { data: { session }, error } = await supabase.auth.getSession();
+
             if (session) {
+                console.log(' AuthCallback: Session found immediately, redirecting to admin');
                 navigate('/admin', { replace: true });
+                return;
             }
-        });
 
-        // Safety timeout: if nothing happens in 10 seconds, go to login
+            if (error) {
+                console.error('AuthCallback: Error getting session:', error);
+            }
+
+            // 2. まだセッションがない場合は、状態の変化を監視する
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                console.log('AuthCallback event:', event, session ? 'Session exists' : 'No session');
+                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                    console.log('AuthCallback: Auth state change detected session, redirecting to admin');
+                    navigate('/admin', { replace: true });
+                }
+            });
+            sub = subscription;
+        };
+
+        handleAuthCallback();
+
         const timeout = setTimeout(() => {
+            console.warn('AuthCallback: Timeout waiting for session, redirecting to login');
             navigate('/login', { replace: true });
-        }, 10000);
+        }, 10000); // 10秒に延長
 
         return () => {
-            subscription.unsubscribe();
+            if (sub) {
+                sub.unsubscribe();
+            }
             clearTimeout(timeout);
         };
     }, [navigate]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center space-y-4">
-                <Icon name="sync" size={48} className="animate-spin mx-auto text-primary" />
-                <h2 className="text-xl font-semibold">認証処理中...</h2>
-                <p className="text-muted-foreground italic">安全にアカウントを紐づけています。少々お待ちください。</p>
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <h2 className="text-xl font-semibold text-gray-900">認証処理中...</h2>
+                <p className="text-gray-500 mt-2">まもなく管理画面へ移動します</p>
             </div>
         </div>
     );
