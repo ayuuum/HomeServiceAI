@@ -34,26 +34,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchOrganization = async (userId: string) => {
+    console.log('Fetching organization for userId:', userId);
     // Fetch the user's profile to get organization_id
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
       .eq('id', userId)
       .single();
 
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return;
+    }
+
+    console.log('Fetched profile:', profile);
+
     if (profile?.organization_id) {
       setOrganizationId(profile.organization_id);
 
       // Fetch organization details
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, brand_color, welcome_message, header_layout')
         .eq('id', profile.organization_id)
         .single();
 
-      if (org) {
+      if (orgError) {
+        console.error('Error fetching organization details:', orgError);
+      } else if (org) {
+        console.log('Fetched organization details:', org);
         setOrganization(org);
+      } else {
+        console.warn('No organization found for id:', profile.organization_id);
       }
+    } else {
+      console.warn('Profile found but no organization_id associated for user:', userId);
     }
   };
 
