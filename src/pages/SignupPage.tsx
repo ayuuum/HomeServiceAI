@@ -62,6 +62,28 @@ export default function SignupPage() {
 
       if (error) throw error;
 
+      // --- Verify database trigger completion ---
+      setIsLoading(true); // Ensure loading state continues
+      let verified = false;
+      for (let i = 0; i < 5; i++) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', validatedData.email)
+          .maybeSingle();
+
+        if (profile) {
+          verified = true;
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1s
+      }
+
+      if (!verified) {
+        console.warn('Profile record creation verification timed out, proceeding anyway.');
+      }
+      // ------------------------------------------
+
       toast({
         title: "登録成功",
         description: "アカウントが作成されました。ログインしています...",

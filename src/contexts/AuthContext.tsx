@@ -10,6 +10,11 @@ interface Organization {
   brand_color?: string;
   welcome_message?: string;
   header_layout?: string;
+  admin_email?: string;
+  booking_headline?: string;
+  payment_enabled?: boolean;
+  stripe_account_id?: string | null;
+  stripe_account_status?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +23,7 @@ interface AuthContextType {
   organizationId: string | null;
   organization: Organization | null;
   loading: boolean;
+  initialized: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -32,9 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
-  const fetchOrganization = async (userId: string) => {
-    console.log('Fetching organization for userId:', userId);
+  const fetchOrganization = async (userId: string, retryCount = 0) => {
+    console.log(`Fetching organization for userId: ${userId} (Attempt: ${retryCount + 1})`);
     // Fetch the user's profile to get organization_id
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -44,6 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileError) {
       console.error('Error fetching user profile:', profileError);
+
+      // Retry logic for race conditions (DB trigger not finished)
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 500; // 0.5s, 1s, 2s
+        console.log(`Retrying fetchOrganization in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchOrganization(userId, retryCount + 1);
+      }
+      setInitialized(true); // Stop waiting even if error persists
       return;
     }
 
@@ -55,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fetch organization details
       const { data: org, error: orgError } = await supabase
         .from('organizations')
-        .select('id, name, slug, logo_url, brand_color, welcome_message, header_layout')
+        .select('id, name, slug, logo_url, brand_color, welcome_message, header_layout, admin_email, booking_headline, payment_enabled, stripe_account_id, stripe_account_status')
         .eq('id', profile.organization_id)
         .single();
 
@@ -67,8 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         console.warn('No organization found for id:', profile.organization_id);
       }
+      setInitialized(true);
     } else {
       console.warn('Profile found but no organization_id associated for user:', userId);
+
+      // If profile exists but no organization_id yet, retry as well (trigger might be mid-execution)
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 500;
+        console.log(`Retrying fetchOrganization in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchOrganization(userId, retryCount + 1);
+      }
+      setInitialized(true);
     }
   };
 
@@ -88,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             setOrganizationId(null);
             setOrganization(null);
+            setInitialized(true);
           }
         } finally {
           setLoading(false);
@@ -95,28 +122,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        try {
-          // Only handle if onAuthStateChange hasn't already processed this
-          if (!initialSessionHandled) {
-            initialSessionHandled = true;
-            setSession(session);
-            setUser(session?.user ?? null);
+    // 既存のセッションを確認
+    const checkInitialSession = async () => {
+      try {
+        console.log('AuthContext: Checking initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-            if (session?.user) {
-              await fetchOrganization(session.user.id);
-            }
-          }
-        } finally {
-          setLoading(false);
+        if (error) {
+          console.error('Auth getSession failed:', error);
         }
-      })
-      .catch((err) => {
-        console.error('Auth getSession failed:', err);
+
+        if (!initialSessionHandled) {
+          initialSessionHandled = true;
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await fetchOrganization(session.user.id);
+          } else {
+            setInitialized(true);
+          }
+        }
+
+        // セッションの有無に関わらず、ハッシュが含まれていればクリアする
+        // これにより、リフレッシュ時に古いトークンが再処理されるのを防ぐ
+        if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('error='))) {
+          console.log('AuthContext: Clearing hash from URL');
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } catch (err) {
+        console.error('Auth initial check failed:', err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    checkInitialSession();
 
     // Fallback: ensure loading ends if neither path completes (e.g. Supabase unreachable)
     const timeoutId = setTimeout(() => setLoading(false), 10000);
@@ -154,9 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setOrganizationId(null);
-    setOrganization(null);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+      setOrganizationId(null);
+      setOrganization(null);
+      setInitialized(false);
+    }
   };
 
   const refreshOrganization = async () => {
@@ -172,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       organizationId,
       organization,
       loading,
+      initialized,
       signIn,
       signInWithGoogle,
       signOut,

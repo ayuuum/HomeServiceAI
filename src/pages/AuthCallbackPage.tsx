@@ -10,36 +10,55 @@ export default function AuthCallbackPage() {
 
         const handleAuthCallback = async () => {
             console.log('AuthCallback: Checking initial session...');
-            // 1. まず現在のセッションを直接確認する（URLのハッシュがパースされているか確認）
-            const { data: { session }, error } = await supabase.auth.getSession();
+            try {
+                // 1. まず現在のセッションを直接確認する
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-            if (session) {
-                console.log(' AuthCallback: Session found immediately, redirecting to admin');
-                navigate('/admin', { replace: true });
-                return;
-            }
-
-            if (error) {
-                console.error('AuthCallback: Error getting session:', error);
-            }
-
-            // 2. まだセッションがない場合は、状態の変化を監視する
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                console.log('AuthCallback event:', event, session ? 'Session exists' : 'No session');
-                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-                    console.log('AuthCallback: Auth state change detected session, redirecting to admin');
-                    navigate('/admin', { replace: true });
+                // セッション取得（または失敗）後、URLハッシュをクリアして無限ループや警告を防ぐ
+                if (window.location.hash) {
+                    console.log('AuthCallback: Clearing hash from URL');
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
-            });
-            sub = subscription;
+
+                if (session) {
+                    console.log('AuthCallback: Session found immediately, redirecting to admin');
+                    navigate('/admin', { replace: true });
+                    return;
+                }
+
+                if (error) {
+                    console.error('AuthCallback: Error getting session:', error);
+                    // エラーがあっても、onAuthStateChange でログインが飛んでくる可能性に賭ける
+                }
+
+                // 2. まだセッションがない場合は、状態の変化を監視する
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    console.log('AuthCallback event:', event, session ? 'Session exists' : 'No session');
+                    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                        console.log('AuthCallback: Auth state change detected session, redirecting to admin');
+                        navigate('/admin', { replace: true });
+                    }
+                });
+                sub = subscription;
+            } catch (err) {
+                console.error('AuthCallback unexpected error:', err);
+            }
         };
 
         handleAuthCallback();
 
         const timeout = setTimeout(() => {
-            console.warn('AuthCallback: Timeout waiting for session, redirecting to login');
-            navigate('/login', { replace: true });
-        }, 10000); // 10秒に延長
+            console.warn('AuthCallback: Timeout waiting for session, final check before redirect...');
+            // 最後にもう一度確認
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                    navigate('/admin', { replace: true });
+                } else {
+                    console.error('AuthCallback: No session after 10s timeout, redirecting to login');
+                    navigate('/login', { replace: true });
+                }
+            });
+        }, 10000);
 
         return () => {
             if (sub) {

@@ -17,7 +17,7 @@ export interface OnboardingStatus {
 }
 
 export function useOnboardingStatus() {
-    const { organization, organizationId, refreshOrganization } = useAuth();
+    const { organization, organizationId, initialized, refreshOrganization } = useAuth();
     const [status, setStatus] = useState<OnboardingStatus>({
         isCompleted: false,
         completedAt: null,
@@ -27,6 +27,8 @@ export function useOnboardingStatus() {
     const [isLoading, setIsLoading] = useState(true);
 
     const checkStatus = useCallback(async () => {
+        if (!initialized) return;
+
         if (!organizationId) {
             setIsLoading(false);
             return;

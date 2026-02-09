@@ -112,12 +112,12 @@ export default function ProfilePage() {
       setLogoUrl(organization.logo_url || null);
       setBrandColor(organization.brand_color || '#1E3A8A');
       setWelcomeMessage(organization.welcome_message || '');
-      setBookingHeadline((organization as any).booking_headline || '');
+      setBookingHeadline(organization.booking_headline || '');
       setHeaderLayout((organization.header_layout as 'logo_only' | 'logo_and_name' | 'name_only') || 'logo_and_name');
       // Load admin notification email
-      setAdminEmail((organization as any).admin_email || '');
+      setAdminEmail(organization.admin_email || '');
       // Load payment settings
-      setPaymentEnabled((organization as any).payment_enabled || false);
+      setPaymentEnabled(organization.payment_enabled || false);
     }
   }, [organization]);
 
@@ -198,6 +198,7 @@ export default function ProfilePage() {
         title: "更新成功",
         description: "プロフィールを更新しました",
       });
+      await loadProfile();
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
@@ -329,7 +330,23 @@ export default function ProfilePage() {
     }
 
     try {
+      if (!organization?.id) {
+        console.error('Organization ID not found');
+        toast({
+          variant: "destructive",
+          title: "エラー",
+          description: "組織情報が見つかりません。再ログインを試してください。",
+        });
+        return;
+      }
+
       setIsLoadingOrganization(true);
+      console.log('Updating organization:', {
+        id: organization.id,
+        name: organizationName,
+        slug: slug,
+        admin_email: adminEmail
+      });
 
       const { error } = await supabase
         .from('organizations')
@@ -338,12 +355,18 @@ export default function ProfilePage() {
           slug: slug.toLowerCase().trim(),
           admin_email: adminEmail.trim() || null
         })
-        .eq('id', organization?.id);
+        .eq('id', organization.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Organization update error:', error);
+        throw error;
+      }
+
+      console.log('Update successful, refreshing organization...');
 
       setOriginalSlug(slug);
       await refreshOrganization();
+      console.log('Organization refresh complete');
 
       toast({
         title: "更新成功",
@@ -1155,7 +1178,7 @@ export default function ProfilePage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">連携状況</span>
-                        {(organization as any)?.stripe_account_status === 'connected' ? (
+                        {organization?.stripe_account_status === 'connected' ? (
                           <Badge variant="outline" className="bg-success/10 text-success border-success/30">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             連携済み
@@ -1167,13 +1190,13 @@ export default function ProfilePage() {
                           </Badge>
                         )}
                       </div>
-                      {(organization as any)?.stripe_account_id && (
+                      {organization?.stripe_account_id && (
                         <p className="text-xs text-muted-foreground font-mono">
-                          ID: {(organization as any).stripe_account_id}
+                          ID: {organization.stripe_account_id}
                         </p>
                       )}
                     </div>
-                    {(organization as any)?.stripe_account_status === 'connected' ? (
+                    {organization?.stripe_account_status === 'connected' ? (
                       <Button
                         variant="outline"
                         size="sm"
