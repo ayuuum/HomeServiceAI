@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Booking Flow', () => {
     test('should allow a user to complete a booking', async ({ page }) => {
+        // コンソールログを出力
+        page.on('console', msg => {
+            console.log(`BROWSER CONSOLE: ${msg.type()}: ${msg.text()}`);
+        });
+
         // 1. Supabaseの通信をモック化
         await page.route('**/rest/v1/rpc/get_organization_public*', async route => {
             await route.fulfill({
@@ -13,6 +18,7 @@ test.describe('Booking Flow', () => {
                     slug: 'test119-ca665cae',
                     line_liff_id: 'test-liff-id',
                     brand_color: '#0ea5e9',
+                    booking_page_status: 'published',
                 }]),
             });
         });
@@ -101,22 +107,42 @@ test.describe('Booking Flow', () => {
             });
         });
 
-        // 予約登録のモック (送信成功)
-        await page.route('**/rest/v1/bookings*', async route => {
+        // 通知登録のモック
+        await page.route('**/rest/v1/notifications*', async route => {
             if (route.request().method() === 'POST') {
                 await route.fulfill({
                     status: 201,
                     contentType: 'application/json',
-                    body: JSON.stringify({ id: 'new-booking-id' }),
-                });
-            } else {
-                // SELECT (空き状況確認用など)
-                await route.fulfill({
-                    status: 200,
-                    contentType: 'application/json',
                     body: JSON.stringify([]),
                 });
             }
+        });
+
+        // 予約登録のモック (RPCを使用)
+        await page.route('**/rest/v1/rpc/create_booking_secure*', async route => {
+            if (route.request().method() === 'POST') {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify('new-booking-id'),
+                });
+            }
+        });
+
+        // 予約データの取得モック (作成直後の取得用)
+        await page.route('**/rest/v1/bookings?id=eq.*', async route => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([{
+                    id: 'new-booking-id',
+                    customer_name: 'テスト 太郎',
+                    selected_date: new Date().toISOString().split('T')[0],
+                    selected_time: '10:00',
+                    total_price: 10000,
+                    status: 'pending'
+                }]),
+            });
         });
 
         // 2. 予約ページにアクセス
@@ -154,6 +180,7 @@ test.describe('Booking Flow', () => {
         await page.locator('#lastName').fill('テスト');
         await page.locator('#firstName').fill('太郎');
         await page.locator('#phone').fill('09012345678');
+        await page.locator('#email').fill('test@example.com');
         await page.locator('#postalCode').fill('1000001');
         await page.getByRole('button', { name: '住所検索' }).click();
 
@@ -165,10 +192,10 @@ test.describe('Booking Flow', () => {
 
         // 12. 最終確認して送信
         await expect(page.locator('h2')).toContainText('予約内容の確認');
-        await page.getByRole('button', { name: '予約を確定する' }).click();
+        await page.getByRole('button', { name: '予約リクエストを送信' }).click();
 
         // 13. 完了画面の確認 (モーダル内のメッセージを確認)
-        await expect(page.getByText('ご予約ありがとうございます！')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByText('予約リクエストを受け付けました')).toBeVisible();
+        await expect(page.getByText('ご予約リクエストを受け付けました')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('ありがとうございます')).toBeVisible();
     });
 });

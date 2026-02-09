@@ -582,41 +582,38 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                     throw new Error("Customer ID is missing");
                 }
 
-                // 2. Create Booking
-                const newBookingId = crypto.randomUUID();
-                const { error: bookingError } = await supabase
-                    .from('bookings')
-                    .insert({
-                        id: newBookingId,
-                        customer_id: customerId,
-                        customer_name: `${customerLastName} ${customerFirstName}`.trim(),
-                        customer_email: customerEmail.trim() || null,
-                        customer_phone: customerPhone.trim() || null,
-                        customer_address: customerAddress.trim() || null,
-                        customer_address_building: customerAddressBuilding.trim() || null,
-                        customer_postal_code: customerPostalCode.trim() || null,
-                        // 第1希望をselected_date/timeに設定（後方互換性）
-                        selected_date: format(selectedDate!, 'yyyy-MM-dd'),
-                        selected_time: selectedTime,
-                        // 3つの希望日時
-                        preference1_date: preferences[0]?.date ? format(preferences[0].date, 'yyyy-MM-dd') : null,
-                        preference1_time: preferences[0]?.time || null,
-                        preference2_date: preferences[1]?.date ? format(preferences[1].date, 'yyyy-MM-dd') : null,
-                        preference2_time: preferences[1]?.time || null,
-                        preference3_date: preferences[2]?.date ? format(preferences[2].date, 'yyyy-MM-dd') : null,
-                        preference3_time: preferences[2]?.time || null,
-                        total_price: totalPrice,
-                        status: 'pending',
-                        diagnosis_has_parking: hasParking === "yes",
-                        diagnosis_notes: notes,
-                        organization_id: organizationId
+                // 2. Create Booking using secure RPC
+                const { data: newBookingId, error: bookingError } = await supabase
+                    .rpc('create_booking_secure', {
+                        p_organization_id: organizationId,
+                        p_customer_id: customerId,
+                        p_customer_name: `${customerLastName} ${customerFirstName}`.trim(),
+                        p_customer_email: customerEmail.trim() || null,
+                        p_customer_phone: customerPhone.trim() || null,
+                        p_customer_address: customerAddress.trim() || null,
+                        p_customer_address_building: customerAddressBuilding.trim() || null,
+                        p_customer_postal_code: customerPostalCode.trim() || null,
+                        p_selected_date: format(selectedDate!, 'yyyy-MM-dd'),
+                        p_selected_time: selectedTime,
+                        p_preference1_date: preferences[0]?.date ? format(preferences[0].date, 'yyyy-MM-dd') : null,
+                        p_preference1_time: preferences[0]?.time || null,
+                        p_preference2_date: preferences[1]?.date ? format(preferences[1].date, 'yyyy-MM-dd') : null,
+                        p_preference2_time: preferences[1]?.time || null,
+                        p_preference3_date: preferences[2]?.date ? format(preferences[2].date, 'yyyy-MM-dd') : null,
+                        p_preference3_time: preferences[2]?.time || null,
+                        p_total_price: totalPrice,
+                        p_diagnosis_has_parking: hasParking === "yes",
+                        p_diagnosis_notes: notes
                     });
 
                 if (bookingError) throw bookingError;
+                if (!newBookingId) throw new Error("Booking creation failed: No ID returned");
+
+                const bookingId = newBookingId as unknown as string;
 
                 // 4. Create booking_services records
                 const servicesData = selectedServices.map(({ serviceId, quantity, service }) => ({
-                    booking_id: newBookingId,
+                    booking_id: bookingId,
                     service_id: serviceId,
                     service_title: service.title,
                     service_quantity: quantity,
@@ -632,7 +629,7 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                 // 5. Create booking_options records
                 if (selectedOptions.length > 0) {
                     const optionsData = selectedOptions.map(({ optionId, quantity, option }) => ({
-                        booking_id: newBookingId,
+                        booking_id: bookingId,
                         option_id: optionId,
                         option_title: option.title,
                         option_price: option.price,
@@ -699,7 +696,7 @@ export const useBooking = (organizationId?: string, liffId?: string) => {
                             title: `${customerLastName} ${customerFirstName}様から予約リクエスト`,
                             message: `${selectedServices.map(s => s.service.title).join('、')} - ${format(selectedDate!, 'M/d')} ${selectedTime}`,
                             resource_type: 'booking',
-                            resource_id: newBookingId
+                            resource_id: bookingId
                         });
 
                     if (notificationError) {

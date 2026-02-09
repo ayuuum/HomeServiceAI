@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Icon } from '@/components/ui/icon';
 import { QuantitySelector } from './QuantitySelector';
 import { OptionCheckbox } from './OptionCheckbox';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface InitialCustomerData {
   id?: string;
@@ -25,6 +26,7 @@ interface AdminBookingModalProps {
 }
 
 export default function AdminBookingModal({ open, onOpenChange, onSuccess, initialCustomer }: AdminBookingModalProps) {
+  const { organizationId } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [services, setServices] = useState<any[]>([]);
@@ -43,7 +45,7 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
     if (open) {
       loadServices();
       loadCustomers();
-      
+
       // Pre-fill customer data if provided
       if (initialCustomer) {
         setCustomerId(initialCustomer.id || '');
@@ -118,22 +120,31 @@ export default function AdminBookingModal({ open, onOpenChange, onSuccess, initi
         finalCustomerId = newCustomer.id;
       }
 
-      const { data: booking, error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          customer_id: finalCustomerId,
-          customer_name: customerName,
-          customer_phone: customerPhone,
-          customer_email: customerEmail,
-          selected_date: selectedDate,
-          selected_time: selectedTime,
-          total_price: calculateTotal(),
-          status: 'pending',
-        })
-        .select()
-        .single();
+      // Create Booking using secure RPC
+      const { data: newBookingId, error: bookingError } = await supabase
+        .rpc('create_booking_secure', {
+          p_organization_id: organizationId,
+          p_customer_id: finalCustomerId,
+          p_customer_name: customerName,
+          p_customer_email: customerEmail || null,
+          p_customer_phone: customerPhone || null,
+          p_selected_date: selectedDate,
+          p_selected_time: selectedTime,
+          p_total_price: calculateTotal(),
+          p_diagnosis_has_parking: false, // Default for admin creation
+          p_diagnosis_notes: ""
+        });
 
       if (bookingError) throw bookingError;
+
+      // Fetch the created booking for subsequent operations
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', newBookingId as unknown as string)
+        .single();
+
+      if (fetchError) throw fetchError;
 
       const { error: serviceError } = await supabase
         .from('booking_services')

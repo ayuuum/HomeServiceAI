@@ -156,18 +156,18 @@ export const NewBookingModal = ({
 
     const handleSearchCustomer = async (query: string) => {
         setLoading(true);
-        
+
         // Sanitize input - remove special PostgREST characters to prevent query injection
         const sanitizedQuery = query
             .replace(/[,().%]/g, '')  // Remove query syntax characters
             .trim();
-        
+
         if (!sanitizedQuery) {
             setSearchResults([]);
             setLoading(false);
             return;
         }
-        
+
         const { data } = await supabase
             .from("customers")
             .select("*")
@@ -332,26 +332,31 @@ export const NewBookingModal = ({
                 return;
             }
 
-            // Create Booking
-            const { data: booking, error: bookingError } = await supabase
-                .from("bookings")
-                .insert({
-                    customer_id: customerId,
-                    customer_name: selectedCustomer ? selectedCustomer.name : newCustomer.name,
-                    customer_email: selectedCustomer ? selectedCustomer.email : newCustomer.email,
-                    customer_phone: selectedCustomer ? selectedCustomer.phone : newCustomer.phone,
-                    selected_date: format(selectedDate, "yyyy-MM-dd"),
-                    selected_time: selectedTime,
-                    total_price: total,
-                    status: "confirmed",
-                    diagnosis_has_parking: hasParking === "yes",
-                    diagnosis_notes: notes,
-                    organization_id: organizationId
-                })
-                .select()
-                .single();
+            // Create Booking using secure RPC
+            const { data: newBookingId, error: bookingError } = await supabase
+                .rpc('create_booking_secure', {
+                    p_organization_id: organizationId,
+                    p_customer_id: customerId,
+                    p_customer_name: selectedCustomer ? selectedCustomer.name : newCustomer.name,
+                    p_customer_email: (selectedCustomer ? selectedCustomer.email : newCustomer.email) || null,
+                    p_customer_phone: (selectedCustomer ? selectedCustomer.phone : newCustomer.phone) || null,
+                    p_selected_date: format(selectedDate, "yyyy-MM-dd"),
+                    p_selected_time: selectedTime,
+                    p_total_price: total,
+                    p_diagnosis_has_parking: hasParking === "yes",
+                    p_diagnosis_notes: notes
+                });
 
             if (bookingError) throw bookingError;
+
+            // Re-fetch booking for context if needed, but we mainly need the ID
+            const { data: booking, error: fetchError } = await supabase
+                .from("bookings")
+                .select("*")
+                .eq("id", newBookingId)
+                .single();
+
+            if (fetchError) throw fetchError;
 
             // Create Booking Services
             const bookingServicesData = selectedServices.map(({ serviceId, quantity, service }) => ({

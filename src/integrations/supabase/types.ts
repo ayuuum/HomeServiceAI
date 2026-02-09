@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -124,8 +124,9 @@ export type Database = {
           gmv_included_at: string | null
           id: string
           line_reminder_sent_at: string | null
+          line_reminders_sent: Json | null
           online_payment_status: string | null
-          organization_id: string | null
+          organization_id: string
           paid_at: string | null
           payment_method: string | null
           payment_reminder_sent_at: string | null
@@ -143,6 +144,7 @@ export type Database = {
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
+          survey_sent_at: string | null
           total_price: number
           updated_at: string | null
         }
@@ -168,8 +170,9 @@ export type Database = {
           gmv_included_at?: string | null
           id?: string
           line_reminder_sent_at?: string | null
+          line_reminders_sent?: Json | null
           online_payment_status?: string | null
-          organization_id?: string | null
+          organization_id: string
           paid_at?: string | null
           payment_method?: string | null
           payment_reminder_sent_at?: string | null
@@ -187,6 +190,7 @@ export type Database = {
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          survey_sent_at?: string | null
           total_price: number
           updated_at?: string | null
         }
@@ -212,8 +216,9 @@ export type Database = {
           gmv_included_at?: string | null
           id?: string
           line_reminder_sent_at?: string | null
+          line_reminders_sent?: Json | null
           online_payment_status?: string | null
-          organization_id?: string | null
+          organization_id?: string
           paid_at?: string | null
           payment_method?: string | null
           payment_reminder_sent_at?: string | null
@@ -231,6 +236,7 @@ export type Database = {
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          survey_sent_at?: string | null
           total_price?: number
           updated_at?: string | null
         }
@@ -254,33 +260,33 @@ export type Database = {
       broadcast_recipients: {
         Row: {
           broadcast_id: string
-          created_at: string | null
+          created_at: string
           customer_id: string
           error_message: string | null
           id: string
           line_user_id: string
           sent_at: string | null
-          status: string | null
+          status: string
         }
         Insert: {
           broadcast_id: string
-          created_at?: string | null
+          created_at?: string
           customer_id: string
           error_message?: string | null
           id?: string
           line_user_id: string
           sent_at?: string | null
-          status?: string | null
+          status?: string
         }
         Update: {
           broadcast_id?: string
-          created_at?: string | null
+          created_at?: string
           customer_id?: string
           error_message?: string | null
           id?: string
           line_user_id?: string
           sent_at?: string | null
-          status?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -301,43 +307,46 @@ export type Database = {
       }
       broadcasts: {
         Row: {
-          created_at: string | null
-          failed_count: number | null
+          created_at: string
+          created_by: string | null
+          failed_count: number
           id: string
           message: string
           organization_id: string
-          recipient_count: number | null
-          segment_filters: Json | null
-          sent_count: number | null
-          status: string | null
+          recipient_count: number
+          segment_filters: Json
+          sent_at: string | null
+          sent_count: number
+          status: string
           title: string
-          updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          failed_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
           id?: string
           message: string
           organization_id: string
-          recipient_count?: number | null
-          segment_filters?: Json | null
-          sent_count?: number | null
-          status?: string | null
+          recipient_count?: number
+          segment_filters?: Json
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
           title: string
-          updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          failed_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
           id?: string
           message?: string
           organization_id?: string
-          recipient_count?: number | null
-          segment_filters?: Json | null
-          sent_count?: number | null
-          status?: string | null
+          recipient_count?: number
+          segment_filters?: Json
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
           title?: string
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -360,7 +369,7 @@ export type Database = {
           line_user_id: string | null
           name: string | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           postal_code: string | null
           updated_at: string | null
@@ -375,7 +384,7 @@ export type Database = {
           line_user_id?: string | null
           name?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           postal_code?: string | null
           updated_at?: string | null
@@ -390,7 +399,7 @@ export type Database = {
           line_user_id?: string | null
           name?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           postal_code?: string | null
           updated_at?: string | null
@@ -630,15 +639,18 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: string | null
           admin_email: string | null
           admin_line_user_id: string | null
           billing_customer_id: string | null
           billing_payment_method_status: string | null
           booking_headline: string | null
+          booking_page_status: string | null
           brand_color: string | null
           business_hours: Json | null
           checkout_expiry_hours: number | null
           created_at: string | null
+          google_review_url: string | null
           header_layout: string | null
           id: string
           line_ai_enabled: boolean | null
@@ -651,7 +663,9 @@ export type Database = {
           line_reminder_hours_before: number[] | null
           logo_url: string | null
           name: string
+          onboarding_completed_at: string | null
           payment_enabled: boolean | null
+          phone: string | null
           platform_fee_percent: number | null
           service_set_discounts: Json | null
           slug: string
@@ -661,15 +675,18 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          address?: string | null
           admin_email?: string | null
           admin_line_user_id?: string | null
           billing_customer_id?: string | null
           billing_payment_method_status?: string | null
           booking_headline?: string | null
+          booking_page_status?: string | null
           brand_color?: string | null
           business_hours?: Json | null
           checkout_expiry_hours?: number | null
           created_at?: string | null
+          google_review_url?: string | null
           header_layout?: string | null
           id?: string
           line_ai_enabled?: boolean | null
@@ -682,7 +699,9 @@ export type Database = {
           line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name: string
+          onboarding_completed_at?: string | null
           payment_enabled?: boolean | null
+          phone?: string | null
           platform_fee_percent?: number | null
           service_set_discounts?: Json | null
           slug: string
@@ -692,15 +711,18 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          address?: string | null
           admin_email?: string | null
           admin_line_user_id?: string | null
           billing_customer_id?: string | null
           billing_payment_method_status?: string | null
           booking_headline?: string | null
+          booking_page_status?: string | null
           brand_color?: string | null
           business_hours?: Json | null
           checkout_expiry_hours?: number | null
           created_at?: string | null
+          google_review_url?: string | null
           header_layout?: string | null
           id?: string
           line_ai_enabled?: boolean | null
@@ -713,7 +735,9 @@ export type Database = {
           line_reminder_hours_before?: number[] | null
           logo_url?: string | null
           name?: string
+          onboarding_completed_at?: string | null
           payment_enabled?: boolean | null
+          phone?: string | null
           platform_fee_percent?: number | null
           service_set_discounts?: Json | null
           slug?: string
@@ -805,7 +829,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
-          organization_id: string | null
+          organization_id: string
           price: number
           service_id: string
           title: string
@@ -814,7 +838,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          organization_id?: string | null
+          organization_id: string
           price: number
           service_id: string
           title: string
@@ -823,7 +847,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          organization_id?: string | null
+          organization_id?: string
           price?: number
           service_id?: string
           title?: string
@@ -855,7 +879,7 @@ export type Database = {
           id: string
           image_url: string
           is_active: boolean | null
-          organization_id: string | null
+          organization_id: string
           quantity_discounts: Json | null
           requires_prepayment: boolean | null
           title: string
@@ -870,7 +894,7 @@ export type Database = {
           id?: string
           image_url: string
           is_active?: boolean | null
-          organization_id?: string | null
+          organization_id: string
           quantity_discounts?: Json | null
           requires_prepayment?: boolean | null
           title: string
@@ -885,7 +909,7 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean | null
-          organization_id?: string | null
+          organization_id?: string
           quantity_discounts?: Json | null
           requires_prepayment?: boolean | null
           title?: string
@@ -942,6 +966,31 @@ export type Database = {
     }
     Functions: {
       cancel_booking_by_token: { Args: { p_token: string }; Returns: boolean }
+      check_onboarding_status: { Args: { org_id: string }; Returns: boolean }
+      create_booking_secure: {
+        Args: {
+          p_customer_address: string
+          p_customer_address_building: string
+          p_customer_email: string
+          p_customer_id: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_customer_postal_code: string
+          p_diagnosis_has_parking?: boolean
+          p_diagnosis_notes?: string
+          p_organization_id: string
+          p_preference1_date?: string
+          p_preference1_time?: string
+          p_preference2_date?: string
+          p_preference2_time?: string
+          p_preference3_date?: string
+          p_preference3_time?: string
+          p_selected_date: string
+          p_selected_time: string
+          p_total_price?: number
+        }
+        Returns: string
+      }
       create_customer_secure:
         | {
             Args: {
@@ -970,6 +1019,7 @@ export type Database = {
             }
             Returns: string
           }
+      ensure_user_organization: { Args: never; Returns: string }
       find_or_create_customer: {
         Args: {
           p_address?: string
@@ -999,20 +1049,32 @@ export type Database = {
           total_price: number
         }[]
       }
+      get_customer_bookings_by_line_id: {
+        Args: { p_line_user_id: string; p_organization_id: string }
+        Returns: {
+          customer_name: string
+          id: string
+          selected_date: string
+          selected_time: string
+          service_titles: string[]
+          status: string
+          total_price: number
+        }[]
+      }
       get_organization_public: {
         Args: { org_slug: string }
         Returns: {
+          address: string
           booking_headline: string
+          booking_page_status: string
           brand_color: string
           business_hours: Json
-          created_at: string
           header_layout: string
           id: string
-          line_liff_id: string
           logo_url: string
           name: string
+          phone: string
           slug: string
-          updated_at: string
           welcome_message: string
         }[]
       }
